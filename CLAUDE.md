@@ -21,5 +21,5 @@ Se publica en https://gpereira-ucip.github.io/carga-mental/ (repo propio gpereir
   4. Tildar los ítems de `BACKLOG.md` con la fecha y la versión.
 - Probar con `python3 tests/smoke.py`, que tiene que dar OK. Mirar las capturas `/tmp/cm-*.png` antes de publicar.
 - Textos en español rioplatense, amables y sin reproches.
-- **No tocar los archivos de PICU Pocket** (todo lo que está fuera de `carga-mental/`). La única excepción es la línea que ya existe en `/sw.js` que ignora `/carga-mental/`.
+- Este repo es solo de Carga Mental. No tocar otros repos (picu-pocket, Arucip, Child, etc.).
 - Commits en `main` con el mensaje `Carga Mental vX.Y.Z: <resumen>`.
