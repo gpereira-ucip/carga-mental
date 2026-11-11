@@ -10,6 +10,8 @@ Levanta un servidor local, abre la app en un celular simulado (390x844) y recorr
   6. Movimiento (v1.3.0): globitos e indicador de la barra, mensajes sin leer, tilde y confeti, vibración,
      cerrar hojas deslizando (toques reales), estados vacíos y datos de v1.2.0 que siguen intactos.
   7. v1.4.0: accesibilidad (44 px, nombres, teclado, letra grande), deshacer, botón +, anillos y datos de v1.3.0 intactos.
+  8. v1.5.0: migración al esquema 2 (datos de v1.4.0), cantidad y unidad, categorías, buscador con alta rápida,
+     anotar por voz (reconocimiento simulado) e historial de compras por producto.
 Falla si hay errores de JavaScript o de consola, o si la página se ensancha más de 390 px.
 Guarda capturas en /tmp/cm-*.png para revisarlas.
 """
@@ -32,6 +34,12 @@ def check(cond, msg):
     if not cond: errs.append(msg)
 
 def S(pg): return pg.evaluate('JSON.parse(localStorage.getItem("cm_data"))')
+def sin_v15(d):
+    """Saca lo que agregó el esquema 2 (v1.5.0) para comparar con los datos guardados por versiones anteriores."""
+    d = json.loads(json.dumps(d)); d['_v'] = 1
+    for i in d['items'].values():
+        for k in ('cat', 'qty', 'unit', 'hist'): i.pop(k, None)
+    return d
 def width_ok(pg, where):
     w = pg.evaluate('document.documentElement.scrollWidth')
     check(w == 390, f'{where}: scrollWidth={w} (debería ser 390)')
@@ -280,7 +288,7 @@ with sync_playwright() as p:
     pg.on('console', lambda m: errs.append(f'[v1.3] consola: {m.text}') if m.type == 'error' else None)
     pg.goto(URL); pg.wait_for_timeout(2200)
     d = S(pg)
-    check(d == V12, 'Datos de v1.2.0: cambiaron al cargar la versión nueva')
+    check(sin_v15(d) == V12, 'Datos de v1.2.0: cambiaron al cargar la versión nueva')
     # Hoja de Novedades: se cierra deslizando hacia abajo con toques reales
     check(pg.locator('#sheet >> text=Novedades y progreso').count() > 0, 'v1.3: no se abrió Novedades')
     check(pg.locator('#sheetbox .grab').count() == 1, 'La hoja no tiene manija')
@@ -369,10 +377,10 @@ with sync_playwright() as p:
         return c, q
     ctx, pg = new13('v1.4')
     pg.goto(URL); pg.wait_for_timeout(2200)
-    check(S(pg) == V12, 'Datos de v1.3.0: cambiaron al cargar la versión nueva')
+    check(sin_v15(S(pg)) == V12, 'Datos de v1.3.0: cambiaron al cargar la versión nueva')
     check(pg.locator('#modal.hidden').count() == 0 or True, '')
     # Novedades se abre sola por ser versión nueva
-    check(pg.locator('#sheet >> text=Novedades y progreso').count() > 0 and pg.locator('#sheet >> text=20/100').count() > 0, 'v1.4: Novedades no muestra 20/100')
+    check(pg.locator('#sheet >> text=Novedades y progreso').count() > 0 and pg.locator(f'#sheet >> text={hechas}/100').count() > 0, 'v1.4: Novedades no muestra el progreso')
     pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
     # Anillos en Hoy
     check(pg.locator('main svg.ring').count() == 3, 'Hoy no muestra los 3 anillos')
@@ -481,11 +489,16 @@ with sync_playwright() as p:
         pg.evaluate("localStorage.setItem('cm_seen', VERSION)"); pg.reload(); pg.wait_for_timeout(1500)
         for tk in ['hoy', 'compras', 'casa', 'joaco', 'chat']:
             pg.locator(f'nav button[data-tab={tk}]').click(); pg.wait_for_timeout(200)
-            if tk == 'compras': pg.evaluate("A.filter('todos')"); pg.wait_for_timeout(100)
+            if tk == 'compras':
+                pg.evaluate("A.filter('todos')"); pg.wait_for_timeout(100)
+                pg.evaluate("A.search('a')"); pg.wait_for_timeout(100)
+                for x in pg.evaluate(AUDIT): errs.append(f'a11y {scheme}/{bigv}/buscador: {x}')
+                width_ok(pg, f'a11y {scheme}/{bigv}/buscador')
+                pg.evaluate("A.search('')"); pg.wait_for_timeout(100)
             if tk == 'casa': pg.evaluate("document.querySelectorAll('details').forEach(d => d.open = true)")
             for x in pg.evaluate(AUDIT): errs.append(f'a11y {scheme}/{bigv}/{tk}: {x}')
             width_ok(pg, f'a11y {scheme}/{bigv}/{tk}')
-        for opener in ["A.settings()", "A.fab()", "A.news()", "A.itemForm('i_agua')", "A.saludForm('s_odonto')", "A.mochilaEdit()"]:
+        for opener in ["A.voice()", "document.getElementById('f_voz').value='agua, dos kilos de tomate y pan';A.voiceReview()", "A.settings()", "A.fab()", "A.news()", "A.itemForm('i_agua')", "A.saludForm('s_odonto')", "A.mochilaEdit()"]:
             pg.evaluate(opener); pg.wait_for_timeout(150)
             for x in pg.evaluate(AUDIT): errs.append(f'a11y {scheme}/{bigv}/{opener}: {x}')
             gh = pg.locator('#sheetbox .grab').bounding_box()['height']; check(gh >= 43.5, f'La manija de la hoja es muy chica ({gh}, {opener}, {scheme}/{bigv})')
@@ -507,6 +520,142 @@ with sync_playwright() as p:
           ['#2563eb','#db2777','#047857','#c2410c','#7c3aed','#64748b'].forEach((c, i) => out['av' + i] = ratio('#ffffff', c));
           return out; }""")
         for k, val in r.items(): check(val >= 4.5, f'Contraste {scheme} {k}={val:.2f} (mínimo 4.5)')
+        ctx.close()
+
+    # ---------- 8. Compras v1.5.0: cantidad, categorías, buscador, voz e historial ----------
+    VOZ = """window.__dicho = 'leche, dos kilos de tomate y agua';
+      window.SpeechRecognition = window.webkitSpeechRecognition = function(){ const r = this; r.start = () => setTimeout(() => {
+        r.onresult && r.onresult({results:[[{transcript: window.__dicho}]]}); r.onend && r.onend(); }, 60); r.stop = r.abort = () => {}; };"""
+    init14 = init12.replace("localStorage.setItem('cm_seen','1.2.0')", "localStorage.setItem('cm_seen','1.4.0')") + VOZ
+    for scheme in ['light', 'dark']:
+        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init14)
+        pg = ctx.new_page()
+        pg.on('pageerror', lambda e: errs.append(f'[v1.5] JS: {e}'))
+        pg.on('console', lambda m: errs.append(f'[v1.5] consola: {m.text}') if m.type == 'error' else None)
+        pg.goto(URL); pg.wait_for_timeout(2200)
+        d = S(pg)
+        # Migración 1 → 2: nada se pierde, queda copia y se completan los campos nuevos
+        check(d['_v'] == 2, f"v1.5: _v={d['_v']} (esperaba 2)")
+        check(sin_v15(d) == V12, 'v1.5: la migración cambió o perdió datos de v1.4.0')
+        check(json.loads(pg.evaluate('localStorage.getItem("cm_backup_v1")') or 'null') == V12, 'v1.5: no quedó la copia cm_backup_v1 idéntica')
+        it = d['items']
+        check(it['i_agua']['cat'] == 'bebidas' and it['i_mio']['cat'] == 'frescos' and it['i_huerfano']['cat'] == 'almacen', f"v1.5: categorías mal asignadas {[x['cat'] for x in it.values()]}")
+        check(all(x['qty'] is None and x['unit'] == '' for x in it.values()), 'v1.5: cantidad/unidad iniciales')
+        check(it['i_mio']['hist'] == [{'at': 1762000000000, 'by': None}] and it['i_agua']['hist'] == [], f"v1.5: historial inicial {it['i_mio']['hist']}")
+        check(pg.locator('#sheet >> text=25/100').count() > 0, 'v1.5: Novedades no muestra 25/100')
+        pg.screenshot(path=f'/tmp/cm-v15-novedades-{scheme}.png')
+        pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
+        pg.reload(); pg.wait_for_timeout(1800)
+        check(S(pg) == d, 'v1.5: recargar volvió a tocar los datos ya migrados')
+        # Categorías del usuario nuevo y texto de cantidades
+        cats = pg.evaluate("Object.fromEntries(Object.values(seed().items).map(i => [i.name, i.cat]))")
+        esperado = {'Agua': 'bebidas', 'Soda': 'bebidas', 'Latas de atún': 'almacen', 'Papel de cocina': 'papeles', 'Papel higiénico': 'papeles', 'Pañuelos descartables': 'papeles',
+                    'Artículos de limpieza': 'limpieza', 'Pastillas para el lavavajillas': 'limpieza', 'Jabón para la ropa': 'limpieza', 'Frutos secos': 'almacen', 'Semillas': 'almacen',
+                    'Frutas': 'frescos', 'Verduras': 'frescos', 'Pescado': 'frescos', 'Yerba': 'almacen', 'Huevos (gallinas alimentadas a maíz)': 'frescos', 'Snacks de Joaco': 'almacen'}
+        for k, v in esperado.items(): check(cats.get(k) == v, f'Categoría de «{k}»: {cats.get(k)} (esperaba {v})')
+        q = pg.evaluate("[qtyTxt({qty:2, unit:'doc'}), qtyTxt({qty:6, unit:'L'}), qtyTxt({qty:1, unit:'kg'}), qtyTxt({qty:1.5, unit:'kg'}), qtyTxt({qty:3, unit:''}), qtyTxt({qty:null, unit:'kg'}), qtyTxt({qty:1, unit:'paq'})]")
+        check(q == ['2 docenas', '6 L', '1 kg', '1,5 kg', '× 3', '', '1 paquete'], f'qtyTxt: {q}')
+        # Cantidad y unidad desde el formulario
+        pg.locator('nav button[data-tab=compras]').click(); pg.wait_for_timeout(300)
+        check(pg.locator('main section.card:has-text("Supermercado") .cat').count() == 2, 'El súper no agrupa por categoría')
+        check(pg.locator('main section.card:has-text("Naturista") .cat').count() == 0, 'Un negocio con una sola categoría no debería mostrar títulos')
+        pg.locator('main .item .t:has-text("Agua")').first.click(); pg.wait_for_timeout(250)
+        check(pg.locator('#f_cat').input_value() == 'bebidas', 'El formulario no muestra la categoría')
+        check(pg.locator('#sheet summary:has-text("Historial de compras (0)")').count() == 1, 'El formulario no muestra el historial vacío')
+        pg.fill('#f_qty', '1,5'); pg.select_option('#f_unit', 'L'); pg.select_option('#f_cat', 'otros')
+        pg.locator('#sheet button.pri').click(); pg.wait_for_timeout(250)
+        a = S(pg)['items']['i_agua']
+        check(a['qty'] == 1.5 and a['unit'] == 'L' and a['cat'] == 'otros' and a['state'] == 'list', f'Cantidad/unidad/categoría no se guardaron: {a}')
+        check(pg.locator('main .item:has-text("Agua") .qty').first.inner_text().strip() == '· 1,5 L', 'La lista no muestra la cantidad')
+        pg.evaluate("A.itemForm('i_agua')"); pg.wait_for_timeout(150)
+        check(pg.locator('#f_qty').input_value() == '1,5' and pg.locator('#f_unit').input_value() == 'L', 'El formulario no recuerda la cantidad')
+        pg.fill('#f_qty', '6'); pg.select_option('#f_cat', 'bebidas'); pg.locator('#sheet button.pri').click(); pg.wait_for_timeout(200)
+        # Historial: comprar registra quién, cuándo y cuánto; deshacer lo saca
+        pg.locator('main input[aria-label="Comprado: Agua"]').click(); pg.wait_for_timeout(250)
+        a = S(pg)['items']['i_agua']
+        check(len(a['hist']) == 1 and a['hist'][0]['by'] == 'gonzalo' and a['hist'][0]['qty'] == 6 and a['hist'][0]['unit'] == 'L' and a['hist'][0]['at'] == a['last'], f"Historial tras comprar: {a['hist']}")
+        pg.locator('#toast button').click(); pg.wait_for_timeout(250)
+        check(S(pg)['items']['i_agua']['hist'] == [] and S(pg)['items']['i_agua']['state'] == 'list', 'Deshacer no sacó la compra del historial')
+        pg.evaluate("A.bought('i_agua')"); pg.wait_for_timeout(100); pg.evaluate("A.need('i_agua')"); pg.wait_for_timeout(100); pg.evaluate("A.boughtAll('super')"); pg.wait_for_timeout(300)
+        check(len(S(pg)['items']['i_agua']['hist']) == 2, '«Compré todo» no sumó al historial')
+        pg.evaluate("A.itemForm('i_agua')"); pg.wait_for_timeout(200)
+        check(pg.locator('#sheet summary:has-text("Historial de compras (2)")').count() == 1, 'El historial no cuenta 2 compras')
+        pg.locator('#sheet summary').click(); pg.wait_for_timeout(150)
+        check(pg.locator('#sheet .histd .log').count() == 2 and 'Gonzalo' in pg.locator('#sheet .histd .log').first.inner_text() and '6 L' in pg.locator('#sheet .histd .log').first.inner_text(), 'El historial no muestra quién y cuánto')
+        pg.screenshot(path=f'/tmp/cm-v15-producto-{scheme}.png'); width_ok(pg, 'v1.5 producto')
+        pg.keyboard.press('Escape'); pg.wait_for_timeout(150)
+        pg.evaluate("A.itemForm('i_mio')"); pg.wait_for_timeout(150); pg.locator('#sheet summary').click()
+        check('Sin dato de quién' in pg.locator('#sheet .histd').inner_text(), 'Historial migrado: falta el renglón de la última compra')
+        pg.keyboard.press('Escape'); pg.wait_for_timeout(150)
+        # Buscador
+        pg.locator('#buscar').click(); pg.keyboard.type('ques'); pg.wait_for_timeout(200)
+        check(pg.locator('#sres .item').count() == 1 and 'Queso rallado' in pg.locator('#sres').inner_text(), 'El buscador no encontró el queso')
+        check(pg.evaluate("document.activeElement.id") == 'buscar' and pg.locator('#buscar').input_value() == 'ques', 'El buscador perdió el foco o el texto al escribir')
+        check(pg.evaluate("document.getElementById('stl').hidden"), 'Con una búsqueda activa siguen a la vista los negocios')
+        pg.locator('#sres button:has-text("Se acaba")').click(); pg.wait_for_timeout(250)
+        check(S(pg)['items']['i_mio']['state'] == 'list' and 'ya está en la lista' in pg.locator('#sres').inner_text(), 'Buscar → «Se acaba» no anotó el producto')
+        pg.fill('#buscar', 'MIEL'); pg.wait_for_timeout(150)
+        check(pg.locator('#sres .item').count() == 1 and pg.locator('#sres .newp').count() == 0, 'Búsqueda exacta sin acentos/mayúsculas')
+        pg.locator('#buscar').press('Enter'); pg.wait_for_timeout(200)
+        check(S(pg)['items']['i_huerfano']['state'] == 'list', 'Enter sobre un producto existente no lo anotó')
+        pg.fill('#buscar', 'pan  lactal'); pg.wait_for_timeout(150)
+        check(pg.locator('#sres .item').count() == 0 and 'Pan lactal' in pg.locator('#sres .newp').inner_text(), 'El buscador no ofrece el alta rápida')
+        pg.screenshot(path=f'/tmp/cm-v15-buscador-{scheme}.png'); width_ok(pg, 'v1.5 buscador')
+        n0 = len(S(pg)['items'])
+        pg.locator('#sres .chips button:has-text("Naturista")').click(); pg.wait_for_timeout(250)
+        nuevo = [x for x in S(pg)['items'].values() if x['name'] == 'Pan lactal']
+        check(len(nuevo) == 1 and nuevo[0]['store'] == 'naturista' and nuevo[0]['state'] == 'list' and nuevo[0]['cat'] == 'frescos' and nuevo[0]['hist'] == [], f'Alta rápida: {nuevo}')
+        check(pg.locator('#buscar').input_value() == '' and not pg.evaluate("document.getElementById('stl').hidden"), 'Después del alta rápida no se limpió la búsqueda')
+        pg.locator('#toast button').click(); pg.wait_for_timeout(250)
+        check(len(S(pg)['items']) == n0, 'Deshacer el alta rápida no borró el producto')
+        pg.fill('#buscar', 'tostadas'); pg.locator('#buscar').press('Enter'); pg.wait_for_timeout(250)
+        t = [x for x in S(pg)['items'].values() if x['name'] == 'Tostadas']
+        check(pg.locator('#buscar').input_value() == '' and pg.evaluate("document.activeElement.id") == 'buscar', 'Después de Enter el buscador no quedó vacío y listo para seguir')
+        check(len(t) == 1 and t[0]['store'] == 'super', 'Enter con un producto nuevo no lo anotó en el súper')
+        # Entender lo dictado
+        ps = pg.evaluate("""['leche, dos kilos de tomate y papel higiénico', 'un kilo y medio de carne', 'media docena de huevos', 'Anotá agua y 1,5 litros de jugo de naranja.',
+          'una lechuga; 3 latas de arvejas', 'queso rallado', 'comprar dos paquetes de fideos y tostadas', ''].map(t => parseSpoken(t).map(x => [x.name, x.id, x.qty, x.unit]))""")
+        check(ps[0] == [['Leche', None, None, ''], ['Tomate', None, 2, 'kg'], ['Papel higiénico', None, None, '']], f'Voz 0: {ps[0]}')
+        check(ps[1] == [['Carne', None, 1.5, 'kg']], f'Voz 1: {ps[1]}')
+        check(ps[2] == [['Huevos', None, 0.5, 'doc']], f'Voz 2: {ps[2]}')
+        check(ps[3] == [['Agua', 'i_agua', None, ''], ['Jugo de naranja', None, 1.5, 'L']], f'Voz 3: {ps[3]}')
+        check(ps[4] == [['Lechuga', None, None, ''], ['Arvejas', None, 3, 'lata']], f'Voz 4: {ps[4]}')
+        check(ps[5] == [['Queso rallado especial', 'i_mio', None, '']], f'Voz 5: {ps[5]}')
+        check(ps[6] == [['Fideos', None, 2, 'paq'], ['Tostadas', t[0]['id'] if t else None, None, '']], f'Voz 6: {ps[6]}')
+        check(ps[7] == [], f'Voz 7: {ps[7]}')
+        # Anotar por voz con el reconocimiento simulado
+        n1 = len(S(pg)['items'])
+        pg.locator('main .search button[aria-label="Anotar por voz"]').click(); pg.wait_for_timeout(250)
+        check(pg.locator('#micbtn').count() == 1, 'La hoja de voz no muestra el micrófono')
+        pg.screenshot(path=f'/tmp/cm-v15-voz-{scheme}.png')
+        pg.locator('#micbtn').click(); pg.wait_for_timeout(400)
+        check(pg.locator('#sheet h3:has-text("¿Anoto esto?")').count() == 1 and pg.locator('#sheet label.item').count() == 3, 'Después de escuchar no apareció la revisión')
+        check(pg.locator('#sheet .tag:has-text("producto nuevo")').count() == 2 and pg.locator('#f_vstore').input_value() == 'super', 'La revisión no distingue productos nuevos')
+        pg.screenshot(path=f'/tmp/cm-v15-voz-revision-{scheme}.png'); width_ok(pg, 'v1.5 voz')
+        pg.locator('#vz_0').uncheck(); pg.select_option('#f_vstore', 'naturista')
+        pg.locator('#sheet button.pri').click(); pg.wait_for_timeout(300)
+        d2 = S(pg); tom = [x for x in d2['items'].values() if x['name'] == 'Tomate']
+        check(len(d2['items']) == n1 + 1 and len(tom) == 1 and tom[0]['qty'] == 2 and tom[0]['unit'] == 'kg' and tom[0]['store'] == 'naturista' and tom[0]['state'] == 'list', f'Voz: tomate {tom}')
+        check(d2['items']['i_agua']['state'] == 'list' and d2['items']['i_agua']['qty'] == 6, 'Voz: el agua no volvió a la lista (o perdió su cantidad)')
+        check(not any(x['name'] == 'Leche' for x in d2['items'].values()), 'Voz: anotó lo que estaba destildado')
+        check(any('anotó por voz' in l['act'] for l in d2['log'].values()), 'Voz: no quedó en últimos movimientos')
+        check(pg.locator('#modal.hidden').count() == 1, 'Voz: la hoja no se cerró')
+        pg.locator('#toast button').click(); pg.wait_for_timeout(250)
+        d3 = S(pg)
+        check(len(d3['items']) == n1 and d3['items']['i_agua']['state'] == 'ok' and not any('anotó por voz' in l['act'] for l in d3['log'].values()), 'Voz: deshacer no dejó todo como estaba')
+        # Escribiendo en lugar de hablar, y sin reconocimiento de voz
+        pg.evaluate("A.voice()"); pg.wait_for_timeout(150); pg.fill('#f_voz', 'media docena de huevos'); pg.locator('#sheet button.pri').click(); pg.wait_for_timeout(200)
+        check(pg.locator('#sheet label.item').count() == 1 and '0,5 docena' in pg.locator('#sheet label.item').inner_text(), 'Voz escrita: no entendió «media docena de huevos»')
+        pg.keyboard.press('Escape'); pg.wait_for_timeout(150)
+        pg.evaluate("window.SpeechRecognition = window.webkitSpeechRecognition = undefined; A.voice()"); pg.wait_for_timeout(150)
+        check(pg.locator('#micbtn').count() == 0 and pg.locator('#f_voz').count() == 1 and 'micrófono del teclado' in pg.locator('#sheet').inner_text(), 'Sin reconocimiento de voz no hay alternativa para dictar')
+        pg.locator('#sheet button.pri').click(); pg.wait_for_timeout(150)
+        check(pg.locator('#f_voz').count() == 1, 'Revisar con el texto vacío no debería avanzar')
+        pg.keyboard.press('Escape'); pg.wait_for_timeout(150)
+        # Vista general con categorías (usuario con todos los productos de fábrica)
+        pg.evaluate("S = seed(); S._v = SCHEMA; ['i_agua','i_atun','i_higienico','i_limpieza'].forEach(k => S.items[k].state = 'list'); S.items.i_agua.qty = 6; S.items.i_agua.unit = 'L'; storeFilter = 'super'; render()"); pg.wait_for_timeout(200)
+        check(pg.locator('main section.card .cat').count() >= 5, 'El súper de fábrica no muestra las categorías')
+        pg.screenshot(path=f'/tmp/cm-v15-compras-{scheme}.png', full_page=True); width_ok(pg, 'v1.5 compras')
         ctx.close()
 
     b.close()

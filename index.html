@@ -269,6 +269,20 @@ main{padding-bottom:150px}
 .ring.a .v{animation:ringin .9s cubic-bezier(.2,.8,.3,1)}
 .ring text{fill:var(--ink);font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
 @keyframes ringin{from{stroke-dashoffset:var(--c)}}
+/* ---------- v1.5.0: buscador, voz, cantidades, categorías e historial ---------- */
+.search{display:flex;gap:var(--s2);margin:var(--s2) 0 2px}
+.search input{flex:1;min-width:0}
+.search .b{display:grid;place-items:center;padding:0;width:44px;flex:none;color:var(--pri-tx)}
+.qty{font-weight:650;color:var(--pri-tx);white-space:nowrap}
+.cat{font-size:var(--fs-xs);font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;padding:10px 0 2px;border-top:1px solid var(--line)}
+.cat + .item{border-top:0}
+.two{display:grid;grid-template-columns:1fr 1.4fr;gap:var(--s2)}
+.two > div{min-width:0}
+textarea.plain{font-family:inherit;font-size:var(--fs-md);min-height:72px}
+.mic{display:flex;align-items:center;justify-content:center;gap:var(--s2);width:100%;min-height:56px;font-size:var(--fs-md);font-weight:650;margin:var(--s2) 0;color:var(--pri-tx)}
+.mic.on{background:var(--badbg);border-color:var(--bad);color:var(--bad);animation:glow 1.2s ease-out infinite}
+.histd .log:first-of-type{border-top:0}
+.newp{margin-top:var(--s3)}
 @media (prefers-reduced-motion: reduce){ *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important} }
 </style>
 </head>
@@ -288,10 +302,17 @@ main{padding-bottom:150px}
 <script>
 'use strict';
 /* ============ Constantes ============ */
-const VERSION = '1.4.0';
-const SCHEMA = 1; // versión de la estructura de datos guardados (ver MIGRATIONS)
+const VERSION = '1.5.0';
+const SCHEMA = 2; // versión de la estructura de datos guardados (ver MIGRATIONS)
 /* Novedades: la primera es la versión actual. "hechas" = ítems del plan de 100 tildados hasta esa versión. */
 const NEWS = [
+  {v:'1.5.0', d:'2026-11-11', hechas:25, items:[
+    'Cada producto puede llevar cantidad y unidad (2 docenas, 6 L, 1 kg) y se ve en la lista y en el mensaje de WhatsApp.',
+    'Dentro de cada negocio los productos se ordenan por categoría: frescos, almacén, bebidas, limpieza, papeles y otros.',
+    'Buscador arriba de Compras: escribí un producto para encontrarlo en cualquier negocio y, si no existe, anotalo ahí mismo.',
+    'Anotar por voz: tocá el micrófono y decí «leche, dos kilos de tomate y papel higiénico». Antes de anotar te muestra lo que entendió.',
+    'Historial de compras por producto: tocá un producto para ver quién lo compró y cuándo.'
+  ]},
   {v:'1.4.0', d:'2026-11-10', hechas:20, items:[
     'Más fácil de tocar y de leer: todos los botones tienen al menos 44 px, los lectores de pantalla entienden cada botón y hay una opción de letra grande en ⚙ Ajustes → Apariencia.',
     'Cada aviso trae un «Deshacer» por si tocaste algo sin querer: compras, tildes, tareas, indicaciones y borrados.',
@@ -338,6 +359,19 @@ const M = {
 };
 const DOW = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 const DOWL = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+/* Compras (v1.5.0): unidades [singular, plural] y categorías [clave, ícono, nombre] */
+const UNITS = {u:['unidad','unidades'], kg:['kg','kg'], g:['g','g'], L:['L','L'], ml:['ml','ml'], doc:['docena','docenas'], paq:['paquete','paquetes'], caja:['caja','cajas'], bot:['botella','botellas'], lata:['lata','latas'], bolsa:['bolsa','bolsas'], rollo:['rollo','rollos'], atado:['atado','atados']};
+const CATS = [['frescos','🥬','Frescos'],['almacen','🥫','Almacén'],['bebidas','🥤','Bebidas'],['limpieza','🧴','Limpieza'],['papeles','🧻','Papeles'],['otros','📦','Otros']];
+const CAT_RX = [
+  ['papeles', /\b(papel|panuelo|servilleta|rollo|panal|toallita)/],
+  ['limpieza', /\b(limpi|lavandina|detergente|jabon|lavavajilla|esponja|suavizante|desengrasante|residuo|trapo|rejilla|desodorante|insecticida|shampoo|champu|dentifrico|pasta dental)/],
+  ['bebidas', /\b(agua|soda|jugo|gaseosa|vino|cerveza|bebida|tonica)/],
+  ['almacen', /\b(semilla|frutos? seco|snack|atun|lata|yerba|arroz|fideo|harina|azucar|aceite|galletita|cafe|miel|legumbre|lenteja|garbanzo|avena|granola|mermelada|vinagre|cacao|cereal|polenta|salsa|condimento|almendra|nuez|nueces|pasas)|\b(te|sal|mani|especias?)\b/],
+  ['frescos', /\b(fruta|verdura|huevo|pescado|carne|pollo|queso|yogur|leche|manteca|crema|jamon|fiambre|tomate|papa|cebolla|banana|manzana|naranja|limon|lechuga|zanahoria|zapallo|palta|merluza|salmon|pan)/]
+];
+const NUMW = {un:1, una:1, uno:1, dos:2, tres:3, cuatro:4, cinco:5, seis:6, siete:7, ocho:8, nueve:9, diez:10, once:11, doce:12, quince:15, veinte:20, medio:.5, media:.5};
+const UNITW = [['kg',/^(kilos?|kg|kilogramos?)$/],['g',/^(gramos?|g|gr)$/],['L',/^(litros?|l|lt|lts)$/],['ml',/^(mililitros?|ml|cc)$/],['doc',/^docenas?$/],['paq',/^paquetes?$/],['caja',/^cajas?$/],['bot',/^botellas?$/],['lata',/^latas?$/],['bolsa',/^bolsas?$/],['rollo',/^rollos?$/],['atado',/^atados?$/],['u',/^unidad(es)?$/]];
+const FILLER = /^(anota|anotar|anotame|anotate|agrega|agregar|agregame|compra|comprar|falta|faltan|necesitamos|necesito|pone|poner|suma|sumar|tambien|ademas|hay|que|por|favor|el|la|los|las|mas)$/;
 
 /* ============ Íconos SVG propios (trazo, 24×24, toman el color del texto) ============ */
 const ICONS = {
@@ -366,6 +400,8 @@ const ICONS = {
   tema:'<path d="M12 3.5a8.5 8.5 0 1 0 0 17z" fill="currentColor"/><circle cx="12" cy="12" r="8.5"/>',
   sol:'<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>',
   luna:'<path d="M19.5 14.5A7.5 7.5 0 0 1 9.5 4.5a7.5 7.5 0 1 0 10 10z"/>',
+  lupa:'<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>',
+  mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/>',
   rotar:'<path d="M4 12a8 8 0 0 1 13.7-5.6M20 12a8 8 0 0 1-13.7 5.6"/><path d="M18 3v3.6h-3.6M6 21v-3.6h3.6"/>'
 };
 const ic = (n, cls='') => `<svg class="ic ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n] || ''}</svg>`;
@@ -374,6 +410,14 @@ const hic = n => `<span class="hic">${ic(n)}</span>`;
 /* ============ Utilidades ============ */
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm = s => String(s ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const fnum = n => String(Math.round(n * 100) / 100).replace('.', ',');
+/* Cantidad y unidad de un producto (o de una compra del historial): «2 docenas», «6 L», «× 3». */
+function qtyTxt(i){ const q = +i.qty; if(!(q > 0)) return ''; const u = UNITS[i.unit]; return u ? `${fnum(q)} ${q <= 1 ? u[0] : u[1]}` : `× ${fnum(q)}`; }
+function guessCat(name){ const n = norm(name); const hit = CAT_RX.find(([, rx]) => rx.test(n)); return hit ? hit[0] : 'otros'; }
+const catOf = i => CATS.some(c => c[0] === i.cat) ? i.cat : guessCat(i.name);
+const histOf = i => Array.isArray(i.hist) ? i.hist : (i.last ? [{at:i.last, by:i.lastBy || null}] : []);
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
 const pad = n => String(n).padStart(2,'0');
 const dk = (d = new Date()) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
@@ -457,7 +501,7 @@ function seed(){
     {id:'ml', name:'MercadoLibre', icon:'📦', how:'Pedido online', owner:'gonzalo', ord:4},
     {id:'berardi', name:'Berardi (pescados)', icon:'🐟', how:'Pedido por la web', owner:'gonzalo', ord:5}
   ].forEach(s => add('stores', s));
-  const it = (id, name, store, every) => add('items', {id:'i_'+id, name, store, every, last:null, state:'ok'});
+  const it = (id, name, store, every) => add('items', {id:'i_'+id, name, store, every, last:null, state:'ok', qty:null, unit:'', cat:guessCat(name), hist:[]});
   it('semillas','Semillas','naturista',14); it('frutos','Frutos secos','naturista',14);
   it('snacks','Snacks de Joaco','naturista',7); it('huevos','Huevos (gallinas alimentadas a maíz)','naturista',7);
   it('frutas','Frutas','verduleria',3); it('verduras','Verduras','verduleria',3);
@@ -519,6 +563,14 @@ const MIGRATIONS = {
     Object.values(D.items).forEach(i => { if(!i.state) i.state = 'ok'; if(!(i.every > 0)) i.every = 7; if(!D.stores[i.store]) i.store = Object.keys(D.stores)[0]; });
     Object.values(D.tasks).forEach(t => { if(!t.kind) t.kind = t.steps ? 'cycle' : 'rec'; if(t.kind === 'cycle'){ if(!Array.isArray(t.steps)) t.steps = ['Hacer']; if(!t.cur) t.cur = {}; } else if(!(t.every > 0)) t.every = 7; if(!t.owner) t.owner = 'ambos'; });
     Object.values(D.indic).forEach(n => { if(!n.kind) n.kind = 'tarea'; });
+  },
+  2(D){ // v1.4.0 → esquema 2 (v1.5.0): cantidad, unidad, categoría e historial de compras por producto
+    Object.values(D.items).forEach(i => {
+      if(!i.cat) i.cat = guessCat(i.name);
+      if(i.qty === undefined) i.qty = null;
+      if(i.unit === undefined) i.unit = '';
+      if(!Array.isArray(i.hist)) i.hist = i.last ? [{at:i.last, by:i.lastBy || null}] : [];
+    });
   }
 };
 function migrate(D){
@@ -536,6 +588,7 @@ if(migrate(S) || fresh) try { localStorage.setItem(LS.data, JSON.stringify(S)); 
 let me = localStorage.getItem(LS.me) || '';
 let tab = localStorage.getItem(LS.tab) || 'hoy';
 let storeFilter = 'todos';
+let searchQ = '';
 let weekOffset = 0;
 function save(){ try { localStorage.setItem(LS.data, JSON.stringify(S)); } catch(e) {} }
 const clean = o => JSON.parse(JSON.stringify(o));
@@ -605,7 +658,7 @@ async function connect(){
         first = false; save(); render();
       }, e => { syncState = 'error'; renderSync(); console.warn(e); });
     }
-    MIGRATIONS[1](S); syncState = 'nube'; save(); render();
+    for(let v = 1; v <= SCHEMA; v++) MIGRATIONS[v](S); syncState = 'nube'; save(); render();
   }catch(e){ console.warn(e); syncState = 'error'; renderSync(); }
 }
 async function notify(title, body){
@@ -624,6 +677,62 @@ const sorted = (col, f = 'ord') => Object.values(S[col]).sort((a,b) => (a[f] ?? 
 const isDue = i => i.last && (Date.now() - i.last) >= i.every * DAY;
 const needs = i => i.state === 'list' || isDue(i);
 const recDue = t => !t.last || (Date.now() - t.last) >= t.every * DAY;
+/* Registrar una compra: vuelve a «al día» y suma un renglón al historial del producto (últimas 30). */
+function buy(i){ const h = histOf(i); i.state = 'ok'; i.last = Date.now(); i.lastBy = me; const e = {at:i.last, by:me}; if(+i.qty > 0){ e.qty = +i.qty; e.unit = i.unit || ''; } i.hist = h.concat([e]).slice(-30); }
+function newItem(name, sid){ return {id:'i_'+uid(), name, store:S.stores[sid] ? sid : (S.stores.super ? 'super' : (sorted('stores')[0] || {}).id), every:7, last:null, state:'list', note:'', qty:null, unit:'', cat:guessCat(name), hist:[]}; }
+const defStore = () => storeFilter !== 'todos' && S.stores[storeFilter] ? storeFilter : (S.stores.super ? 'super' : (sorted('stores')[0] || {}).id);
+const iname = i => esc(i.name) + (qtyTxt(i) ? ` <span class="qty">· ${esc(qtyTxt(i))}</span>` : '');
+/* Busca un producto ya cargado a partir de un texto normalizado (igual, con/sin «s», que empiece igual o que lo contenga como palabra). */
+function findItem(q){
+  if(!q) return null;
+  const all = Object.values(S.items).map(i => ({i, n:norm(i.name)})).sort((a,b) => a.n.length - b.n.length || a.n.localeCompare(b.n));
+  const alt = [...new Set([q, q + 's', q.replace(/s$/, '')])].filter(Boolean);
+  const hit = all.find(x => alt.includes(x.n)) || all.find(x => alt.some(a => x.n.startsWith(a + ' '))) || (q.length >= 3 ? all.find(x => alt.some(a => (' ' + x.n + ' ').includes(' ' + a + ' '))) : null);
+  return hit ? hit.i : null;
+}
+/* Convierte «leche, dos kilos de tomate y papel higiénico» en una lista [{name, id, qty, unit}]. */
+function parseSpoken(text){
+  const out = [];
+  String(text ?? '').replace(/(\d)[.,](\d)/g, '$1·$2').replace(/\s+y\s+(medio|media)(?=\s|$|[,;.])/gi, ' ymedio')
+    .split(/[,;.\n]+|\s+y\s+|\s+e\s+/i).forEach(ch => {
+      let w = ch.replace(/·/g, '.').replace(/[¿?¡!"«»]/g, ' ').trim().split(/\s+/).filter(Boolean);
+      while(w.length && FILLER.test(norm(w[0]))) w.shift();
+      if(!w.length) return;
+      let it = findItem(norm(w.join(' '))), qty = null, unit = '', name = '';
+      if(!it){
+        const half = () => { if(w[0] === 'ymedio'){ qty = (qty || 0) + .5; w.shift(); } };
+        const n0 = norm(w[0]); let soft = false;
+        if(/^\d+(\.\d+)?$/.test(w[0])){ qty = parseFloat(w.shift()); }
+        else if(NUMW[n0] && w.length > 1){ qty = NUMW[n0]; soft = /^(un|una|uno)$/.test(n0); w.shift(); }
+        half();
+        const uw = w.length > 1 && UNITW.find(([, rx]) => rx.test(norm(w[0])));
+        if(uw){ unit = uw[0]; w.shift(); if(!qty) qty = 1; half(); if(w.length > 1 && norm(w[0]) === 'de') w.shift(); }
+        else if(soft) qty = null;
+        w = w.filter(x => x !== 'ymedio');
+        name = w.join(' ').trim(); if(!name) return;
+        it = findItem(norm(name));
+      }
+      const o = {name:it ? it.name : cap(name), id:it ? it.id : null, qty:qty > 0 ? Math.round(qty * 100) / 100 : null, unit:qty > 0 ? unit : ''};
+      if(!out.some(x => (x.id && x.id === o.id) || norm(x.name) === norm(o.name))) out.push(o);
+    });
+  return out;
+}
+/* Resultados del buscador de Compras (se pintan sin redibujar toda la pantalla, para no perder el teclado). */
+function searchHtml(){
+  const q = norm(searchQ); if(!q) return '';
+  const all = Object.values(S.items).map(i => ({i, n:norm(i.name)})).filter(x => x.n.includes(q) || norm(x.i.note).includes(q))
+    .sort((a,b) => (a.n.startsWith(q) ? 0 : 1) - (b.n.startsWith(q) ? 0 : 1) || a.i.name.localeCompare(b.i.name));
+  const show = all.slice(0, 12), exact = all.some(x => x.n === q), nuevo = cap(searchQ.trim().replace(/\s+/g, ' '));
+  let h = `<section class="card" aria-label="Resultados de la búsqueda"><h3>${hic('lupa')} ${all.length ? (all.length === 1 ? 'Encontré 1 producto' : `Encontré ${all.length} productos`) : 'Todavía no está cargado'}</h3>`;
+  h += show.map(({i}) => { const s = S.stores[i.store]; return `<div class="item"><div class="t" onclick="A.itemForm('${i.id}')" ${KB} aria-label="Editar ${esc(i.name)}"><div>${iname(i)}</div><div class="meta">${s ? s.icon + ' ' + esc(s.name) : ''}${needs(i) ? ' · <span class="tag">ya está en la lista</span>' : ''}</div></div>${needs(i) ? '' : `<button class="b sm" onclick="A.need('${i.id}')" aria-label="Se acaba ${esc(i.name)}">Se acaba</button>`}</div>`; }).join('');
+  if(all.length > show.length) h += `<div class="sub">Y ${all.length - show.length} más: seguí escribiendo para afinar.</div>`;
+  if(!exact) h += `<div class="sub newp">${all.length ? '¿Es otra cosa?' : 'No pasa nada:'} anotá <b>«${esc(nuevo)}»</b> como producto nuevo en:</div><div class="chips">${sorted('stores').map(s => `<button onclick="A.quickAdd('${s.id}')" aria-label="Anotar ${esc(nuevo)} en ${esc(s.name)}">${s.icon} ${esc(s.name.split(' ')[0])}</button>`).join('')}</div>`;
+  return h + `<div class="btns"><button onclick="A.search('')">Limpiar búsqueda</button></div></section>`;
+}
+function byCat(list, row, show){
+  if(!show) return list.map(row).join('');
+  return CATS.map(([k, e, l]) => { const x = list.filter(i => catOf(i) === k); return x.length ? `<div class="cat">${e} ${l}</div>` + x.map(row).join('') : ''; }).join('');
+}
 const mine = owner => owner === me || (owner === 'ambos' && (me === 'gonzalo' || me === 'dani'));
 
 function weekCfg(mon){
@@ -668,7 +777,7 @@ function status(p, date){
 /* ============ Acciones ============ */
 const A = {
   go(t){ tab = t; localStorage.setItem(LS.tab, t); render(); scrollTo(0,0); },
-  close(){ $('#modal').classList.add('hidden'); const b = $('#sheetbox'); b.style.transform = ''; b.classList.remove('drag','back'); $('#modal').style.backgroundColor = '';
+  close(){ if(A._rec){ const r = A._rec; A._rec = null; try { r.abort(); } catch(e) {} } $('#modal').classList.add('hidden'); const b = $('#sheetbox'); b.style.transform = ''; b.classList.remove('drag','back'); $('#modal').style.backgroundColor = '';
     const r = A._ret; A._ret = null; if(r && r.isConnected) try { r.focus({preventScroll:true}); } catch(e) {} },
   open(html){ $('#sheet').innerHTML = html; const b = $('#sheetbox'); b.style.transform = ''; b.scrollTop = 0;
     if($('#modal').classList.contains('hidden')) A._ret = document.activeElement;
@@ -731,33 +840,87 @@ const A = {
   // Compras
   filter(s){ storeFilter = s; render(); },
   need(id){ const i = S.items[id]; const u = snapshot([['items', id]]); i.state = 'list'; put('items', i, `anotó ${i.name} (${S.stores[i.store]?.name})`); toast('Agregado a la lista', u); },
-  bought(id){ const i = S.items[id]; const u = snapshot([['items', id]]); i.state = 'ok'; i.last = Date.now(); i.lastBy = me; buzz(); pop('s:' + i.store); put('items', i, `compró ${i.name}`);
+  bought(id){ const i = S.items[id]; const u = snapshot([['items', id]]); buy(i); buzz(); pop('s:' + i.store); put('items', i, `compró ${i.name}`);
     const quedan = Object.values(S.items).filter(x => x.store === i.store && needs(x)).length;
     if(!quedan){ confetti(); toast(`¡Lista de ${S.stores[i.store]?.name || 'compras'} completa! 🎉`, u); } else toast('¡Comprado! ✔', u); },
   unlist(id){ const i = S.items[id]; const u = snapshot([['items', id]]); i.state = 'ok'; if(isDue(i)) i.last = Date.now(); put('items', i, `sacó ${i.name} de la lista`); toast('Sacado de la lista', u); },
   allList(sid){ const u = snapshot(Object.values(S.items).filter(i => i.store === sid).map(i => ['items', i.id])); Object.values(S.items).filter(i => i.store === sid).forEach(i => { i.state = 'list'; i.at = Date.now(); i.by = me; S.items[i.id] = i; if(fs) remotePath('items').doc(i.id).set(clean(i)); }); save(); logAct(`armó el pedido habitual de ${S.stores[sid].name}`); render(); toast('Pedido habitual armado', u); },
-  boughtAll(sid){ const u = snapshot(Object.values(S.items).filter(i => i.store === sid && needs(i)).map(i => ['items', i.id])); Object.values(S.items).filter(i => i.store === sid && needs(i)).forEach(i => { i.state = 'ok'; i.last = Date.now(); i.lastBy = me; i.at = Date.now(); i.by = me; if(fs) remotePath('items').doc(i.id).set(clean(i)); }); save(); logAct(`hizo la compra de ${S.stores[sid].name}`); pop('s:' + sid); render(); confetti(); toast('Compra registrada ✔ 🎉', u); },
+  boughtAll(sid){ const u = snapshot(Object.values(S.items).filter(i => i.store === sid && needs(i)).map(i => ['items', i.id])); Object.values(S.items).filter(i => i.store === sid && needs(i)).forEach(i => { buy(i); i.at = Date.now(); i.by = me; if(fs) remotePath('items').doc(i.id).set(clean(i)); }); save(); logAct(`hizo la compra de ${S.stores[sid].name}`); pop('s:' + sid); render(); confetti(); toast('Compra registrada ✔ 🎉', u); },
   cycleStore(sid){ const s = S.stores[sid]; const o = ['gonzalo','dani','ambos']; s.owner = o[(o.indexOf(s.owner)+1) % o.length]; put('stores', s, `ahora ${M[s.owner].n} se encarga de ${s.name}`); },
   share(sid){
     const s = S.stores[sid]; const list = Object.values(S.items).filter(i => i.store === sid && needs(i));
     if(!list.length) return toast('No hay nada pendiente');
-    const txt = `${s.icon} *${s.name}* — lista\n` + list.map(i => `• ${i.name}${i.note ? ' ('+i.note+')' : ''}`).join('\n') + `\n\n— Carga Mental`;
+    const txt = `${s.icon} *${s.name}* — lista\n` + list.map(i => `• ${i.name}${qtyTxt(i) ? ': ' + qtyTxt(i) : ''}${i.note ? ' ('+i.note+')' : ''}`).join('\n') + `\n\n— Carga Mental`;
     location.href = 'https://wa.me/?text=' + encodeURIComponent(txt);
   },
   itemForm(id, sid){
-    const i = id ? S.items[id] : {id:'i_'+uid(), name:'', store:sid || 'super', every:7, last:null, state:'list', note:''};
+    const i = id ? S.items[id] : newItem('', sid || 'super');
+    const h = histOf(i).slice().reverse();
     A.open(`<h3>${id ? 'Editar' : 'Nuevo'} producto</h3>
       <label class="f">Nombre</label><input type="text" id="f_name" value="${esc(i.name)}">
+      <div class="two"><div><label class="f">Cantidad</label><input type="text" inputmode="decimal" id="f_qty" value="${+i.qty > 0 ? fnum(+i.qty) : ''}" placeholder="Ej: 2"></div>
+      <div><label class="f">Unidad</label><select id="f_unit"><option value="">sin unidad</option>${Object.keys(UNITS).map(k => `<option value="${k}" ${i.unit === k ? 'selected' : ''}>${UNITS[k][1]}</option>`).join('')}</select></div></div>
       <label class="f">Dónde se compra</label><select id="f_store">${sorted('stores').map(s => `<option value="${s.id}" ${s.id===i.store?'selected':''}>${s.icon} ${esc(s.name)}</option>`).join('')}</select>
+      <label class="f">Categoría</label><select id="f_cat">${id ? '' : '<option value="">Que la elija la app según el nombre</option>'}${CATS.map(([k, e, l]) => `<option value="${k}" ${id && catOf(i) === k ? 'selected' : ''}>${e} ${l}</option>`).join('')}</select>
       <label class="f">Cada cuántos días se repone (aprox.)</label><input type="number" id="f_every" min="1" value="${i.every}">
-      <label class="f">Detalle (marca, cantidad…)</label><input type="text" id="f_note" value="${esc(i.note || '')}">
+      <label class="f">Detalle (marca, variedad…)</label><input type="text" id="f_note" value="${esc(i.note || '')}">
+      ${id ? `<details class="histd"><summary>Historial de compras (${h.length})</summary>${h.length ? h.slice(0, 15).map(x => `<div class="log">${AV(x.by)}<div><b>${x.by ? esc(pm(x.by).n) : 'Sin dato de quién'}</b> · ${fdate(dk(new Date(x.at)))}${qtyTxt(x) ? ' · ' + esc(qtyTxt(x)) : ''} <span class="meta">· ${ago(x.at)}</span></div></div>`).join('') : '<p class="muted">Todavía no hay compras registradas. Cuando alguien lo tilde como comprado, queda anotado acá quién fue y cuándo.</p>'}</details>` : ''}
       <div class="btns"><button class="pri" onclick="A.saveItem('${i.id}')">Guardar</button>${id ? `<button onclick="A.delItem('${i.id}')">Borrar</button>` : ''}<button onclick="A.close()">Cancelar</button></div>`);
     A._draft = i;
   },
   saveItem(id){
     const i = S.items[id] || A._draft; i.name = $('#f_name').value.trim(); if(!i.name) return toast('Poné un nombre');
     i.store = $('#f_store').value; i.every = Math.max(1, +$('#f_every').value || 7); i.note = $('#f_note').value.trim();
+    const q = parseFloat($('#f_qty').value.replace(',', '.')); i.qty = q > 0 ? Math.round(q * 100) / 100 : null; i.unit = i.qty ? $('#f_unit').value : '';
+    i.cat = $('#f_cat').value || guessCat(i.name);
     A.close(); put('items', i, `editó ${i.name}`);
+  },
+  // Buscador y alta rápida
+  search(v){ searchQ = v; const r = $('#sres'); if(r){ r.innerHTML = searchHtml(); $('#stl').hidden = !!norm(searchQ); } const el = $('#buscar'); if(el && el.value !== v) el.value = v; },
+  searchGo(){ const q = norm(searchQ); if(!q) return; const it = Object.values(S.items).find(i => norm(i.name) === q); if(!it) return A.quickAdd(defStore()); if(needs(it)) toast(`${it.name} ya está en la lista`); else A.need(it.id); },
+  quickAdd(sid){
+    const name = cap(searchQ.trim().replace(/\s+/g, ' ')); if(!name) return;
+    const i = newItem(name, sid), u = snapshot([['items', i.id]]), st = S.stores[i.store];
+    searchQ = ''; put('items', i, `anotó ${name} (${st?.name})`); toast(`${name} anotado en ${st?.name}`, u);
+  },
+  // Anotar por voz (o dictando con el teclado)
+  voice(){
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    A.open(`<h3>${hic('mic')} Anotar por voz</h3>
+      <p class="muted">Decí todo junto, separado por comas o «y». Por ejemplo: <i>«leche, dos kilos de tomate y papel higiénico»</i>.</p>
+      ${SR ? `<button class="b mic" id="micbtn" aria-pressed="false" onclick="A.listen()">${ic('mic')}<span>Tocá y hablá</span></button>` : `<p class="muted">Este navegador no escucha directo, pero podés tocar el micrófono del teclado y dictar acá abajo.</p>`}
+      <label class="f">${SR ? 'Lo que escuché (podés corregirlo o escribirlo)' : 'Escribí o dictá acá'}</label><textarea id="f_voz" class="plain"></textarea>
+      <div class="btns"><button class="pri" onclick="A.voiceReview()">Revisar y anotar</button><button onclick="A.close()">Cancelar</button></div>`);
+  },
+  listen(){
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition; if(!SR) return;
+    if(A._rec){ try { A._rec.stop(); } catch(e) {} return; }
+    let r; try { r = new SR(); } catch(e) { return toast('No pude abrir el micrófono; podés escribirlo abajo'); }
+    const btn = $('#micbtn'), set = on => { if(btn && btn.isConnected){ btn.classList.toggle('on', on); btn.setAttribute('aria-pressed', on); btn.querySelector('span').textContent = on ? 'Te escucho… tocá para terminar' : 'Tocá y hablá'; } };
+    let fin = '';
+    r.lang = 'es-AR'; r.interimResults = true; r.continuous = false;
+    r.onresult = e => { let t = ''; for(let k = 0; k < e.results.length; k++) t += e.results[k][0].transcript + ' '; fin = t.trim(); const el = $('#f_voz'); if(el) el.value = fin; };
+    r.onerror = e => { const c = e && e.error; if(c === 'aborted') return; toast(c === 'not-allowed' || c === 'service-not-allowed' ? 'Falta el permiso del micrófono; mientras tanto podés escribirlo abajo' : c === 'no-speech' ? 'No llegué a escuchar nada; probá de nuevo' : 'No pude escuchar esta vez; podés escribirlo abajo'); };
+    r.onend = () => { if(A._rec !== r) return; A._rec = null; set(false); if(fin && btn && btn.isConnected && !$('#modal').classList.contains('hidden')) A.voiceReview(); };
+    A._rec = r; set(true); try { r.start(); } catch(e) { A._rec = null; set(false); toast('No pude abrir el micrófono; podés escribirlo abajo'); }
+  },
+  voiceReview(){
+    const txt = (($('#f_voz') || {}).value || '').trim(), list = parseSpoken(txt);
+    if(!list.length) return toast('No llegué a entender ningún producto; probá de nuevo o escribilo');
+    A._voz = list; const def = defStore();
+    A.open(`<h3>${hic('mic')} ¿Anoto esto?</h3><p class="muted">Entendí: «${esc(txt)}». Destildá lo que no va.</p>
+      ${list.map((x, k) => { const i = x.id && S.items[x.id], s = i && S.stores[i.store], q = qtyTxt(x); return `<label class="item"><input type="checkbox" id="vz_${k}" checked><div class="t"><div>${esc(x.name)}${q ? ` <span class="qty">· ${esc(q)}</span>` : ''}</div><div class="meta">${i ? `${s ? s.icon + ' ' + esc(s.name) : ''}${needs(i) ? ' · ya está en la lista' : ''}` : '<span class="tag">producto nuevo</span>'}</div></div></label>`; }).join('')}
+      ${list.some(x => !x.id) ? `<label class="f">Los productos nuevos van a</label><select id="f_vstore">${sorted('stores').map(s => `<option value="${s.id}" ${s.id === def ? 'selected' : ''}>${s.icon} ${esc(s.name)}</option>`).join('')}</select>` : ''}
+      <div class="btns"><button class="pri" onclick="A.voiceSave()">Anotar en la lista</button><button onclick="A.voice()">Probar de nuevo</button><button onclick="A.close()">Cancelar</button></div>`);
+  },
+  voiceSave(){
+    const pick = (A._voz || []).filter((x, k) => { const c = $('#vz_' + k); return c && c.checked; }); if(!pick.length) return toast('No quedó nada tildado');
+    const sel = $('#f_vstore'), sid = sel ? sel.value : defStore();
+    const objs = pick.map(x => (x.id && S.items[x.id]) || newItem(x.name, sid));
+    const u = snapshot(objs.map(o => ['items', o.id]));
+    objs.forEach((i, k) => { const x = pick[k]; i.state = 'list'; if(x.qty){ i.qty = x.qty; i.unit = x.unit || ''; } i.at = Date.now(); i.by = me; S.items[i.id] = i; if(fs) remotePath('items').doc(i.id).set(clean(i)).catch(() => {}); });
+    A._voz = null; save(); logAct(`anotó por voz: ${objs.map(i => i.name).join(', ')}`); A.close(); render();
+    toast(objs.length === 1 ? `${objs[0].name} anotado` : `${objs.length} productos anotados`, u);
   },
   delItem(id){ if(!confirm('¿Borrar este producto?')) return; const n = S.items[id].name; const u = snapshot([['items', id]]); A.close(); del('items', id, `borró ${n}`); toast('Producto borrado', u); },
 
@@ -1027,16 +1190,17 @@ function badges(){
 
 function vCompras(){
   const stores = sorted('stores');
-  let h = `<div class="chips"><button class="${storeFilter==='todos'?'on':''}" aria-pressed="${storeFilter==='todos'}" onclick="A.filter('todos')">Todos</button>${stores.map(s => { const n = Object.values(S.items).filter(i => i.store === s.id && needs(i)).length; return `<button class="${storeFilter===s.id?'on':''}" aria-pressed="${storeFilter===s.id}" onclick="A.filter('${s.id}')">${s.icon} ${esc(s.name.split(' ')[0])}${n ? ` · ${n}` : ''}</button>`; }).join('')}</div>`;
+  let h = `<div class="search"><input type="text" id="buscar" inputmode="search" enterkeyhint="search" autocomplete="off" aria-label="Buscar o anotar un producto" placeholder="Buscar o anotar un producto…" value="${esc(searchQ)}" oninput="A.search(this.value)" onkeydown="if(event.key==='Enter')A.searchGo()"><button class="b" onclick="A.voice()" aria-label="Anotar por voz" title="Anotar por voz">${ic('mic')}</button></div><div id="sres">${searchHtml()}</div><div id="stl"${norm(searchQ) ? ' hidden' : ''}>`;
+  h += `<div class="chips"><button class="${storeFilter==='todos'?'on':''}" aria-pressed="${storeFilter==='todos'}" onclick="A.filter('todos')">Todos</button>${stores.map(s => { const n = Object.values(S.items).filter(i => i.store === s.id && needs(i)).length; return `<button class="${storeFilter===s.id?'on':''}" aria-pressed="${storeFilter===s.id}" onclick="A.filter('${s.id}')">${s.icon} ${esc(s.name.split(' ')[0])}${n ? ` · ${n}` : ''}</button>`; }).join('')}</div>`;
   stores.filter(s => storeFilter === 'todos' || storeFilter === s.id).forEach(s => {
     const its = Object.values(S.items).filter(i => i.store === s.id).sort((a,b) => a.name.localeCompare(b.name));
-    const need = its.filter(needs), rest = its.filter(i => !needs(i));
+    const need = its.filter(needs), rest = its.filter(i => !needs(i)), cats = new Set(its.map(catOf)).size > 1;
     h += `<section class="card${pc('s:' + s.id)}"><div class="row"><h3>${s.icon} ${esc(s.name)}</h3>${PB(s.owner, `A.cycleStore('${s.id}')`)}</div><div class="sub">${esc(s.how)} · se encarga ${esc(M[s.owner].n)}</div>
-      ${need.length ? need.map(i => `<div class="item">${chk(`<input type="checkbox" onchange="A.bought('${i.id}')" aria-label="Comprado: ${esc(i.name)}">`)}<div class="t" onclick="A.itemForm('${i.id}')" ${KB} aria-label="Editar ${esc(i.name)}"><div>${esc(i.name)}</div><div class="meta">${i.state === 'list' ? `anotado por ${esc(M[i.by]?.n || '—')}` : `<span class="tag w">toca reponer</span> última ${ago(i.last)}`}${i.note ? ' · ' + esc(i.note) : ''}</div></div><button class="b sm" onclick="A.unlist('${i.id}')" aria-label="Sacar ${esc(i.name)} de la lista">✕</button></div>`).join('') : empty('compras', 'Nada para comprar', 'La despensa está al día. Si algo se acaba, tocá «Se acaba».', '', true)}
-      <details ${need.length ? "" : "open"}><summary>Habituales (${rest.length})</summary>${rest.map(i => `<div class="item"><div class="t" onclick="A.itemForm('${i.id}')" ${KB} aria-label="Editar ${esc(i.name)}"><div>${esc(i.name)}</div><div class="meta">cada ${i.every} días · última ${ago(i.last)}${i.lastBy ? ' (' + esc(M[i.lastBy]?.n) + ')' : ''}</div></div><button class="b sm" onclick="A.need('${i.id}')" aria-label="Se acaba ${esc(i.name)}">Se acaba</button></div>`).join('')}</details>
+      ${need.length ? byCat(need, i => `<div class="item">${chk(`<input type="checkbox" onchange="A.bought('${i.id}')" aria-label="Comprado: ${esc(i.name)}">`)}<div class="t" onclick="A.itemForm('${i.id}')" ${KB} aria-label="Editar ${esc(i.name)}"><div>${iname(i)}</div><div class="meta">${i.state === 'list' ? `anotado por ${esc(M[i.by]?.n || '—')}` : `<span class="tag w">toca reponer</span> última ${ago(i.last)}`}${i.note ? ' · ' + esc(i.note) : ''}</div></div><button class="b sm" onclick="A.unlist('${i.id}')" aria-label="Sacar ${esc(i.name)} de la lista">✕</button></div>`, cats) : empty('compras', 'Nada para comprar', 'La despensa está al día. Si algo se acaba, tocá «Se acaba».', '', true)}
+      <details ${need.length ? "" : "open"}><summary>Habituales (${rest.length})</summary>${byCat(rest, i => `<div class="item"><div class="t" onclick="A.itemForm('${i.id}')" ${KB} aria-label="Editar ${esc(i.name)}"><div>${iname(i)}</div><div class="meta">cada ${i.every} días · última ${ago(i.last)}${i.lastBy ? ' (' + esc(M[i.lastBy]?.n) + ')' : ''}</div></div><button class="b sm" onclick="A.need('${i.id}')" aria-label="Se acaba ${esc(i.name)}">Se acaba</button></div>`, cats)}</details>
       <div class="btns"><button onclick="A.share('${s.id}')">📲 Mandar lista</button>${need.length > 1 ? `<button onclick="A.boughtAll('${s.id}')">✔ Compré todo</button>` : ''}<button onclick="A.allList('${s.id}')">Pedido habitual</button><button onclick="A.itemForm(null,'${s.id}')">+ Producto</button></div></section>`;
   });
-  h += `<p class="muted">Tocá un producto para editar cada cuánto se repone. Cuando pasa ese tiempo desde la última compra, vuelve solo a la lista.</p>`;
+  h += `<p class="muted">Tocá un producto para editar la cantidad, la categoría o cada cuánto se repone, y para ver su historial. Cuando pasa ese tiempo desde la última compra, vuelve solo a la lista.</p></div>`;
   return h;
 }
 
@@ -1134,9 +1298,9 @@ function render(){
   const fa = me && me !== 'daniela' ? FAB[tab] : null, fb = $('#fab'); fb.hidden = !fa;
   if(fa){ fb.innerHTML = ic('mas'); fb.setAttribute('aria-label', fa[0]); fb.title = fa[0]; fb.onclick = fa[1]; }
   $('#who').innerHTML = me ? `${AV(me)}${esc(pm(me).n)}${ic('ajustes')}` : ic('ajustes'); $('#who').classList.toggle('solo', !me);
-  const typing = document.activeElement && ['chatin','in_tarea','in_comida'].includes(document.activeElement.id) ? {id:document.activeElement.id, v:document.activeElement.value} : null;
+  const typing = document.activeElement && ['chatin','in_tarea','in_comida','buscar'].includes(document.activeElement.id) ? {id:document.activeElement.id, v:document.activeElement.value} : null;
   $('#main').innerHTML = ({hoy:vHoy, compras:vCompras, casa:vCasa, joaco:vJoaco, chat:vChat, daniela:() => vDaniela(false)})[tab]();
-  if(typing){ const el = document.getElementById(typing.id); if(el){ el.value = typing.v; el.focus(); } }
+  if(typing){ const el = document.getElementById(typing.id); if(el){ if(typing.id !== 'buscar') el.value = typing.v; el.focus(); } }
   renderSync();
 }
 

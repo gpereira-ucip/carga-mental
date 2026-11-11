@@ -29,12 +29,13 @@ Las marcadas 🔑 necesitan algo de Gonzalo (una cuenta, una clave, un dato). En
 - [x] 20. Revisión de todos los textos: tono rioplatense amable, sin reproches, claro para Daniela. — ✔ 2026-11-10 (v1.4.0)
 
 ## Compras
-- [ ] 21. Cantidad y unidad por producto (ej.: 2 docenas, 6 L, 1 kg).
-- [ ] 22. Categorías dentro de cada negocio (bebidas, limpieza, papeles, almacén).
-- [ ] 23. Buscador de productos con alta rápida si no existe.
-- [ ] 24. Anotar compras por voz (reconocimiento de voz del navegador).
-- [ ] 25. Historial de compras por producto (quién, cuándo).
+- [x] 21. Cantidad y unidad por producto (ej.: 2 docenas, 6 L, 1 kg). — ✔ 2026-11-11 (v1.5.0)
+- [x] 22. Categorías dentro de cada negocio (bebidas, limpieza, papeles, almacén). — ✔ 2026-11-11 (v1.5.0)
+- [x] 23. Buscador de productos con alta rápida si no existe. — ✔ 2026-11-11 (v1.5.0)
+- [x] 24. Anotar compras por voz (reconocimiento de voz del navegador). — ✔ 2026-11-11 (v1.5.0)
+- [x] 25. Historial de compras por producto (quién, cuándo). — ✔ 2026-11-11 (v1.5.0)
 - [ ] 26. Frecuencia aprendida: "cada X días" se ajusta solo con el promedio real.
+  - Preparado en v1.5.0: cada producto ya guarda su historial de compras (`hist`, hasta 30 fechas); falta calcular el promedio de los intervalos y ofrecerlo.
 - [ ] 27. Aviso anticipado: "se acaba en 2 días".
 - [ ] 28. Modo "estoy en el negocio": letra grande, solo pendientes, tachado al tocar.
 - [ ] 29. Precio del último pedido y total estimado de cada lista.
