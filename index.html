@@ -249,9 +249,9 @@ main{padding-bottom:150px}
 :root[data-big="1"] :is(.newsv li,.newsv h4){font-size:16px}
 :root[data-big="1"] .day b{font-size:14px}
 /* aviso con «Deshacer» */
-#toast{display:flex;align-items:center;gap:var(--s3);bottom:calc(140px + env(safe-area-inset-bottom))}
+#toast{display:flex;align-items:center;gap:var(--s3);bottom:calc(140px + env(safe-area-inset-bottom));width:max-content}
 #toast.u{pointer-events:auto}
-#toast button{border:0;background:none;color:inherit;font:inherit;font-weight:700;text-decoration:underline;min-height:44px;min-width:44px;padding:0 var(--s2);margin:-12px -8px -12px 0}
+#toast button{border:0;background:none;color:inherit;font:inherit;font-weight:700;text-decoration:underline;min-height:44px;min-width:44px;padding:0 var(--s2);margin:-12px -8px -12px 0;flex:none}
 #toast.on{opacity:1}
 /* botón flotante + */
 .fab{position:fixed;right:var(--s4);bottom:calc(72px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;border:0;background:var(--pri);color:var(--pri-on);box-shadow:var(--sh2);display:grid;place-items:center;z-index:4;animation:bpop .3s cubic-bezier(.3,1.6,.5,1);padding:0}
@@ -302,10 +302,14 @@ textarea.plain{font-family:inherit;font-size:var(--fs-md);min-height:72px}
 <script>
 'use strict';
 /* ============ Constantes ============ */
-const VERSION = '1.5.0';
-const SCHEMA = 2; // versión de la estructura de datos guardados (ver MIGRATIONS)
+const VERSION = '1.6.0';
+const SCHEMA = 3; // versión de la estructura de datos guardados (ver MIGRATIONS)
 /* Novedades: la primera es la versión actual. "hechas" = ítems del plan de 100 tildados hasta esa versión. */
 const NEWS = [
+  {v:'1.6.0', d:'2026-11-12', hechas:26, items:[
+    'Frecuencia aprendida: desde la tercera compra de un producto, la app calcula cada cuántos días lo compran de verdad y ajusta sola el «cada X días». Te avisa cuando lo cambia y se puede deshacer.',
+    'En cada producto hay una opción «Que se ajuste solo con las compras reales»: si preferís un número fijo, destildala (o escribí el número y queda fijo).'
+  ]},
   {v:'1.5.0', d:'2026-11-11', hechas:25, items:[
     'Cada producto puede llevar cantidad y unidad (2 docenas, 6 L, 1 kg) y se ve en la lista y en el mensaje de WhatsApp.',
     'Dentro de cada negocio los productos se ordenan por categoría: frescos, almacén, bebidas, limpieza, papeles y otros.',
@@ -501,7 +505,7 @@ function seed(){
     {id:'ml', name:'MercadoLibre', icon:'📦', how:'Pedido online', owner:'gonzalo', ord:4},
     {id:'berardi', name:'Berardi (pescados)', icon:'🐟', how:'Pedido por la web', owner:'gonzalo', ord:5}
   ].forEach(s => add('stores', s));
-  const it = (id, name, store, every) => add('items', {id:'i_'+id, name, store, every, last:null, state:'ok', qty:null, unit:'', cat:guessCat(name), hist:[]});
+  const it = (id, name, store, every) => add('items', {id:'i_'+id, name, store, every, last:null, state:'ok', qty:null, unit:'', cat:guessCat(name), hist:[], auto:true});
   it('semillas','Semillas','naturista',14); it('frutos','Frutos secos','naturista',14);
   it('snacks','Snacks de Joaco','naturista',7); it('huevos','Huevos (gallinas alimentadas a maíz)','naturista',7);
   it('frutas','Frutas','verduleria',3); it('verduras','Verduras','verduleria',3);
@@ -571,6 +575,9 @@ const MIGRATIONS = {
       if(i.unit === undefined) i.unit = '';
       if(!Array.isArray(i.hist)) i.hist = i.last ? [{at:i.last, by:i.lastBy || null}] : [];
     });
+  },
+  3(D){ // v1.5.0 → esquema 3 (v1.6.0): frecuencia aprendida. No toca «every»: recién se ajusta con la próxima compra.
+    Object.values(D.items).forEach(i => { if(i.auto === undefined) i.auto = true; });
   }
 };
 function migrate(D){
@@ -678,8 +685,23 @@ const isDue = i => i.last && (Date.now() - i.last) >= i.every * DAY;
 const needs = i => i.state === 'list' || isDue(i);
 const recDue = t => !t.last || (Date.now() - t.last) >= t.every * DAY;
 /* Registrar una compra: vuelve a «al día» y suma un renglón al historial del producto (últimas 30). */
-function buy(i){ const h = histOf(i); i.state = 'ok'; i.last = Date.now(); i.lastBy = me; const e = {at:i.last, by:me}; if(+i.qty > 0){ e.qty = +i.qty; e.unit = i.unit || ''; } i.hist = h.concat([e]).slice(-30); }
-function newItem(name, sid){ return {id:'i_'+uid(), name, store:S.stores[sid] ? sid : (S.stores.super ? 'super' : (sorted('stores')[0] || {}).id), every:7, last:null, state:'list', note:'', qty:null, unit:'', cat:guessCat(name), hist:[]}; }
+/* Frecuencia aprendida (ítem 26): promedio de los intervalos reales entre compras.
+   Compras con menos de 12 h de diferencia cuentan como una sola; se usan los últimos 6 intervalos
+   y hacen falta al menos 2 (tres compras). Devuelve {days, n} o null si todavía no alcanza. */
+const LEARN_MIN = 2, LEARN_MAX = 6;
+function learned(i){
+  const ts = histOf(i).map(x => +x.at).filter(x => x > 0).sort((a, b) => a - b), u = [];
+  ts.forEach(t => { if(!u.length || t - u[u.length - 1] >= DAY / 2) u.push(t); });
+  const gaps = u.slice(1).map((t, k) => (t - u[k]) / DAY).slice(-LEARN_MAX);
+  if(gaps.length < LEARN_MIN) return null;
+  return {days: Math.min(365, Math.max(1, Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length))), n: gaps.length};
+}
+const isAuto = i => i.auto !== false;
+/* Registra la compra. Si el producto se ajusta solo y el promedio cambió, actualiza «every» y devuelve el aviso. */
+function buy(i){ const h = histOf(i); i.state = 'ok'; i.last = Date.now(); i.lastBy = me; const e = {at:i.last, by:me}; if(+i.qty > 0){ e.qty = +i.qty; e.unit = i.unit || ''; } i.hist = h.concat([e]).slice(-30);
+  const l = isAuto(i) && learned(i); if(l && l.days !== i.every){ const antes = i.every; i.every = l.days; return `${i.name}: ahora cada ${dias(l.days)} (antes ${antes})`; } return ''; }
+const dias = n => n === 1 ? '1 día' : n + ' días';
+function newItem(name, sid){ return {id:'i_'+uid(), name, store:S.stores[sid] ? sid : (S.stores.super ? 'super' : (sorted('stores')[0] || {}).id), every:7, last:null, state:'list', note:'', qty:null, unit:'', cat:guessCat(name), hist:[], auto:true}; }
 const defStore = () => storeFilter !== 'todos' && S.stores[storeFilter] ? storeFilter : (S.stores.super ? 'super' : (sorted('stores')[0] || {}).id);
 const iname = i => esc(i.name) + (qtyTxt(i) ? ` <span class="qty">· ${esc(qtyTxt(i))}</span>` : '');
 /* Busca un producto ya cargado a partir de un texto normalizado (igual, con/sin «s», que empiece igual o que lo contenga como palabra). */
@@ -840,12 +862,12 @@ const A = {
   // Compras
   filter(s){ storeFilter = s; render(); },
   need(id){ const i = S.items[id]; const u = snapshot([['items', id]]); i.state = 'list'; put('items', i, `anotó ${i.name} (${S.stores[i.store]?.name})`); toast('Agregado a la lista', u); },
-  bought(id){ const i = S.items[id]; const u = snapshot([['items', id]]); buy(i); buzz(); pop('s:' + i.store); put('items', i, `compró ${i.name}`);
+  bought(id){ const i = S.items[id]; const u = snapshot([['items', id]]); const aj = buy(i); buzz(); pop('s:' + i.store); put('items', i, `compró ${i.name}`);
     const quedan = Object.values(S.items).filter(x => x.store === i.store && needs(x)).length;
-    if(!quedan){ confetti(); toast(`¡Lista de ${S.stores[i.store]?.name || 'compras'} completa! 🎉`, u); } else toast('¡Comprado! ✔', u); },
+    if(!quedan){ confetti(); toast(`¡Lista de ${S.stores[i.store]?.name || 'compras'} completa! 🎉${aj ? ' ' + aj : ''}`, u); } else toast(aj ? `¡Comprado! ✔ ${aj}` : '¡Comprado! ✔', u); },
   unlist(id){ const i = S.items[id]; const u = snapshot([['items', id]]); i.state = 'ok'; if(isDue(i)) i.last = Date.now(); put('items', i, `sacó ${i.name} de la lista`); toast('Sacado de la lista', u); },
   allList(sid){ const u = snapshot(Object.values(S.items).filter(i => i.store === sid).map(i => ['items', i.id])); Object.values(S.items).filter(i => i.store === sid).forEach(i => { i.state = 'list'; i.at = Date.now(); i.by = me; S.items[i.id] = i; if(fs) remotePath('items').doc(i.id).set(clean(i)); }); save(); logAct(`armó el pedido habitual de ${S.stores[sid].name}`); render(); toast('Pedido habitual armado', u); },
-  boughtAll(sid){ const u = snapshot(Object.values(S.items).filter(i => i.store === sid && needs(i)).map(i => ['items', i.id])); Object.values(S.items).filter(i => i.store === sid && needs(i)).forEach(i => { buy(i); i.at = Date.now(); i.by = me; if(fs) remotePath('items').doc(i.id).set(clean(i)); }); save(); logAct(`hizo la compra de ${S.stores[sid].name}`); pop('s:' + sid); render(); confetti(); toast('Compra registrada ✔ 🎉', u); },
+  boughtAll(sid){ let aj = 0; const u = snapshot(Object.values(S.items).filter(i => i.store === sid && needs(i)).map(i => ['items', i.id])); Object.values(S.items).filter(i => i.store === sid && needs(i)).forEach(i => { if(buy(i)) aj++; i.at = Date.now(); i.by = me; if(fs) remotePath('items').doc(i.id).set(clean(i)); }); save(); logAct(`hizo la compra de ${S.stores[sid].name}`); pop('s:' + sid); render(); confetti(); toast('Compra registrada ✔ 🎉' + (aj ? (aj === 1 ? ' Se ajustó la frecuencia de 1 producto.' : ` Se ajustó la frecuencia de ${aj} productos.`) : ''), u); },
   cycleStore(sid){ const s = S.stores[sid]; const o = ['gonzalo','dani','ambos']; s.owner = o[(o.indexOf(s.owner)+1) % o.length]; put('stores', s, `ahora ${M[s.owner].n} se encarga de ${s.name}`); },
   share(sid){
     const s = S.stores[sid]; const list = Object.values(S.items).filter(i => i.store === sid && needs(i));
@@ -855,14 +877,16 @@ const A = {
   },
   itemForm(id, sid){
     const i = id ? S.items[id] : newItem('', sid || 'super');
-    const h = histOf(i).slice().reverse();
+    const h = histOf(i).slice().reverse(), lr = id ? learned(i) : null, nh = h.length;
     A.open(`<h3>${id ? 'Editar' : 'Nuevo'} producto</h3>
       <label class="f">Nombre</label><input type="text" id="f_name" value="${esc(i.name)}">
       <div class="two"><div><label class="f">Cantidad</label><input type="text" inputmode="decimal" id="f_qty" value="${+i.qty > 0 ? fnum(+i.qty) : ''}" placeholder="Ej: 2"></div>
       <div><label class="f">Unidad</label><select id="f_unit"><option value="">sin unidad</option>${Object.keys(UNITS).map(k => `<option value="${k}" ${i.unit === k ? 'selected' : ''}>${UNITS[k][1]}</option>`).join('')}</select></div></div>
       <label class="f">Dónde se compra</label><select id="f_store">${sorted('stores').map(s => `<option value="${s.id}" ${s.id===i.store?'selected':''}>${s.icon} ${esc(s.name)}</option>`).join('')}</select>
       <label class="f">Categoría</label><select id="f_cat">${id ? '' : '<option value="">Que la elija la app según el nombre</option>'}${CATS.map(([k, e, l]) => `<option value="${k}" ${id && catOf(i) === k ? 'selected' : ''}>${e} ${l}</option>`).join('')}</select>
-      <label class="f">Cada cuántos días se repone (aprox.)</label><input type="number" id="f_every" min="1" value="${i.every}">
+      <label class="f">Cada cuántos días se repone (aprox.)</label><input type="number" id="f_every" min="1" value="${i.every}" oninput="$('#f_auto').checked = false">
+      <label class="item"><input type="checkbox" id="f_auto" ${isAuto(i) ? 'checked' : ''}><div class="t"><div>Que se ajuste solo con las compras reales</div><div class="meta" id="f_learn">${lr ? `Según las últimas ${lr.n + 1} compras, lo reponen cada ${dias(lr.days)}.` : `Desde la tercera compra la app calcula el promedio${nh ? ` (${nh === 1 ? 'va 1' : 'van ' + nh})` : ''}.`}</div></div></label>
+      ${lr && lr.days !== i.every ? `<div class="btns"><button id="f_uselearn" onclick="$('#f_every').value = ${lr.days}; this.hidden = true">Usar ${dias(lr.days)}</button></div>` : ''}
       <label class="f">Detalle (marca, variedad…)</label><input type="text" id="f_note" value="${esc(i.note || '')}">
       ${id ? `<details class="histd"><summary>Historial de compras (${h.length})</summary>${h.length ? h.slice(0, 15).map(x => `<div class="log">${AV(x.by)}<div><b>${x.by ? esc(pm(x.by).n) : 'Sin dato de quién'}</b> · ${fdate(dk(new Date(x.at)))}${qtyTxt(x) ? ' · ' + esc(qtyTxt(x)) : ''} <span class="meta">· ${ago(x.at)}</span></div></div>`).join('') : '<p class="muted">Todavía no hay compras registradas. Cuando alguien lo tilde como comprado, queda anotado acá quién fue y cuándo.</p>'}</details>` : ''}
       <div class="btns"><button class="pri" onclick="A.saveItem('${i.id}')">Guardar</button>${id ? `<button onclick="A.delItem('${i.id}')">Borrar</button>` : ''}<button onclick="A.close()">Cancelar</button></div>`);
@@ -870,7 +894,7 @@ const A = {
   },
   saveItem(id){
     const i = S.items[id] || A._draft; i.name = $('#f_name').value.trim(); if(!i.name) return toast('Poné un nombre');
-    i.store = $('#f_store').value; i.every = Math.max(1, +$('#f_every').value || 7); i.note = $('#f_note').value.trim();
+    i.store = $('#f_store').value; i.every = Math.max(1, Math.round(+$('#f_every').value) || 7); i.auto = $('#f_auto').checked; i.note = $('#f_note').value.trim();
     const q = parseFloat($('#f_qty').value.replace(',', '.')); i.qty = q > 0 ? Math.round(q * 100) / 100 : null; i.unit = i.qty ? $('#f_unit').value : '';
     i.cat = $('#f_cat').value || guessCat(i.name);
     A.close(); put('items', i, `editó ${i.name}`);
@@ -1197,10 +1221,10 @@ function vCompras(){
     const need = its.filter(needs), rest = its.filter(i => !needs(i)), cats = new Set(its.map(catOf)).size > 1;
     h += `<section class="card${pc('s:' + s.id)}"><div class="row"><h3>${s.icon} ${esc(s.name)}</h3>${PB(s.owner, `A.cycleStore('${s.id}')`)}</div><div class="sub">${esc(s.how)} · se encarga ${esc(M[s.owner].n)}</div>
       ${need.length ? byCat(need, i => `<div class="item">${chk(`<input type="checkbox" onchange="A.bought('${i.id}')" aria-label="Comprado: ${esc(i.name)}">`)}<div class="t" onclick="A.itemForm('${i.id}')" ${KB} aria-label="Editar ${esc(i.name)}"><div>${iname(i)}</div><div class="meta">${i.state === 'list' ? `anotado por ${esc(M[i.by]?.n || '—')}` : `<span class="tag w">toca reponer</span> última ${ago(i.last)}`}${i.note ? ' · ' + esc(i.note) : ''}</div></div><button class="b sm" onclick="A.unlist('${i.id}')" aria-label="Sacar ${esc(i.name)} de la lista">✕</button></div>`, cats) : empty('compras', 'Nada para comprar', 'La despensa está al día. Si algo se acaba, tocá «Se acaba».', '', true)}
-      <details ${need.length ? "" : "open"}><summary>Habituales (${rest.length})</summary>${byCat(rest, i => `<div class="item"><div class="t" onclick="A.itemForm('${i.id}')" ${KB} aria-label="Editar ${esc(i.name)}"><div>${iname(i)}</div><div class="meta">cada ${i.every} días · última ${ago(i.last)}${i.lastBy ? ' (' + esc(M[i.lastBy]?.n) + ')' : ''}</div></div><button class="b sm" onclick="A.need('${i.id}')" aria-label="Se acaba ${esc(i.name)}">Se acaba</button></div>`, cats)}</details>
+      <details ${need.length ? "" : "open"}><summary>Habituales (${rest.length})</summary>${byCat(rest, i => `<div class="item"><div class="t" onclick="A.itemForm('${i.id}')" ${KB} aria-label="Editar ${esc(i.name)}"><div>${iname(i)}</div><div class="meta">cada ${dias(i.every)}${isAuto(i) && (learned(i) || {}).days === i.every ? ' <span class="tag">aprendido</span>' : ''} · última ${ago(i.last)}${i.lastBy ? ' (' + esc(M[i.lastBy]?.n) + ')' : ''}</div></div><button class="b sm" onclick="A.need('${i.id}')" aria-label="Se acaba ${esc(i.name)}">Se acaba</button></div>`, cats)}</details>
       <div class="btns"><button onclick="A.share('${s.id}')">📲 Mandar lista</button>${need.length > 1 ? `<button onclick="A.boughtAll('${s.id}')">✔ Compré todo</button>` : ''}<button onclick="A.allList('${s.id}')">Pedido habitual</button><button onclick="A.itemForm(null,'${s.id}')">+ Producto</button></div></section>`;
   });
-  h += `<p class="muted">Tocá un producto para editar la cantidad, la categoría o cada cuánto se repone, y para ver su historial. Cuando pasa ese tiempo desde la última compra, vuelve solo a la lista.</p></div>`;
+  h += `<p class="muted">Tocá un producto para editar la cantidad, la categoría o cada cuánto se repone, y para ver su historial. Cuando pasa ese tiempo desde la última compra, vuelve solo a la lista. Desde la tercera compra, la app ajusta sola ese tiempo con el promedio real.</p></div>`;
   return h;
 }
 

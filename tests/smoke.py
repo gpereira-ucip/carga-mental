@@ -12,6 +12,8 @@ Levanta un servidor local, abre la app en un celular simulado (390x844) y recorr
   7. v1.4.0: accesibilidad (44 px, nombres, teclado, letra grande), deshacer, botón +, anillos y datos de v1.3.0 intactos.
   8. v1.5.0: migración al esquema 2 (datos de v1.4.0), cantidad y unidad, categorías, buscador con alta rápida,
      anotar por voz (reconocimiento simulado) e historial de compras por producto.
+  9. v1.6.0: migración al esquema 3 (datos de v1.5.0), frecuencia aprendida con el promedio real de las compras,
+     aviso y deshacer, opción por producto y «Compré todo».
 Falla si hay errores de JavaScript o de consola, o si la página se ensancha más de 390 px.
 Guarda capturas en /tmp/cm-*.png para revisarlas.
 """
@@ -22,8 +24,9 @@ from playwright.sync_api import sync_playwright
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CHROME = next((p for p in ['/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser'] if os.path.exists(p)), None)
 
-handler = partial(http.server.SimpleHTTPRequestHandler, directory=ROOT)
-handler.log_message = lambda *a: None
+class Quiet(http.server.SimpleHTTPRequestHandler):
+    def log_message(self, *a): pass
+handler = partial(Quiet, directory=ROOT)
 srv = socketserver.TCPServer(('127.0.0.1', 0), handler)
 port = srv.server_address[1]
 threading.Thread(target=srv.serve_forever, daemon=True).start()
@@ -38,7 +41,7 @@ def sin_v15(d):
     """Saca lo que agregó el esquema 2 (v1.5.0) para comparar con los datos guardados por versiones anteriores."""
     d = json.loads(json.dumps(d)); d['_v'] = 1
     for i in d['items'].values():
-        for k in ('cat', 'qty', 'unit', 'hist'): i.pop(k, None)
+        for k in ('cat', 'qty', 'unit', 'hist', 'auto'): i.pop(k, None)
     return d
 def width_ok(pg, where):
     w = pg.evaluate('document.documentElement.scrollWidth')
@@ -535,14 +538,14 @@ with sync_playwright() as p:
         pg.goto(URL); pg.wait_for_timeout(2200)
         d = S(pg)
         # Migración 1 → 2: nada se pierde, queda copia y se completan los campos nuevos
-        check(d['_v'] == 2, f"v1.5: _v={d['_v']} (esperaba 2)")
+        check(d['_v'] == 3, f"v1.5: _v={d['_v']} (esperaba 3)")
         check(sin_v15(d) == V12, 'v1.5: la migración cambió o perdió datos de v1.4.0')
         check(json.loads(pg.evaluate('localStorage.getItem("cm_backup_v1")') or 'null') == V12, 'v1.5: no quedó la copia cm_backup_v1 idéntica')
         it = d['items']
         check(it['i_agua']['cat'] == 'bebidas' and it['i_mio']['cat'] == 'frescos' and it['i_huerfano']['cat'] == 'almacen', f"v1.5: categorías mal asignadas {[x['cat'] for x in it.values()]}")
         check(all(x['qty'] is None and x['unit'] == '' for x in it.values()), 'v1.5: cantidad/unidad iniciales')
         check(it['i_mio']['hist'] == [{'at': 1762000000000, 'by': None}] and it['i_agua']['hist'] == [], f"v1.5: historial inicial {it['i_mio']['hist']}")
-        check(pg.locator('#sheet >> text=25/100').count() > 0, 'v1.5: Novedades no muestra 25/100')
+        check(pg.locator('#sheet >> text=26/100').count() > 0, 'v1.5: Novedades no muestra 26/100')
         pg.screenshot(path=f'/tmp/cm-v15-novedades-{scheme}.png')
         pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
         pg.reload(); pg.wait_for_timeout(1800)
@@ -656,6 +659,99 @@ with sync_playwright() as p:
         pg.evaluate("S = seed(); S._v = SCHEMA; ['i_agua','i_atun','i_higienico','i_limpieza'].forEach(k => S.items[k].state = 'list'); S.items.i_agua.qty = 6; S.items.i_agua.unit = 'L'; storeFilter = 'super'; render()"); pg.wait_for_timeout(200)
         check(pg.locator('main section.card .cat').count() >= 5, 'El súper de fábrica no muestra las categorías')
         pg.screenshot(path=f'/tmp/cm-v15-compras-{scheme}.png', full_page=True); width_ok(pg, 'v1.5 compras')
+        ctx.close()
+
+    # ---------- 9. v1.6.0: frecuencia aprendida ----------
+    DAYMS = 86400000
+    V15 = json.loads(json.dumps(V12)); V15['_v'] = 2
+    for x in V15['items'].values():
+        x.update({'cat': 'otros', 'qty': None, 'unit': '', 'hist': [{'at': x['last'], 'by': None}] if x.get('last') else []})
+    init15 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.5.0');"
+              " if(!localStorage.getItem('cm_data')){ const d = %s; const now = Date.now(), D = 86400000;"
+              " d.items.i_agua.hist = [20, 15, 10].map(n => ({at: now - n * D, by: 'dani'})); d.items.i_agua.last = now - 10 * D; d.items.i_agua.lastBy = 'dani'; d.items.i_agua.every = 7; d.items.i_agua.state = 'list';"
+              " localStorage.setItem('cm_pre', JSON.stringify(d)); localStorage.setItem('cm_data', JSON.stringify(d)); }") % json.dumps(V15)
+    for scheme in ['light', 'dark']:
+        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init15)
+        pg = ctx.new_page()
+        pg.on('pageerror', lambda e: errs.append(f'[v1.6] JS: {e}'))
+        pg.on('console', lambda m: errs.append(f'[v1.6] consola: {m.text}') if m.type == 'error' else None)
+        pg.goto(URL); pg.wait_for_timeout(2200)
+        d = S(pg); pre = json.loads(pg.evaluate('localStorage.getItem("cm_pre")'))
+        # Migración 2 → 3: solo agrega «auto», no cambia «every» ni nada más, y deja copia
+        check(d['_v'] == 3, f"v1.6: _v={d['_v']} (esperaba 3)")
+        check(all(x.get('auto') is True for x in d['items'].values()), 'v1.6: la migración no puso auto=true')
+        d0 = json.loads(json.dumps(d)); d0['_v'] = 2
+        for x in d0['items'].values(): x.pop('auto', None)
+        check(d0 == pre, 'v1.6: la migración cambió o perdió datos de v1.5.0')
+        check(json.loads(pg.evaluate('localStorage.getItem("cm_backup_v2")') or 'null') == pre, 'v1.6: no quedó la copia cm_backup_v2 idéntica')
+        check(pg.locator('#sheet >> text=26/100').count() > 0, 'v1.6: Novedades no se abrió con 26/100')
+        pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
+        # Cálculo del promedio
+        calc = pg.evaluate("""() => { const D = 86400000, t = 1e12, h = a => ({hist: a.map(n => ({at: t + n * D}))});
+          return [learned(h([])), learned(h([0, 7])), learned(h([0, 4, 10])), learned(h([0, 0.1, 0.2, 6, 12.2])), learned(h([0, 100, 101, 102, 103, 104, 105, 106])), learned(h([0, 0.6, 1.2])), learned({last: t})]; }""")
+        check(calc[0] is None and calc[1] is None and calc[6] is None, f'Promedio: con menos de 3 compras no hay que calcular {calc}')
+        check(calc[2] == {'days': 5, 'n': 2}, f'Promedio de 4 y 6 días: {calc[2]}')
+        check(calc[3] == {'days': 6, 'n': 2}, f'Compras del mismo día cuentan una vez: {calc[3]}')
+        check(calc[4] == {'days': 1, 'n': 6}, f'Solo los últimos 6 intervalos: {calc[4]}')
+        check(calc[5] == {'days': 1, 'n': 2}, f'Mínimo 1 día: {calc[5]}')
+        # Comprar el agua (compras hace 20, 15, 10 días y hoy → intervalos 5, 5, 10 → 7 no cambia… se usa otro historial)
+        pg.evaluate("A.go('compras')"); pg.wait_for_timeout(250)
+        pg.locator('main input[aria-label="Comprado: Agua"]').click(); pg.wait_for_timeout(300)
+        a = S(pg)['items']['i_agua']
+        check(a['every'] == 7 and len(a['hist']) == 4, f"Agua: promedio (5+5+10)/3≈7, no debía cambiar: {a['every']}")
+        check('ahora cada' not in pg.locator('#toast').inner_text(), 'Agua: avisó un ajuste que no hubo')
+        check(pg.locator('main .item:has-text("Agua") .tag:has-text("aprendido")').count() == 1, 'Agua: falta la etiqueta «aprendido»')
+        # Otro producto: compras hace 12, 8 y 4 días, cada 7 → al comprar hoy pasa a 4
+        pg.evaluate("(() => { const i = S.items.i_mio, now = Date.now(), D = 86400000; i.hist = [12, 8, 4].map(n => ({at: now - n * D, by: 'gonzalo'})); i.last = now - 4 * D; i.every = 7; i.state = 'list'; save(); render(); })()"); pg.wait_for_timeout(200)
+        nm = S(pg)['items']['i_mio']['name']
+        pg.locator(f'main input[aria-label="Comprado: {nm}"]').click(); pg.wait_for_timeout(300)
+        m = S(pg)['items']['i_mio']
+        check(m['every'] == 4, f"Frecuencia aprendida: esperaba 4 días, quedó {m['every']}")
+        check('ahora cada 4 días (antes 7)' in pg.locator('#toast').inner_text(), f"Falta el aviso del ajuste: {pg.locator('#toast').inner_text()}")
+        pg.screenshot(path=f'/tmp/cm-v16-aviso-{scheme}.png'); width_ok(pg, 'v1.6 aviso')
+        pg.locator('#toast button').click(); pg.wait_for_timeout(300)
+        m = S(pg)['items']['i_mio']
+        check(m['every'] == 7 and len(m['hist']) == 3 and m['state'] == 'list', f"Deshacer no devolvió la frecuencia: {m['every']} {len(m['hist'])}")
+        # Formulario: muestra lo aprendido, «Usar X días» y la opción de ajuste
+        pg.locator(f'main .item .t:has-text("{nm}")').first.click(); pg.wait_for_timeout(300)
+        check(pg.locator('#f_auto').is_checked(), 'Formulario: la opción de ajuste no viene tildada')
+        check('Según las últimas 3 compras, lo reponen cada 4 días' in pg.locator('#f_learn').inner_text(), f"Formulario: texto de lo aprendido: {pg.locator('#f_learn').inner_text()}")
+        check(pg.locator('#f_uselearn').count() == 1, 'Formulario: falta «Usar 4 días»')
+        box = pg.locator('#f_auto').locator('xpath=..').bounding_box(); check(box['height'] >= 44, f"Formulario: la opción mide {box['height']} px")
+        pg.screenshot(path=f'/tmp/cm-v16-form-{scheme}.png'); width_ok(pg, 'v1.6 formulario')
+        pg.locator('#f_uselearn').click(); pg.wait_for_timeout(100)
+        check(pg.input_value('#f_every') == '4' and pg.locator('#f_auto').is_checked(), '«Usar 4 días» no cargó el número')
+        # Escribir un número a mano lo deja fijo
+        pg.fill('#f_every', '9'); pg.wait_for_timeout(100)
+        check(not pg.locator('#f_auto').is_checked(), 'Escribir el número a mano tendría que destildar el ajuste')
+        pg.locator('#sheet button.pri').click(); pg.wait_for_timeout(300)
+        m = S(pg)['items']['i_mio']; check(m['every'] == 9 and m['auto'] is False, f"Guardar fijo: {m['every']} {m['auto']}")
+        pg.locator(f'main input[aria-label="Comprado: {nm}"]').click(); pg.wait_for_timeout(300)
+        m = S(pg)['items']['i_mio']
+        check(m['every'] == 9 and len(m['hist']) == 4, f"Con el ajuste apagado no debía cambiar: {m['every']}")
+        check('ahora cada' not in pg.locator('#toast').inner_text(), 'Con el ajuste apagado avisó un cambio')
+        check(pg.locator(f'main .item:has-text("{nm}") .tag:has-text("aprendido")').count() == 0, 'Etiqueta «aprendido» en un producto fijo')
+        # Producto con pocas compras: cuenta cuántas van
+        pg.evaluate("A.itemForm('i_huerfano')"); pg.wait_for_timeout(250)
+        check('Desde la tercera compra' in pg.locator('#f_learn').inner_text() and pg.locator('#f_uselearn').count() == 0, 'Formulario sin historial suficiente')
+        pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
+        # «Compré todo» también ajusta y se deshace
+        pg.evaluate("""(() => { const now = Date.now(), D = 86400000; const ids = Object.values(S.items).filter(i => i.store === S.items.i_agua.store).map(i => i.id); window.__ids = ids;
+          ids.forEach(k => { const i = S.items[k]; i.auto = true; i.every = 30; i.hist = [6, 3].map(n => ({at: now - n * D, by: 'dani'})); i.last = now - 3 * D; i.state = 'list'; }); save(); storeFilter = S.items.i_agua.store; render(); })()"""); pg.wait_for_timeout(200)
+        ids = pg.evaluate('window.__ids')
+        if len(ids) > 1:
+            pg.locator('main button:has-text("Compré todo")').first.click(); pg.wait_for_timeout(300)
+            its = S(pg)['items']
+            check(all(its[k]['every'] == 3 for k in ids), f"Compré todo: {[its[k]['every'] for k in ids]}")
+            check('Se ajustó la frecuencia de' in pg.locator('#toast').inner_text(), f"Compré todo: aviso {pg.locator('#toast').inner_text()}")
+            pg.locator('#toast button').click(); pg.wait_for_timeout(300)
+            its = S(pg)['items']; check(all(its[k]['every'] == 30 and len(its[k]['hist']) == 2 for k in ids), 'Compré todo: deshacer no devolvió las frecuencias')
+        else:
+            check(False, 'Prueba de «Compré todo»: el negocio del agua tiene un solo producto')
+        # Producto nuevo nace con el ajuste prendido
+        check(pg.evaluate("newItem('Prueba', 'super').auto === true && Object.values(seed().items).every(i => i.auto === true)"), 'Los productos nuevos no nacen con auto=true')
+        pg.evaluate("storeFilter = 'todos'; render()"); pg.wait_for_timeout(150)
+        pg.screenshot(path=f'/tmp/cm-v16-compras-{scheme}.png', full_page=True); width_ok(pg, 'v1.6 compras')
         ctx.close()
 
     b.close()

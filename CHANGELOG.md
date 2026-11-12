@@ -1,5 +1,12 @@
 # Novedades de Carga Mental
 
+## v1.6.0 — 2026-11-12
+- Frecuencia aprendida (ítem 26): al registrar una compra, la app promedia los intervalos reales entre las últimas compras del producto (hasta 6 intervalos; hacen falta al menos 3 compras; las del mismo día cuentan una sola vez) y ajusta sola el «cada X días». Cuando lo cambia avisa en el mismo cartel («Agua: ahora cada 5 días (antes 7)») y «Deshacer» devuelve también la frecuencia. «Compré todo» cuenta cuántos productos se ajustaron.
+- En el formulario del producto: opción «Que se ajuste solo con las compras reales» (tildada de fábrica), el promedio calculado («Según las últimas 4 compras, lo reponen cada 5 días») y un botón «Usar X días» si difiere. Escribir el número a mano destilda la opción y lo deja fijo. En «Habituales», los productos cuya frecuencia viene del promedio llevan la etiqueta «aprendido».
+- Estructura de datos: SCHEMA pasa a 3. La migración 3 solo agrega `auto: true` a cada producto (no cambia ninguna frecuencia: recién se ajusta con la próxima compra); antes guarda la copia `cm_backup_v2`. Un producto sin el campo (de un teléfono con versión vieja) se trata como `auto` prendido.
+- El cartel de aviso ahora usa todo el ancho disponible cuando el texto es largo.
+- Pruebas: migración desde v1.5.0 (nada cambia salvo `auto`, copia idéntica), cálculo del promedio (pocas compras, mismo día, tope de 6 intervalos, mínimo 1 día), ajuste con aviso y deshacer, producto fijo que no se toca, formulario, «Compré todo» y 390 px en claro y oscuro.
+
 ## v1.5.0 — 2026-11-11
 - Cantidad y unidad por producto (ítem 21): en el formulario del producto hay «Cantidad» (acepta coma: 1,5) y «Unidad» (unidades, kg, g, L, ml, docenas, paquetes, cajas, botellas, latas, bolsas, rollos, atados). Se muestra al lado del nombre («Agua · 6 L»), en el buscador y en la lista que se manda por WhatsApp («• Agua: 6 L»). El campo «Detalle» queda para marca o variedad; las notas que ya estaban no se tocan.
 - Categorías dentro de cada negocio (ítem 22): frescos, almacén, bebidas, limpieza, papeles y otros. La app la elige sola según el nombre (se puede cambiar en el formulario) y agrupa con un título cada categoría, tanto en la lista como en «Habituales»; si un negocio tiene una sola categoría no muestra títulos.
