@@ -302,10 +302,14 @@ textarea.plain{font-family:inherit;font-size:var(--fs-md);min-height:72px}
 <script>
 'use strict';
 /* ============ Constantes ============ */
-const VERSION = '1.6.0';
+const VERSION = '1.7.0';
 const SCHEMA = 3; // versión de la estructura de datos guardados (ver MIGRATIONS)
 /* Novedades: la primera es la versión actual. "hechas" = ítems del plan de 100 tildados hasta esa versión. */
 const NEWS = [
+  {v:'1.7.0', d:'2026-11-13', hechas:27, items:[
+    'Aviso anticipado: en Compras aparece «Por acabarse» con los productos que, según cada cuánto los reponen, se terminan en 2 días o menos («Agua: se acaba mañana»). Desde ahí los pasás a la lista con un toque, sin esperar a que se acaben.',
+    'En «Habituales», esos productos llevan la etiqueta «se acaba en 2 días». No cambia ninguno de tus datos.'
+  ]},
   {v:'1.6.0', d:'2026-11-12', hechas:26, items:[
     'Frecuencia aprendida: desde la tercera compra de un producto, la app calcula cada cuántos días lo compran de verdad y ajusta sola el «cada X días». Te avisa cuando lo cambia y se puede deshacer.',
     'En cada producto hay una opción «Que se ajuste solo con las compras reales»: si preferís un número fijo, destildala (o escribí el número y queda fijo).'
@@ -683,6 +687,15 @@ function renderSync(){
 const sorted = (col, f = 'ord') => Object.values(S[col]).sort((a,b) => (a[f] ?? 0) - (b[f] ?? 0) || String(a.name).localeCompare(b.name));
 const isDue = i => i.last && (Date.now() - i.last) >= i.every * DAY;
 const needs = i => i.state === 'list' || isDue(i);
+/* Aviso anticipado (ítem 27): productos al día que, según su «cada X días», se acaban en 2 días o menos.
+   Solo para los que se reponen cada 4 días o más (si no, estarían siempre «por acabarse»). */
+const SOON_DAYS = 2;
+function soonLeft(i){
+  if(needs(i) || !i.last || !(i.every >= 4)) return null;
+  const left = Math.ceil((i.last + i.every * DAY - Date.now()) / DAY);
+  return left >= 1 && left <= SOON_DAYS ? left : null;
+}
+const soonTxt = n => n === 1 ? 'se acaba mañana' : `se acaba en ${n} días`;
 const recDue = t => !t.last || (Date.now() - t.last) >= t.every * DAY;
 /* Registrar una compra: vuelve a «al día» y suma un renglón al historial del producto (últimas 30). */
 /* Frecuencia aprendida (ítem 26): promedio de los intervalos reales entre compras.
@@ -1212,6 +1225,11 @@ function badges(){
   return b;
 }
 
+function soonHtml(its){
+  const l = its.map(i => ({i, n:soonLeft(i)})).filter(x => x.n).sort((a, b) => a.n - b.n || a.i.name.localeCompare(b.i.name));
+  if(!l.length) return '';
+  return `<div class="soon" role="group" aria-label="Por acabarse"><div class="sub"><b>Por acabarse</b></div>${l.map(({i, n}) => `<div class="item"><div class="t" onclick="A.itemForm('${i.id}')" ${KB} aria-label="Editar ${esc(i.name)}"><div>${iname(i)}</div><div class="meta"><span class="tag w">${soonTxt(n)}</span></div></div><button class="b sm" onclick="A.need('${i.id}')" aria-label="Anotar ${esc(i.name)} para comprar">Anotar</button></div>`).join('')}</div>`;
+}
 function vCompras(){
   const stores = sorted('stores');
   let h = `<div class="search"><input type="text" id="buscar" inputmode="search" enterkeyhint="search" autocomplete="off" aria-label="Buscar o anotar un producto" placeholder="Buscar o anotar un producto…" value="${esc(searchQ)}" oninput="A.search(this.value)" onkeydown="if(event.key==='Enter')A.searchGo()"><button class="b" onclick="A.voice()" aria-label="Anotar por voz" title="Anotar por voz">${ic('mic')}</button></div><div id="sres">${searchHtml()}</div><div id="stl"${norm(searchQ) ? ' hidden' : ''}>`;
@@ -1220,8 +1238,9 @@ function vCompras(){
     const its = Object.values(S.items).filter(i => i.store === s.id).sort((a,b) => a.name.localeCompare(b.name));
     const need = its.filter(needs), rest = its.filter(i => !needs(i)), cats = new Set(its.map(catOf)).size > 1;
     h += `<section class="card${pc('s:' + s.id)}"><div class="row"><h3>${s.icon} ${esc(s.name)}</h3>${PB(s.owner, `A.cycleStore('${s.id}')`)}</div><div class="sub">${esc(s.how)} · se encarga ${esc(M[s.owner].n)}</div>
+      ${soonHtml(its)}
       ${need.length ? byCat(need, i => `<div class="item">${chk(`<input type="checkbox" onchange="A.bought('${i.id}')" aria-label="Comprado: ${esc(i.name)}">`)}<div class="t" onclick="A.itemForm('${i.id}')" ${KB} aria-label="Editar ${esc(i.name)}"><div>${iname(i)}</div><div class="meta">${i.state === 'list' ? `anotado por ${esc(M[i.by]?.n || '—')}` : `<span class="tag w">toca reponer</span> última ${ago(i.last)}`}${i.note ? ' · ' + esc(i.note) : ''}</div></div><button class="b sm" onclick="A.unlist('${i.id}')" aria-label="Sacar ${esc(i.name)} de la lista">✕</button></div>`, cats) : empty('compras', 'Nada para comprar', 'La despensa está al día. Si algo se acaba, tocá «Se acaba».', '', true)}
-      <details ${need.length ? "" : "open"}><summary>Habituales (${rest.length})</summary>${byCat(rest, i => `<div class="item"><div class="t" onclick="A.itemForm('${i.id}')" ${KB} aria-label="Editar ${esc(i.name)}"><div>${iname(i)}</div><div class="meta">cada ${dias(i.every)}${isAuto(i) && (learned(i) || {}).days === i.every ? ' <span class="tag">aprendido</span>' : ''} · última ${ago(i.last)}${i.lastBy ? ' (' + esc(M[i.lastBy]?.n) + ')' : ''}</div></div><button class="b sm" onclick="A.need('${i.id}')" aria-label="Se acaba ${esc(i.name)}">Se acaba</button></div>`, cats)}</details>
+      <details ${need.length ? "" : "open"}><summary>Habituales (${rest.length})</summary>${byCat(rest, i => `<div class="item"><div class="t" onclick="A.itemForm('${i.id}')" ${KB} aria-label="Editar ${esc(i.name)}"><div>${iname(i)}</div><div class="meta">${soonLeft(i) ? `<span class="tag w">${soonTxt(soonLeft(i))}</span> ` : ''}cada ${dias(i.every)}${isAuto(i) && (learned(i) || {}).days === i.every ? ' <span class="tag">aprendido</span>' : ''} · última ${ago(i.last)}${i.lastBy ? ' (' + esc(M[i.lastBy]?.n) + ')' : ''}</div></div><button class="b sm" onclick="A.need('${i.id}')" aria-label="Se acaba ${esc(i.name)}">Se acaba</button></div>`, cats)}</details>
       <div class="btns"><button onclick="A.share('${s.id}')">📲 Mandar lista</button>${need.length > 1 ? `<button onclick="A.boughtAll('${s.id}')">✔ Compré todo</button>` : ''}<button onclick="A.allList('${s.id}')">Pedido habitual</button><button onclick="A.itemForm(null,'${s.id}')">+ Producto</button></div></section>`;
   });
   h += `<p class="muted">Tocá un producto para editar la cantidad, la categoría o cada cuánto se repone, y para ver su historial. Cuando pasa ese tiempo desde la última compra, vuelve solo a la lista. Desde la tercera compra, la app ajusta sola ese tiempo con el promedio real.</p></div>`;

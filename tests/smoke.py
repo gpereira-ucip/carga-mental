@@ -545,7 +545,7 @@ with sync_playwright() as p:
         check(it['i_agua']['cat'] == 'bebidas' and it['i_mio']['cat'] == 'frescos' and it['i_huerfano']['cat'] == 'almacen', f"v1.5: categorías mal asignadas {[x['cat'] for x in it.values()]}")
         check(all(x['qty'] is None and x['unit'] == '' for x in it.values()), 'v1.5: cantidad/unidad iniciales')
         check(it['i_mio']['hist'] == [{'at': 1762000000000, 'by': None}] and it['i_agua']['hist'] == [], f"v1.5: historial inicial {it['i_mio']['hist']}")
-        check(pg.locator('#sheet >> text=26/100').count() > 0, 'v1.5: Novedades no muestra 26/100')
+        check(pg.locator('#sheet >> text=27/100').count() > 0, 'v1.5: Novedades no muestra 27/100')
         pg.screenshot(path=f'/tmp/cm-v15-novedades-{scheme}.png')
         pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
         pg.reload(); pg.wait_for_timeout(1800)
@@ -684,7 +684,7 @@ with sync_playwright() as p:
         for x in d0['items'].values(): x.pop('auto', None)
         check(d0 == pre, 'v1.6: la migración cambió o perdió datos de v1.5.0')
         check(json.loads(pg.evaluate('localStorage.getItem("cm_backup_v2")') or 'null') == pre, 'v1.6: no quedó la copia cm_backup_v2 idéntica')
-        check(pg.locator('#sheet >> text=26/100').count() > 0, 'v1.6: Novedades no se abrió con 26/100')
+        check(pg.locator('#sheet >> text=27/100').count() > 0, 'v1.6: Novedades no se abrió con 27/100')
         pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
         # Cálculo del promedio
         calc = pg.evaluate("""() => { const D = 86400000, t = 1e12, h = a => ({hist: a.map(n => ({at: t + n * D}))});
@@ -752,6 +752,33 @@ with sync_playwright() as p:
         check(pg.evaluate("newItem('Prueba', 'super').auto === true && Object.values(seed().items).every(i => i.auto === true)"), 'Los productos nuevos no nacen con auto=true')
         pg.evaluate("storeFilter = 'todos'; render()"); pg.wait_for_timeout(150)
         pg.screenshot(path=f'/tmp/cm-v16-compras-{scheme}.png', full_page=True); width_ok(pg, 'v1.6 compras')
+        ctx.close()
+
+    # ---------- 10. v1.7.0: aviso anticipado («se acaba en 2 días») ----------
+    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.7.0');"
+              " if(!localStorage.getItem('cm_data')){ const d = %s; d._v = 3; Object.values(d.items).forEach(i => i.auto = true);"
+              " localStorage.setItem('cm_pre', JSON.stringify(d)); localStorage.setItem('cm_data', JSON.stringify(d)); }") % json.dumps(V15)
+    for scheme in ['light', 'dark']:
+        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init17)
+        pg = ctx.new_page()
+        pg.on('pageerror', lambda e: errs.append(f'[v1.7] JS: {e}'))
+        pg.on('console', lambda m: errs.append(f'[v1.7] consola: {m.text}') if m.type == 'error' else None)
+        pg.goto(URL); pg.wait_for_timeout(1500)
+        pre = json.loads(pg.evaluate('localStorage.getItem("cm_pre")')); check(S(pg) == pre, 'v1.7: los datos cambiaron al abrir (no hay migración)')
+        r = pg.evaluate("""() => { const D = 86400000, n = Date.now(), t = (e, ago) => ({state: 'ok', every: e, last: n - ago * D});
+          const f = (o) => soonLeft(Object.assign({}, o));
+          return [f(t(7, 5.5)), f(t(7, 6.2)), f(t(7, 4)), f(t(7, 8)), f(t(3, 1.5)), f({state: 'list', every: 7, last: n - 6 * D}), f({state: 'ok', every: 7, last: 0}), f(t(10, 7.1))]; }""")
+        check(r == [2, 1, None, None, None, None, None, None], f'Aviso anticipado: cálculo {r}')
+        pg.evaluate("""(() => { const D = 86400000, n = Date.now(), a = S.items.i_agua; a.state = 'ok'; a.every = 7; a.last = n - 6.2 * D; a.hist = []; save(); A.go('compras'); storeFilter = 'todos'; render(); })()""")
+        pg.wait_for_timeout(300)
+        check(pg.locator('main .soon .item:has-text("se acaba mañana")').count() == 1, 'Aviso anticipado: no aparece «se acaba mañana»')
+        check(pg.locator('main details .tag:has-text("se acaba mañana")').count() == 1, 'Aviso anticipado: falta la etiqueta en Habituales')
+        pg.screenshot(path=f'/tmp/cm-v17-compras-{scheme}.png'); width_ok(pg, 'v1.7 compras')
+        pg.locator('main .soon button:has-text("Anotar")').first.click(); pg.wait_for_timeout(300)
+        check(S(pg)['items']['i_agua']['state'] == 'list', 'Aviso anticipado: «Anotar» no pasó el producto a la lista')
+        check(pg.locator('main .soon').count() == 0, 'Aviso anticipado: sigue «Por acabarse» después de anotar')
+        pg.locator('#toast button').click(); pg.wait_for_timeout(300)
+        check(S(pg)['items']['i_agua']['state'] == 'ok' and pg.locator('main .soon').count() == 1, 'Aviso anticipado: deshacer no lo devolvió')
         ctx.close()
 
     b.close()

@@ -1,5 +1,10 @@
 # Novedades de Carga Mental
 
+## v1.7.0 — 2026-11-13
+- Aviso anticipado (ítem 27): en Compras, cada negocio muestra arriba «Por acabarse» con los productos al día que, según su «cada X días» y la última compra, se terminan en 2 días o menos («se acaba mañana», «se acaba en 2 días»). El botón «Anotar» los pasa a la lista antes de que falten, con «Deshacer». En «Habituales» esos productos llevan la misma etiqueta.
+- Solo se avisa de productos que se reponen cada 4 días o más (con frecuencias más cortas estarían siempre «por acabarse»). No toca ningún dato: no cambia SCHEMA (sigue en 3) ni hay migración.
+- Pruebas: cálculo de días restantes (límites, lista, sin compra, frecuencia corta), tarjeta y etiqueta, «Anotar» y su deshacer, y 390 px en claro y oscuro. Se actualizó el texto 27/100 de las pruebas anteriores.
+
 ## v1.6.0 — 2026-11-12
 - Frecuencia aprendida (ítem 26): al registrar una compra, la app promedia los intervalos reales entre las últimas compras del producto (hasta 6 intervalos; hacen falta al menos 3 compras; las del mismo día cuentan una sola vez) y ajusta sola el «cada X días». Cuando lo cambia avisa en el mismo cartel («Agua: ahora cada 5 días (antes 7)») y «Deshacer» devuelve también la frecuencia. «Compré todo» cuenta cuántos productos se ajustaron.
 - En el formulario del producto: opción «Que se ajuste solo con las compras reales» (tildada de fábrica), el promedio calculado («Según las últimas 4 compras, lo reponen cada 5 días») y un botón «Usar X días» si difiere. Escribir el número a mano destilda la opción y lo deja fijo. En «Habituales», los productos cuya frecuencia viene del promedio llevan la etiqueta «aprendido».
