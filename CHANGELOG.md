@@ -1,5 +1,10 @@
 # Novedades de Carga Mental
 
+## v1.8.0 — 2026-11-14
+- Modo «Estoy en el negocio» (ítem 28): cada negocio con pendientes tiene el botón «🛒 Estoy en el negocio», que abre una hoja con letra grande, solo con lo que falta comprar (agrupado por categoría si hay varias) y un contador «Faltan N de M». Tocar un producto lo tacha (y vuelve a tocar para destacharlo); «Terminé» registra como comprados los tachados —con historial, frecuencia aprendida, confeti si no queda nada y «Deshacer»— y deja el resto en la lista. «Seguir después» cierra sin perder lo tachado.
+- Lo tachado se guarda en el teléfono (`cm_shop`) hasta tocar «Terminé», por si se cierra la app a mitad de compra; no cambia los datos de la familia: SCHEMA sigue en 3, sin migración.
+- Pruebas: datos de v1.7.0 intactos, pendientes mostrados, letra y filas ≥ 44 px, tachado y contador, persistencia tras recargar, destachar, «Terminé» (solo tachados, historial) y su deshacer, 390 px en claro y oscuro. Se actualizó 28/100 en pruebas anteriores.
+
 ## v1.7.0 — 2026-11-13
 - Aviso anticipado (ítem 27): en Compras, cada negocio muestra arriba «Por acabarse» con los productos al día que, según su «cada X días» y la última compra, se terminan en 2 días o menos («se acaba mañana», «se acaba en 2 días»). El botón «Anotar» los pasa a la lista antes de que falten, con «Deshacer». En «Habituales» esos productos llevan la misma etiqueta.
 - Solo se avisa de productos que se reponen cada 4 días o más (con frecuencias más cortas estarían siempre «por acabarse»). No toca ningún dato: no cambia SCHEMA (sigue en 3) ni hay migración.

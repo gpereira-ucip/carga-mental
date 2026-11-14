@@ -14,6 +14,7 @@ Levanta un servidor local, abre la app en un celular simulado (390x844) y recorr
      anotar por voz (reconocimiento simulado) e historial de compras por producto.
   9. v1.6.0: migración al esquema 3 (datos de v1.5.0), frecuencia aprendida con el promedio real de las compras,
      aviso y deshacer, opción por producto y «Compré todo».
+  10. v1.8.0: modo «Estoy en el negocio» (tachado, persistencia, «Terminé» y deshacer).
 Falla si hay errores de JavaScript o de consola, o si la página se ensancha más de 390 px.
 Guarda capturas en /tmp/cm-*.png para revisarlas.
 """
@@ -545,7 +546,7 @@ with sync_playwright() as p:
         check(it['i_agua']['cat'] == 'bebidas' and it['i_mio']['cat'] == 'frescos' and it['i_huerfano']['cat'] == 'almacen', f"v1.5: categorías mal asignadas {[x['cat'] for x in it.values()]}")
         check(all(x['qty'] is None and x['unit'] == '' for x in it.values()), 'v1.5: cantidad/unidad iniciales')
         check(it['i_mio']['hist'] == [{'at': 1762000000000, 'by': None}] and it['i_agua']['hist'] == [], f"v1.5: historial inicial {it['i_mio']['hist']}")
-        check(pg.locator('#sheet >> text=27/100').count() > 0, 'v1.5: Novedades no muestra 27/100')
+        check(pg.locator('#sheet >> text=28/100').count() > 0, 'v1.5: Novedades no muestra 28/100')
         pg.screenshot(path=f'/tmp/cm-v15-novedades-{scheme}.png')
         pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
         pg.reload(); pg.wait_for_timeout(1800)
@@ -684,7 +685,7 @@ with sync_playwright() as p:
         for x in d0['items'].values(): x.pop('auto', None)
         check(d0 == pre, 'v1.6: la migración cambió o perdió datos de v1.5.0')
         check(json.loads(pg.evaluate('localStorage.getItem("cm_backup_v2")') or 'null') == pre, 'v1.6: no quedó la copia cm_backup_v2 idéntica')
-        check(pg.locator('#sheet >> text=27/100').count() > 0, 'v1.6: Novedades no se abrió con 27/100')
+        check(pg.locator('#sheet >> text=28/100').count() > 0, 'v1.6: Novedades no se abrió con 28/100')
         pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
         # Cálculo del promedio
         calc = pg.evaluate("""() => { const D = 86400000, t = 1e12, h = a => ({hist: a.map(n => ({at: t + n * D}))});
@@ -755,7 +756,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---------- 10. v1.7.0: aviso anticipado («se acaba en 2 días») ----------
-    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.7.0');"
+    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.8.0');"
               " if(!localStorage.getItem('cm_data')){ const d = %s; d._v = 3; Object.values(d.items).forEach(i => i.auto = true);"
               " localStorage.setItem('cm_pre', JSON.stringify(d)); localStorage.setItem('cm_data', JSON.stringify(d)); }") % json.dumps(V15)
     for scheme in ['light', 'dark']:
@@ -779,6 +780,44 @@ with sync_playwright() as p:
         check(pg.locator('main .soon').count() == 0, 'Aviso anticipado: sigue «Por acabarse» después de anotar')
         pg.locator('#toast button').click(); pg.wait_for_timeout(300)
         check(S(pg)['items']['i_agua']['state'] == 'ok' and pg.locator('main .soon').count() == 1, 'Aviso anticipado: deshacer no lo devolvió')
+        ctx.close()
+
+    # ---- v1.8.0: modo «Estoy en el negocio» ----
+    for scheme in ['light', 'dark']:
+        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init17)
+        pg = ctx.new_page()
+        pg.on('pageerror', lambda e: errs.append(f'[v1.8] JS: {e}'))
+        pg.on('console', lambda m: errs.append(f'[v1.8] consola: {m.text}') if m.type == 'error' else None)
+        pg.goto(URL); pg.wait_for_timeout(1500)
+        pre = json.loads(pg.evaluate('localStorage.getItem("cm_pre")')); check(S(pg) == pre, 'v1.8: los datos cambiaron al abrir (no hay migración)')
+        pg.evaluate("""(() => { ['i_agua','i_leche','i_pan'].forEach(k => { if(S.items[k]){ S.items[k].state = 'list'; S.items[k].by = 'dani'; } }); save(); A.go('compras'); storeFilter = 'todos'; render(); })()""")
+        pg.wait_for_timeout(300)
+        ids = pg.evaluate("Object.values(S.items).filter(i => i.store === 'super' && needs(i)).map(i => i.id)")
+        check(len(ids) >= 2, f'v1.8: hacen falta 2 productos pendientes en el súper ({ids})')
+        pg.locator('main button:has-text("Estoy en el negocio")').first.click(); pg.wait_for_timeout(300)
+        check(pg.locator('#sheetbox.shop .sitem').count() == len(ids), 'v1.8: el modo no muestra todos los pendientes')
+        check(pg.evaluate("parseFloat(getComputedStyle(document.querySelector('.sitem')).fontSize)") >= 20, 'v1.8: letra chica en el modo negocio')
+        check(pg.evaluate("[...document.querySelectorAll('.sitem')].every(e => e.getBoundingClientRect().height >= 44)"), 'v1.8: filas de menos de 44 px')
+        pg.locator('.sitem').first.click(); pg.wait_for_timeout(150)
+        check(pg.locator('.sitem.struck').count() == 1 and 'Faltan' in pg.locator('#shopcount').inner_text(), 'v1.8: tocar no tacha o no cuenta')
+        check(len(json.loads(pg.evaluate('localStorage.getItem("cm_shop")'))['super']) == 1, 'v1.8: lo tachado no se guardó')
+        pg.screenshot(path=f'/tmp/cm-v18-negocio-{scheme}.png'); width_ok(pg, 'v1.8 negocio')
+        pg.reload(); pg.wait_for_timeout(1200); pg.evaluate("A.go('compras')"); pg.wait_for_timeout(200)
+        pg.locator('main button:has-text("Estoy en el negocio")').first.click(); pg.wait_for_timeout(200)
+        check(pg.locator('.sitem.struck').count() == 1, 'v1.8: lo tachado no sobrevivió a recargar')
+        pg.locator('.sitem.struck').click(); pg.wait_for_timeout(100)
+        check(pg.locator('.sitem.struck').count() == 0, 'v1.8: no se pudo destachar')
+        pg.locator('.sitem').first.click(); pg.wait_for_timeout(100)
+        first = pg.locator('.sitem.struck').get_attribute('data-id')
+        antes = S(pg)['items']
+        pg.locator('.shop button:has-text("Terminé")').click(); pg.wait_for_timeout(400)
+        d = S(pg)
+        check(d['items'][first]['state'] == 'ok' and len(d['items'][first]['hist']) == len(antes[first].get('hist', [])) + 1, 'v1.8: «Terminé» no registró la compra')
+        check(all(d['items'][k] == antes[k] for k in ids if k != first), 'v1.8: «Terminé» tocó productos sin tachar')
+        check(pg.locator('#modal.hidden').count() == 1, 'v1.8: la hoja no se cerró')
+        pg.locator('#toast button').click(); pg.wait_for_timeout(300)
+        check(S(pg)['items'][first] == antes[first] and pg.evaluate('localStorage.getItem("cm_shop")') in ('{}', None), 'v1.8: deshacer no devolvió el producto')
+        width_ok(pg, 'v1.8 compras')
         ctx.close()
 
     b.close()

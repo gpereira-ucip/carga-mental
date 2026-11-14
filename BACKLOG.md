@@ -36,7 +36,7 @@ Las marcadas 🔑 necesitan algo de Gonzalo (una cuenta, una clave, un dato). En
 - [x] 25. Historial de compras por producto (quién, cuándo). — ✔ 2026-11-11 (v1.5.0)
 - [x] 26. Frecuencia aprendida: "cada X días" se ajusta solo con el promedio real. — ✔ 2026-11-12 (v1.6.0)
 - [x] 27. Aviso anticipado: "se acaba en 2 días". — ✔ 2026-11-13 (v1.7.0)
-- [ ] 28. Modo "estoy en el negocio": letra grande, solo pendientes, tachado al tocar.
+- [x] 28. Modo "estoy en el negocio": letra grande, solo pendientes, tachado al tocar. — ✔ 2026-11-14 (v1.8.0)
 - [ ] 29. Precio del último pedido y total estimado de cada lista.
 - [ ] 30. Resumen de gasto mensual por negocio.
 - [ ] 31. Plantillas de pedido (súper semanal, MercadoLibre mensual, Berardi quincenal).
