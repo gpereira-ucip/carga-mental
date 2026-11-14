@@ -1,5 +1,8 @@
 # Novedades de Carga Mental
 
+## v1.8.1 — 2026-11-14
+- Ícono nuevo (pedido de Gonzalo): el camión con el cerebro sobre fondo blanco, sin la bandera blanca. Se sacó el ícono «maskable» para que Android no lo recorte.
+
 ## v1.8.0 — 2026-11-14
 - Modo «Estoy en el negocio» (ítem 28): cada negocio con pendientes tiene el botón «🛒 Estoy en el negocio», que abre una hoja con letra grande, solo con lo que falta comprar (agrupado por categoría si hay varias) y un contador «Faltan N de M». Tocar un producto lo tacha (y vuelve a tocar para destacharlo); «Terminé» registra como comprados los tachados —con historial, frecuencia aprendida, confeti si no queda nada y «Deshacer»— y deja el resto en la lista. «Seguir después» cierra sin perder lo tachado.
 - Lo tachado se guarda en el teléfono (`cm_shop`) hasta tocar «Terminé», por si se cierra la app a mitad de compra; no cambia los datos de la familia: SCHEMA sigue en 3, sin migración.
