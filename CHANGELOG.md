@@ -1,5 +1,8 @@
 # Novedades de Carga Mental
 
+## v1.8.2 — 2026-11-14
+- Ícono más nítido (pedido de Gonzalo): sin restos del palo ni de la bandera, fondo blanco limpio y mejor definición.
+
 ## v1.8.1 — 2026-11-14
 - Ícono nuevo (pedido de Gonzalo): el camión con el cerebro sobre fondo blanco, sin la bandera blanca. Se sacó el ícono «maskable» para que Android no lo recorte.
 
