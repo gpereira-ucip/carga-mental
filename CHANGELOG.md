@@ -1,5 +1,10 @@
 # Novedades de Carga Mental
 
+## v1.9.0 — 2026-11-14
+- Portada nueva (pedido de Gonzalo): el camión sin bandera sobre fondo blanco, como el ícono; el título va como texto.
+- Paleta sin marrón: azul marino (#24476b) en claro y oscuro. Tipografía Poppins incluida en la app (carpeta fonts/, solo letras latinas) para que funcione sin conexión.
+- Teléfonos para WhatsApp en ⚙ Ajustes (solo en el dispositivo; nunca en el repo). La lista de un comercio se manda directo al responsable y las indicaciones a Daniela. También se pueden cargar con un enlace `#tel=`.
+
 ## v1.8.2 — 2026-11-14
 - Ícono más nítido (pedido de Gonzalo): sin restos del palo ni de la bandera, fondo blanco limpio y mejor definición.
 

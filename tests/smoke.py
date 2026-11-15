@@ -245,7 +245,7 @@ with sync_playwright() as p:
         for k, val in c.items():
             if k != 'bg': check(val >= 4.5, f'Contraste {scheme} {k}={val:.2f} (mínimo 4.5)')
         bg = pg.evaluate("getComputedStyle(document.body).backgroundColor")
-        check((bg == 'rgb(26, 20, 17)') == (scheme == 'dark'), f'Modo {scheme} automático: fondo {bg}')
+        check((bg == 'rgb(16, 21, 27)') == (scheme == 'dark'), f'Modo {scheme} automático: fondo {bg}')
         check(pg.locator('nav svg.ic').count() == 5, 'La barra inferior no tiene los 5 íconos SVG')
         check(pg.locator('nav b').count() == 0, 'Quedaron emojis en la barra inferior')
         check(pg.locator('#who .av').count() == 1, 'El botón de usuario no muestra el avatar')
@@ -266,7 +266,7 @@ with sync_playwright() as p:
     pg.locator('#who').click(); pg.wait_for_timeout(200)
     pg.locator('#sheet .seg >> text=Oscuro').click(); pg.wait_for_timeout(200)
     check(pg.evaluate("document.documentElement.dataset.theme") == 'dark', 'Elegir «Oscuro» no cambió el tema')
-    check(pg.evaluate("document.querySelector('meta[name=theme-color]').content") == '#2f231d', 'La barra del teléfono no cambió de color')
+    check(pg.evaluate("document.querySelector('meta[name=theme-color]').content") == '#172330', 'La barra del teléfono no cambió de color')
     pg.screenshot(path='/tmp/cm-dark-ajustes.png', full_page=True)
     pg.reload(); pg.wait_for_timeout(600)
     check(pg.evaluate("document.documentElement.dataset.theme") == 'dark', 'El modo oscuro no se recordó al recargar')
@@ -756,7 +756,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---------- 10. v1.7.0: aviso anticipado («se acaba en 2 días») ----------
-    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.8.2');"
+    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.9.0');"
               " if(!localStorage.getItem('cm_data')){ const d = %s; d._v = 3; Object.values(d.items).forEach(i => i.auto = true);"
               " localStorage.setItem('cm_pre', JSON.stringify(d)); localStorage.setItem('cm_data', JSON.stringify(d)); }") % json.dumps(V15)
     for scheme in ['light', 'dark']:

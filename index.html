@@ -11,7 +11,8 @@
 <meta property="og:url" content="https://gpereira-ucip.github.io/carga-mental/">
 <meta property="og:image" content="https://gpereira-ucip.github.io/carga-mental/icon-512.png">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#7c5440">
+<meta name="theme-color" content="#24476b">
+<style>@font-face{font-family:"Poppins";src:url(fonts/poppins-regular.woff) format("woff");font-weight:300 449;font-display:swap}@font-face{font-family:"Poppins";src:url(fonts/poppins-medium.woff) format("woff");font-weight:450 599;font-display:swap}@font-face{font-family:"Poppins";src:url(fonts/poppins-bold.woff) format("woff");font-weight:600 900;font-display:swap}</style>
 <script>try{var t=localStorage.getItem("cm_theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t;if(localStorage.getItem("cm_big")==="1")document.documentElement.dataset.big="1";}catch(e){}</script>
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -21,10 +22,10 @@
 :root{
   color-scheme:light;
   /* color */
-  --bg:#f5efe7; --card:#fffdfa; --sheet:#f8f2ea; --field:#fff; --ink:#2b211c; --mut:#6f6057; --line:#e7dacb; --line2:#d9c7b5;
-  --pri:#7c5440; --pri-tx:#7c5440; --pri-on:#fff; --pri2:#f3e2d4; --pri2-line:#e3c9b6; --hdr:#7c5440; --hdr-tx:#fff;
+  --bg:#f5f7fa; --card:#ffffff; --sheet:#f0f3f7; --field:#fff; --ink:#1d2733; --mut:#5d6b7a; --line:#e1e7ee; --line2:#cdd6e0;
+  --pri:#24476b; --pri-tx:#24476b; --pri-on:#fff; --pri2:#e4edf6; --pri2-line:#c6d7e8; --hdr:#24476b; --hdr-tx:#fff;
   --warn:#8f4508; --warnbg:#fcefd4; --bad:#a3191b; --badbg:#fde3df; --ok:#2c7139; --okbg:#e7f4ea;
-  --toast:#2b211c; --toast-tx:#fff; --scrim:rgba(43,33,28,.45);
+  --toast:#1d2733; --toast-tx:#fff; --scrim:rgba(29,39,51,.45);
   /* espacio */
   --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px;
   /* radios */
@@ -33,25 +34,25 @@
   --sh1:0 1px 2px rgba(74,45,28,.05),0 2px 6px rgba(74,45,28,.06);
   --sh2:0 10px 30px rgba(74,45,28,.18);
   /* tipografía: Roboto en Android, San Francisco en iPhone, Segoe en Windows */
-  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans","Helvetica Neue",Arial,sans-serif;
+  --font:"Poppins",system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans","Helvetica Neue",Arial,sans-serif;
   --fs-xs:12px; --fs-sm:13px; --fs-md:15px; --fs-lg:17px; --fs-xl:20px; --fs-2xl:24px;
   --lh:1.45;
 }
 :root[data-theme="dark"]{
   color-scheme:dark;
-  --bg:#1a1411; --card:#261e19; --sheet:#211a16; --field:#1e1814; --ink:#f3eae2; --mut:#b9a698; --line:#3a2f28; --line2:#4a3c33;
-  --pri:#9a5d40; --pri-tx:#e3ae8e; --pri-on:#fff; --pri2:#3b2a21; --pri2-line:#5a3f30; --hdr:#2f231d; --hdr-tx:#f6e7da;
+  --bg:#10151b; --card:#18212b; --sheet:#141c25; --field:#131a22; --ink:#e8eef4; --mut:#9fb0c2; --line:#26313d; --line2:#334252;
+  --pri:#3d77ad; --pri-tx:#93c2ea; --pri-on:#fff; --pri2:#1c2b3a; --pri2-line:#2d4459; --hdr:#172330; --hdr-tx:#e8f1f8;
   --warn:#f2c27b; --warnbg:#3a2b14; --bad:#f4a5a2; --badbg:#3e1d1c; --ok:#93d3a1; --okbg:#1c3223;
-  --toast:#f3eae2; --toast-tx:#1a1411; --scrim:rgba(0,0,0,.6);
+  --toast:#e8eef4; --toast-tx:#10151b; --scrim:rgba(0,0,0,.6);
   --sh1:0 1px 2px rgba(0,0,0,.35); --sh2:0 10px 30px rgba(0,0,0,.55);
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     color-scheme:dark;
-    --bg:#1a1411; --card:#261e19; --sheet:#211a16; --field:#1e1814; --ink:#f3eae2; --mut:#b9a698; --line:#3a2f28; --line2:#4a3c33;
-    --pri:#9a5d40; --pri-tx:#e3ae8e; --pri-on:#fff; --pri2:#3b2a21; --pri2-line:#5a3f30; --hdr:#2f231d; --hdr-tx:#f6e7da;
+    --bg:#10151b; --card:#18212b; --sheet:#141c25; --field:#131a22; --ink:#e8eef4; --mut:#9fb0c2; --line:#26313d; --line2:#334252;
+    --pri:#3d77ad; --pri-tx:#93c2ea; --pri-on:#fff; --pri2:#1c2b3a; --pri2-line:#2d4459; --hdr:#172330; --hdr-tx:#e8f1f8;
     --warn:#f2c27b; --warnbg:#3a2b14; --bad:#f4a5a2; --badbg:#3e1d1c; --ok:#93d3a1; --okbg:#1c3223;
-    --toast:#f3eae2; --toast-tx:#1a1411; --scrim:rgba(0,0,0,.6);
+    --toast:#e8eef4; --toast-tx:#10151b; --scrim:rgba(0,0,0,.6);
     --sh1:0 1px 2px rgba(0,0,0,.35); --sh2:0 10px 30px rgba(0,0,0,.55);
   }
 }
@@ -69,9 +70,10 @@ header{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-c
 .brand{font-weight:750;font-size:var(--fs-lg);letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
 .brand img{width:38px;height:38px;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.25)}
 .brand small{display:block;font-weight:400;font-size:11px;opacity:.82;letter-spacing:.01em}
-#splash{position:fixed;inset:0;z-index:50;background:#e5e2db;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s}
-#splash img{width:min(78vw,420px);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.18)}
-#splash p{color:#6b5146;font-size:var(--fs-sm);margin-top:var(--s4);letter-spacing:.3px}
+#splash{position:fixed;inset:0;z-index:50;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s}
+#splash img{width:min(80vw,420px)}
+#splash h1{margin:6px 0 0;font:800 30px/1.1 var(--font);color:#24476b;letter-spacing:-.3px}
+#splash p{color:#5d6b7a;font-size:var(--fs-sm);margin-top:var(--s4);letter-spacing:.3px}
 #splash.out{opacity:0;pointer-events:none}
 .welcome img{display:block;width:62%;max-width:260px;margin:0 auto 10px;border-radius:var(--r2)}
 #who{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:var(--rp);padding:4px 10px 4px 4px;background:rgba(255,255,255,.16);color:inherit;font:inherit;font-weight:600;font-size:var(--fs-sm);min-height:36px}
@@ -147,7 +149,7 @@ details summary{cursor:pointer;color:var(--pri-tx);font-size:var(--fs-sm);font-w
 .msg .meta .av{width:18px;height:18px;font-size:9px}
 .composer{position:fixed;left:0;right:0;bottom:calc(58px + env(safe-area-inset-bottom));display:flex;gap:6px;padding:var(--s2) var(--s3);background:var(--bg);border-top:1px solid var(--line);max-width:720px;margin:0 auto}
 .composer input{flex:1}
-input[type=text],input[type=number],input[type=date],select,textarea{width:100%;border:1px solid var(--line2);border-radius:var(--r2);padding:9px 10px;font:inherit;background:var(--field);color:var(--ink);min-height:42px}
+input[type=text],input[type=tel],input[type=number],input[type=date],select,textarea{width:100%;border:1px solid var(--line2);border-radius:var(--r2);padding:9px 10px;font:inherit;background:var(--field);color:var(--ink);min-height:42px}
 input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--pri-tx);outline-offset:2px}
 textarea{min-height:90px;font-family:ui-monospace,monospace;font-size:var(--fs-xs)}
 label.f{display:block;font-size:var(--fs-xs);color:var(--mut);margin:10px 0 3px;font-weight:500}
@@ -243,7 +245,7 @@ button.sm{min-height:44px;min-width:44px;padding:5px 12px}
 button.pp,.pp.v,#who{min-height:44px}
 .chips button,.seg button,details summary{min-height:44px}
 details summary{display:flex;align-items:center}
-input[type=text],input[type=number],input[type=date],select{min-height:44px}
+input[type=text],input[type=tel],input[type=number],input[type=date],select{min-height:44px}
 .chk{display:grid;place-items:center;width:44px;height:44px;flex:none;margin:-8px -10px -8px -10px;cursor:pointer}
 .chk input{margin:0}
 .grabzone{padding:0;margin:0}
@@ -298,7 +300,7 @@ textarea.plain{font-family:inherit;font-size:var(--fs-md);min-height:72px}
 </style>
 </head>
 <body>
-<div id="splash" onclick="this.classList.add('out')"><img src="cover.jpg" alt="Carga Mental"><p>Compartida, no invisible</p></div>
+<div id="splash" onclick="this.classList.add('out')"><img src="cover.jpg" alt=""><h1>Carga Mental</h1><p>Compartida, no invisible</p></div>
 <header>
   <div class="brand"><img src="icon-192.png" alt=""><div>Carga Mental<small>Compartida, no invisible</small></div></div>
   <button id="who" onclick="A.settings()" aria-label="Ajustes">⚙</button>
@@ -313,10 +315,11 @@ textarea.plain{font-family:inherit;font-size:var(--fs-md);min-height:72px}
 <script>
 'use strict';
 /* ============ Constantes ============ */
-const VERSION = '1.8.2';
+const VERSION = '1.9.0';
 const SCHEMA = 3; // versión de la estructura de datos guardados (ver MIGRATIONS)
 /* Novedades: la primera es la versión actual. "hechas" = ítems del plan de 100 tildados hasta esa versión. */
 const NEWS = [
+  {v:'1.9.0', d:'2026-11-14', hechas:28, items:['Portada nueva: el camión sin bandera, sobre blanco, como el ícono.','Colores nuevos sin marrón (azul marino) y letra más agradable (Poppins).','Teléfonos de Gonzalo, Dani y Daniela en ⚙ Ajustes: la lista del súper y las indicaciones para Daniela se mandan directo por WhatsApp.']},
   {v:'1.8.2', d:'2026-11-14', hechas:28, items:['Ícono más nítido: sin rastros de la bandera y con mejor definición.']},
   {v:'1.8.1', d:'2026-11-14', hechas:28, items:['Ícono nuevo: el camión con el cerebro sobre fondo blanco, sin la bandera.']},
   {v:'1.8.0', d:'2026-11-14', hechas:28, items:[
@@ -457,7 +460,7 @@ function ago(ts){
 function fdate(s){ if(!s) return ''; const d = parseDk(s); return `${DOW[d.getDay()]} ${d.getDate()}/${d.getMonth()+1}`; }
 function daysTo(s){ return Math.round((parseDk(s) - parseDk(dk()))/DAY); }
 /* Avatares: círculo con inicial y color de cada persona. "Ambos" = Gonzalo y Dani superpuestos. */
-const pm = id => M[id] || {n:String(id || '—'), c:'#8a7a70', ini:String(id || '?').slice(0,1).toUpperCase()};
+const pm = id => M[id] || {n:String(id || '—'), c:'#7a8794', ini:String(id || '?').slice(0,1).toUpperCase()};
 const AV = id => id === 'ambos' ? `<span class="avs" aria-hidden="true">${AV('gonzalo')}${AV('dani')}</span>` : `<span class="av" style="--c:${pm(id).c}" aria-hidden="true">${esc(pm(id).ini)}</span>`;
 const P = id => `<span class="pp">${AV(id)}${esc(pm(id).n)}</span>`;
 const PB = (id, onclick) => `<button class="pp" onclick="${onclick}" aria-label="${esc(pm(id).n)}: tocá para cambiar">${AV(id)}${esc(pm(id).n)}${ic('rotar')}</button>`;
@@ -473,7 +476,7 @@ function confetti(){
   buzz([20, 40, 30]);
   if(calm() || document.getElementById('confeti')) return;
   const box = document.createElement('div'); box.id = 'confeti'; box.setAttribute('aria-hidden', 'true');
-  const cols = ['#7c5440','#c98a63','#e3ae8e','#f3c98b','#8fb996','#db2777','#2563eb'];
+  const cols = ['#24476b','#4f7cac','#9cbfe0','#f3c98b','#8fb996','#db2777','#2563eb'];
   for(let i = 0; i < 36; i++){
     const p = document.createElement('i'); const x = 10 + Math.random()*80;
     p.style.left = x + 'vw'; p.style.background = cols[i % cols.length];
@@ -572,7 +575,11 @@ function seed(){
 }
 
 /* ============ Estado + persistencia local ============ */
-const LS = {data:'cm_data', me:'cm_me', cfg:'cm_fb', code:'cm_code', tab:'cm_tab', seen:'cm_seen', noInst:'cm_noinst', theme:'cm_theme', read:'cm_read', vib:'cm_vib', big:'cm_big', shop:'cm_shop'};
+const LS = {data:'cm_data', me:'cm_me', cfg:'cm_fb', code:'cm_code', tab:'cm_tab', seen:'cm_seen', noInst:'cm_noinst', theme:'cm_theme', read:'cm_read', vib:'cm_vib', big:'cm_big', shop:'cm_shop', tel:'cm_tel'};
+/* Teléfonos para mandar por WhatsApp directo. Se guardan solo en el teléfono (nunca en el repo, que es público). */
+const tels = () => { try{ return JSON.parse(localStorage.getItem(LS.tel) || '{}'); }catch(e){ return {}; } };
+const normTel = v => { let d = String(v || '').replace(/\D/g, ''); if(!d) return ''; d = d.replace(/^00/, ''); if(d.startsWith('0')) d = d.slice(1); if(d.length === 10) d = '549' + d; else if(d.startsWith('54') && !d.startsWith('549') && d.length === 12) d = '549' + d.slice(2); return d; };
+const waTo = (who, txt) => { const n = who && tels()[who]; location.href = 'https://wa.me/' + (n ? n : '') + '?text=' + encodeURIComponent(txt); };
 /* Migraciones: cada número lleva los datos de la versión anterior a esa. Nunca borran nada:
    solo completan lo que falta. Antes de migrar se guarda una copia en cm_backup_v{n}. */
 const MIGRATIONS = {
@@ -924,7 +931,8 @@ const A = {
     const s = S.stores[sid]; const list = Object.values(S.items).filter(i => i.store === sid && needs(i));
     if(!list.length) return toast('No hay nada pendiente');
     const txt = `${s.icon} *${s.name}* — lista\n` + list.map(i => `• ${i.name}${qtyTxt(i) ? ': ' + qtyTxt(i) : ''}${i.note ? ' ('+i.note+')' : ''}`).join('\n') + `\n\n— Carga Mental`;
-    location.href = 'https://wa.me/?text=' + encodeURIComponent(txt);
+    const to = s.owner === 'ambos' ? ({gonzalo:'dani', dani:'gonzalo'})[me] : (s.owner !== me ? s.owner : null);
+    waTo(to, txt);
   },
   itemForm(id, sid){
     const i = id ? S.items[id] : newItem('', sid || 'super');
@@ -1053,7 +1061,7 @@ const A = {
     if(tareas.length) t += '\n🧹 *Tareas*\n' + tareas.map(n => '• ' + n.text).join('\n');
     if(comidas.length) t += '\n\n🍲 *Para cocinar*\n' + comidas.map(n => '• ' + n.text).join('\n');
     t += '\n\nGracias! 🙌';
-    location.href = 'https://wa.me/?text=' + encodeURIComponent(t);
+    waTo('daniela', t);
   },
 
   // Joaco
@@ -1125,6 +1133,11 @@ const A = {
       <label class="f">Código del hogar (secreto, igual en todos los teléfonos)</label><input type="text" id="f_code" value="${esc(code)}">
       <div class="btns"><button class="pri" onclick="A.saveCfg()">Conectar</button>${raw ? `<button onclick="A.invite()">📲 Invitar por WhatsApp</button><button onclick="A.disconnect()">Desconectar</button>` : ''}</div>
 
+      <h3 class="sec">${hic('telefono')} Teléfonos para WhatsApp</h3>
+      <p class="muted">Con el número, la lista o las indicaciones se mandan directo a esa persona. Se guardan solo en este teléfono.</p>
+      ${['gonzalo','dani','daniela'].map(p => `<label class="f">${M[p].n} · ${M[p].r}</label><input type="tel" inputmode="tel" id="f_tel_${p}" placeholder="Ej.: 11 1234-5678" value="${esc(tels()[p] || '')}">`).join('')}
+      <div class="btns"><button onclick="A.saveTel()">Guardar teléfonos</button></div>
+
       <h3 class="sec">${hic('campana')} Avisos</h3>
       <p class="muted">Permiso: <b>${({granted:'activado', denied:'bloqueado', default:'todavía sin activar', no:'no disponible'})[perm] || perm}</b>. Te avisa cuando otro marca algo o manda un mensaje.</p>
       <div class="btns"><button onclick="A.perm()">Activar notificaciones</button></div>
@@ -1138,6 +1151,7 @@ const A = {
       <div class="btns"><button onclick="A.close()">Cerrar</button></div>
       <p class="credit">Carga Mental v${VERSION} · creada por Gonzalo Gabriel Pereira</p>`);
   },
+  saveTel(){ const t = {}; ['gonzalo','dani','daniela'].forEach(p => { const v = normTel($('#f_tel_' + p).value); if(v) t[p] = v; }); localStorage.setItem(LS.tel, JSON.stringify(t)); toast('Teléfonos guardados'); A.close(); },
   saveCfg(){
     try{
       const c = parseCfg($('#f_cfg').value); const code = $('#f_code').value.trim().toLowerCase().replace(/[^a-z0-9-]/g,'');
@@ -1174,7 +1188,7 @@ function applyTheme(){
   const t = theme(), root = document.documentElement;
   if(t === 'auto') delete root.dataset.theme; else root.dataset.theme = t;
   const dark = t === 'dark' || (t === 'auto' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
-  const meta = document.querySelector('meta[name=theme-color]'); if(meta) meta.content = dark ? '#2f231d' : '#7c5440';
+  const meta = document.querySelector('meta[name=theme-color]'); if(meta) meta.content = dark ? '#172330' : '#24476b';
 }
 if(window.matchMedia) try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme); } catch(e) {}
 const isStandalone = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
@@ -1413,6 +1427,8 @@ function swipeSheet(){
 
 /* ============ Arranque ============ */
 (function boot(){
+  const tm = location.hash.match(/#tel=(.+)/);
+  if(tm){ try{ const t = JSON.parse(decodeURIComponent(escape(atob(tm[1])))); const o = {}; ['gonzalo','dani','daniela'].forEach(p => { const v = normTel(t[p]); if(v) o[p] = v; }); localStorage.setItem(LS.tel, JSON.stringify(o)); setTimeout(() => toast('Teléfonos cargados'), 600); }catch(e){} history.replaceState(null, '', location.pathname); }
   const m = location.hash.match(/#join=(.+)/);
   if(m){
     try { const j = JSON.parse(decodeURIComponent(escape(atob(m[1])))); localStorage.setItem(LS.cfg, JSON.stringify(j.c)); localStorage.setItem(LS.code, j.h); S = seed(); S._v = SCHEMA; save(); } catch(e) { console.warn(e); }
