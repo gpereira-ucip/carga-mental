@@ -82,7 +82,7 @@ header{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-c
 .sync{font-size:var(--fs-xs);text-align:center;padding:var(--s1);color:var(--mut)}
 main{padding:var(--s2) var(--s3) 96px;max-width:720px;margin:0 auto}
 /* barra inferior */
-nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);z-index:5;box-shadow:0 -2px 12px rgba(74,45,28,.06)}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);z-index:5;box-shadow:0 -2px 12px rgba(29,39,51,.06)}
 nav button{flex:1;border:0;background:none;padding:8px 2px 10px;font:inherit;font-size:11px;font-weight:500;color:var(--mut);display:flex;flex-direction:column;align-items:center;gap:3px;min-height:56px}
 nav button .ic{width:24px;height:24px}
 nav button.on{color:var(--pri-tx);font-weight:700}
@@ -315,10 +315,11 @@ textarea.plain{font-family:inherit;font-size:var(--fs-md);min-height:72px}
 <script>
 'use strict';
 /* ============ Constantes ============ */
-const VERSION = '1.9.0';
+const VERSION = '1.9.1';
 const SCHEMA = 3; // versión de la estructura de datos guardados (ver MIGRATIONS)
 /* Novedades: la primera es la versión actual. "hechas" = ítems del plan de 100 tildados hasta esa versión. */
 const NEWS = [
+  {v:'1.9.1', d:'2026-11-14', hechas:28, items:['Se sacó el último resto de marrón (la sombra de la barra de abajo).']},
   {v:'1.9.0', d:'2026-11-14', hechas:28, items:['Portada nueva: el camión sin bandera, sobre blanco, como el ícono.','Colores nuevos sin marrón (azul marino) y letra más agradable (Poppins).','Teléfonos de Gonzalo, Dani y Daniela en ⚙ Ajustes: la lista del súper y las indicaciones para Daniela se mandan directo por WhatsApp.']},
   {v:'1.8.2', d:'2026-11-14', hechas:28, items:['Ícono más nítido: sin rastros de la bandera y con mejor definición.']},
   {v:'1.8.1', d:'2026-11-14', hechas:28, items:['Ícono nuevo: el camión con el cerebro sobre fondo blanco, sin la bandera.']},

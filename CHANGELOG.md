@@ -1,5 +1,8 @@
 # Novedades de Carga Mental
 
+## v1.9.1 — 2026-11-14
+- Sombra de la barra inferior sin tono marrón.
+
 ## v1.9.0 — 2026-11-14
 - Portada nueva (pedido de Gonzalo): el camión sin bandera sobre fondo blanco, como el ícono; el título va como texto.
 - Paleta sin marrón: azul marino (#24476b) en claro y oscuro. Tipografía Poppins incluida en la app (carpeta fonts/, solo letras latinas) para que funcione sin conexión.
