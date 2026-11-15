@@ -228,6 +228,10 @@ nav button .nic{position:relative;display:grid;place-items:center;height:32px;wi
 .empty.sm .ill{width:48px;height:48px;margin:0}
 .empty.sm .ill .ic{width:24px;height:24px}
 .empty.sm .ill::after,.empty.sm .ill .sp{display:none}
+/* ---------- v1.10.0: precios y total estimado ---------- */
+.total{font-weight:700;color:var(--pri-tx);margin:6px 0 2px}
+.total small{font-weight:500;color:var(--mut)}
+.shop .total{font-size:var(--fs-lg)}
 /* ---------- v1.8.0: modo «Estoy en el negocio» ---------- */
 .shop h3{font-size:var(--fs-xl)}
 .shop .sitem{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;border-top:1px solid var(--line);background:transparent;color:var(--ink);font:inherit;font-size:var(--fs-xl);font-weight:600;padding:14px 4px;min-height:60px}
@@ -315,10 +319,11 @@ textarea.plain{font-family:inherit;font-size:var(--fs-md);min-height:72px}
 <script>
 'use strict';
 /* ============ Constantes ============ */
-const VERSION = '1.9.1';
+const VERSION = '1.10.0';
 const SCHEMA = 3; // versión de la estructura de datos guardados (ver MIGRATIONS)
 /* Novedades: la primera es la versión actual. "hechas" = ítems del plan de 100 tildados hasta esa versión. */
 const NEWS = [
+  {v:'1.10.0', d:'2026-11-15', hechas:29, items:['Precios: en cada producto podés anotar cuánto costó el último pedido. Cada negocio muestra arriba el «Total estimado» de lo que hay en la lista (y cuántos productos tienen precio), también en el modo «Estoy en el negocio».','Al marcar algo como comprado, el precio queda en su historial. No hace falta cargarlos todos: el total suma los que tienen precio.']},
   {v:'1.9.1', d:'2026-11-14', hechas:28, items:['Se sacó el último resto de marrón (la sombra de la barra de abajo).']},
   {v:'1.9.0', d:'2026-11-14', hechas:28, items:['Portada nueva: el camión sin bandera, sobre blanco, como el ícono.','Colores nuevos sin marrón (azul marino) y letra más agradable (Poppins).','Teléfonos de Gonzalo, Dani y Daniela en ⚙ Ajustes: la lista del súper y las indicaciones para Daniela se mandan directo por WhatsApp.']},
   {v:'1.8.2', d:'2026-11-14', hechas:28, items:['Ícono más nítido: sin rastros de la bandera y con mejor definición.']},
@@ -445,6 +450,12 @@ const fnum = n => String(Math.round(n * 100) / 100).replace('.', ',');
 function qtyTxt(i){ const q = +i.qty; if(!(q > 0)) return ''; const u = UNITS[i.unit]; return u ? `${fnum(q)} ${q <= 1 ? u[0] : u[1]}` : `× ${fnum(q)}`; }
 function guessCat(name){ const n = norm(name); const hit = CAT_RX.find(([, rx]) => rx.test(n)); return hit ? hit[0] : 'otros'; }
 const catOf = i => CATS.some(c => c[0] === i.cat) ? i.cat : guessCat(i.name);
+const fmoney = n => '$' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+const priceOf = i => (+i.price > 0 ? +i.price : 0);
+function parsePrice(t){ t = String(t || '').replace(/[\s$]/g, ''); if(!t) return null; if(t.includes(',')) t = t.replace(/\./g, '').replace(',', '.'); else if(/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, ''); const n = parseFloat(t); return n > 0 ? Math.round(n * 100) / 100 : null; }
+/* Total estimado de una lista: suma los precios cargados; «con» = cuántos productos tienen precio. */
+function estTotal(l){ const c = l.filter(i => priceOf(i)); return {sum:c.reduce((a, i) => a + priceOf(i), 0), con:c.length, n:l.length}; }
+const totalTxt = t => t.con ? `Total estimado: ${fmoney(t.sum)}${t.con < t.n ? ` · ${t.con} de ${t.n} con precio` : ''}` : '';
 const histOf = i => Array.isArray(i.hist) ? i.hist : (i.last ? [{at:i.last, by:i.lastBy || null}] : []);
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
 const pad = n => String(n).padStart(2,'0');
@@ -735,7 +746,7 @@ function learned(i){
 }
 const isAuto = i => i.auto !== false;
 /* Registra la compra. Si el producto se ajusta solo y el promedio cambió, actualiza «every» y devuelve el aviso. */
-function buy(i){ const h = histOf(i); i.state = 'ok'; i.last = Date.now(); i.lastBy = me; const e = {at:i.last, by:me}; if(+i.qty > 0){ e.qty = +i.qty; e.unit = i.unit || ''; } i.hist = h.concat([e]).slice(-30);
+function buy(i){ const h = histOf(i); i.state = 'ok'; i.last = Date.now(); i.lastBy = me; const e = {at:i.last, by:me}; if(+i.qty > 0){ e.qty = +i.qty; e.unit = i.unit || ''; } if(priceOf(i)) e.price = priceOf(i); i.hist = h.concat([e]).slice(-30);
   const l = isAuto(i) && learned(i); if(l && l.days !== i.every){ const antes = i.every; i.every = l.days; return `${i.name}: ahora cada ${dias(l.days)} (antes ${antes})`; } return ''; }
 const dias = n => n === 1 ? '1 día' : n + ' días';
 function newItem(name, sid){ return {id:'i_'+uid(), name, store:S.stores[sid] ? sid : (S.stores.super ? 'super' : (sorted('stores')[0] || {}).id), every:7, last:null, state:'list', note:'', qty:null, unit:'', cat:guessCat(name), hist:[], auto:true}; }
@@ -905,7 +916,7 @@ const A = {
   filter(s){ storeFilter = s; render(); },
   shopMode(sid){ const st = S.stores[sid]; if(!st) return; const l = shopNeed(sid), tk = new Set(shopStruck(sid)), cats = new Set(l.map(catOf)).size > 1;
     $('#sheetbox').classList.add('shop');
-    A.open(`<div class="shop" data-sid="${sid}"><h3>${st.icon} ${esc(st.name)}</h3><div class="count" id="shopcount" aria-live="polite"></div>
+    A.open(`<div class="shop" data-sid="${sid}"><h3>${st.icon} ${esc(st.name)}</h3><div class="count" id="shopcount" aria-live="polite"></div>${totalTxt(estTotal(l)) ? `<div class="total" id="shoptotal">${esc(totalTxt(estTotal(l)))}</div>` : ''}
       ${byCat(l, i => `<button type="button" class="sitem${tk.has(i.id) ? ' struck' : ''}" data-id="${i.id}" aria-pressed="${tk.has(i.id)}" onclick="A.shopTap('${i.id}')"><span class="box" aria-hidden="true">${tk.has(i.id) ? '✔' : ''}</span><span>${iname(i)}</span></button>`, cats)}
       <div class="btns"><button class="pri" onclick="A.shopDone('${sid}')">✔ Terminé</button><button onclick="A.close()">Seguir después</button></div></div>`);
     A.shopCount(); },
@@ -944,11 +955,12 @@ const A = {
       <div><label class="f">Unidad</label><select id="f_unit"><option value="">sin unidad</option>${Object.keys(UNITS).map(k => `<option value="${k}" ${i.unit === k ? 'selected' : ''}>${UNITS[k][1]}</option>`).join('')}</select></div></div>
       <label class="f">Dónde se compra</label><select id="f_store">${sorted('stores').map(s => `<option value="${s.id}" ${s.id===i.store?'selected':''}>${s.icon} ${esc(s.name)}</option>`).join('')}</select>
       <label class="f">Categoría</label><select id="f_cat">${id ? '' : '<option value="">Que la elija la app según el nombre</option>'}${CATS.map(([k, e, l]) => `<option value="${k}" ${id && catOf(i) === k ? 'selected' : ''}>${e} ${l}</option>`).join('')}</select>
+      <label class="f">Precio del último pedido ($, para la cantidad indicada)</label><input type="text" inputmode="decimal" id="f_price" value="${priceOf(i) ? fnum(priceOf(i)) : ''}" placeholder="Ej: 1500">
       <label class="f">Cada cuántos días se repone (aprox.)</label><input type="number" id="f_every" min="1" value="${i.every}" oninput="$('#f_auto').checked = false">
       <label class="item"><input type="checkbox" id="f_auto" ${isAuto(i) ? 'checked' : ''}><div class="t"><div>Que se ajuste solo con las compras reales</div><div class="meta" id="f_learn">${lr ? `Según las últimas ${lr.n + 1} compras, lo reponen cada ${dias(lr.days)}.` : `Desde la tercera compra la app calcula el promedio${nh ? ` (${nh === 1 ? 'va 1' : 'van ' + nh})` : ''}.`}</div></div></label>
       ${lr && lr.days !== i.every ? `<div class="btns"><button id="f_uselearn" onclick="$('#f_every').value = ${lr.days}; this.hidden = true">Usar ${dias(lr.days)}</button></div>` : ''}
       <label class="f">Detalle (marca, variedad…)</label><input type="text" id="f_note" value="${esc(i.note || '')}">
-      ${id ? `<details class="histd"><summary>Historial de compras (${h.length})</summary>${h.length ? h.slice(0, 15).map(x => `<div class="log">${AV(x.by)}<div><b>${x.by ? esc(pm(x.by).n) : 'Sin dato de quién'}</b> · ${fdate(dk(new Date(x.at)))}${qtyTxt(x) ? ' · ' + esc(qtyTxt(x)) : ''} <span class="meta">· ${ago(x.at)}</span></div></div>`).join('') : '<p class="muted">Todavía no hay compras registradas. Cuando alguien lo tilde como comprado, queda anotado acá quién fue y cuándo.</p>'}</details>` : ''}
+      ${id ? `<details class="histd"><summary>Historial de compras (${h.length})</summary>${h.length ? h.slice(0, 15).map(x => `<div class="log">${AV(x.by)}<div><b>${x.by ? esc(pm(x.by).n) : 'Sin dato de quién'}</b> · ${fdate(dk(new Date(x.at)))}${qtyTxt(x) ? ' · ' + esc(qtyTxt(x)) : ''}${+x.price > 0 ? ' · ' + fmoney(+x.price) : ''} <span class="meta">· ${ago(x.at)}</span></div></div>`).join('') : '<p class="muted">Todavía no hay compras registradas. Cuando alguien lo tilde como comprado, queda anotado acá quién fue y cuándo.</p>'}</details>` : ''}
       <div class="btns"><button class="pri" onclick="A.saveItem('${i.id}')">Guardar</button>${id ? `<button onclick="A.delItem('${i.id}')">Borrar</button>` : ''}<button onclick="A.close()">Cancelar</button></div>`);
     A._draft = i;
   },
@@ -956,7 +968,7 @@ const A = {
     const i = S.items[id] || A._draft; i.name = $('#f_name').value.trim(); if(!i.name) return toast('Poné un nombre');
     i.store = $('#f_store').value; i.every = Math.max(1, Math.round(+$('#f_every').value) || 7); i.auto = $('#f_auto').checked; i.note = $('#f_note').value.trim();
     const q = parseFloat($('#f_qty').value.replace(',', '.')); i.qty = q > 0 ? Math.round(q * 100) / 100 : null; i.unit = i.qty ? $('#f_unit').value : '';
-    i.cat = $('#f_cat').value || guessCat(i.name);
+    i.cat = $('#f_cat').value || guessCat(i.name); i.price = parsePrice($('#f_price').value);
     A.close(); put('items', i, `editó ${i.name}`);
   },
   // Buscador y alta rápida
@@ -1292,7 +1304,8 @@ function vCompras(){
     const need = its.filter(needs), rest = its.filter(i => !needs(i)), cats = new Set(its.map(catOf)).size > 1;
     h += `<section class="card${pc('s:' + s.id)}"><div class="row"><h3>${s.icon} ${esc(s.name)}</h3>${PB(s.owner, `A.cycleStore('${s.id}')`)}</div><div class="sub">${esc(s.how)} · se encarga ${esc(M[s.owner].n)}</div>
       ${soonHtml(its)}
-      ${need.length ? byCat(need, i => `<div class="item">${chk(`<input type="checkbox" onchange="A.bought('${i.id}')" aria-label="Comprado: ${esc(i.name)}">`)}<div class="t" onclick="A.itemForm('${i.id}')" ${KB} aria-label="Editar ${esc(i.name)}"><div>${iname(i)}</div><div class="meta">${i.state === 'list' ? `anotado por ${esc(M[i.by]?.n || '—')}` : `<span class="tag w">toca reponer</span> última ${ago(i.last)}`}${i.note ? ' · ' + esc(i.note) : ''}</div></div><button class="b sm" onclick="A.unlist('${i.id}')" aria-label="Sacar ${esc(i.name)} de la lista">✕</button></div>`, cats) : empty('compras', 'Nada para comprar', 'La despensa está al día. Si algo se acaba, tocá «Se acaba».', '', true)}
+      ${totalTxt(estTotal(need)) ? `<div class="total" role="status">${esc(totalTxt(estTotal(need)))}</div>` : ''}
+      ${need.length ? byCat(need, i => `<div class="item">${chk(`<input type="checkbox" onchange="A.bought('${i.id}')" aria-label="Comprado: ${esc(i.name)}">`)}<div class="t" onclick="A.itemForm('${i.id}')" ${KB} aria-label="Editar ${esc(i.name)}"><div>${iname(i)}</div><div class="meta">${i.state === 'list' ? `anotado por ${esc(M[i.by]?.n || '—')}` : `<span class="tag w">toca reponer</span> última ${ago(i.last)}`}${i.note ? ' · ' + esc(i.note) : ''}${priceOf(i) ? ' · ' + fmoney(priceOf(i)) : ''}</div></div><button class="b sm" onclick="A.unlist('${i.id}')" aria-label="Sacar ${esc(i.name)} de la lista">✕</button></div>`, cats) : empty('compras', 'Nada para comprar', 'La despensa está al día. Si algo se acaba, tocá «Se acaba».', '', true)}
       <details ${need.length ? "" : "open"}><summary>Habituales (${rest.length})</summary>${byCat(rest, i => `<div class="item"><div class="t" onclick="A.itemForm('${i.id}')" ${KB} aria-label="Editar ${esc(i.name)}"><div>${iname(i)}</div><div class="meta">${soonLeft(i) ? `<span class="tag w">${soonTxt(soonLeft(i))}</span> ` : ''}cada ${dias(i.every)}${isAuto(i) && (learned(i) || {}).days === i.every ? ' <span class="tag">aprendido</span>' : ''} · última ${ago(i.last)}${i.lastBy ? ' (' + esc(M[i.lastBy]?.n) + ')' : ''}</div></div><button class="b sm" onclick="A.need('${i.id}')" aria-label="Se acaba ${esc(i.name)}">Se acaba</button></div>`, cats)}</details>
       <div class="btns">${need.length ? `<button class="pri" onclick="A.shopMode('${s.id}')">🛒 Estoy en el negocio</button>` : ''}<button onclick="A.share('${s.id}')">📲 Mandar lista</button>${need.length > 1 ? `<button onclick="A.boughtAll('${s.id}')">✔ Compré todo</button>` : ''}<button onclick="A.allList('${s.id}')">Pedido habitual</button><button onclick="A.itemForm(null,'${s.id}')">+ Producto</button></div></section>`;
   });

@@ -1,5 +1,9 @@
 # Novedades de Carga Mental
 
+## v1.10.0 — 2026-11-15
+- Precios y total estimado (ítem 29): cada producto tiene «Precio del último pedido» (para la cantidad indicada; acepta 1500, 1.500 o 1.234,50). En cada negocio, arriba de la lista, aparece «Total estimado: $X» con la suma de lo pendiente y, si faltan precios, «N de M con precio»; el mismo total se ve en el modo «Estoy en el negocio». Al marcar algo como comprado, el precio queda en su historial. En la lista, cada producto muestra su precio.
+- Estructura de datos: sin cambios (SCHEMA sigue en 3, sin migración): `price` es un campo opcional que, si falta, se lee como «sin precio». Los datos guardados no se tocan.
+- Pruebas: datos de v1.9.1 intactos al abrir, lectura de precios (con puntos y coma) y formato de pesos, total parcial y completo, total en modo negocio, precio en el historial y su deshacer, borrar el precio, y 390 px en claro y oscuro.
 ## v1.9.1 — 2026-11-14
 - Sombra de la barra inferior sin tono marrón.
 
