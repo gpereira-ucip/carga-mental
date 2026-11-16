@@ -246,6 +246,7 @@ nav button .nic{position:relative;display:grid;place-items:center;height:32px;wi
 .shop .btns button{min-height:52px;font-size:var(--fs-lg)}
 /* ---------- v1.4.0: accesibilidad, deshacer, botón + y anillos de progreso ---------- */
 button.b,.btns button{min-height:44px;min-width:44px}
+.btns a.btn{display:inline-flex;align-items:center;border:1px solid var(--line2);background:var(--card);border-radius:var(--r2);padding:8px 12px;font-size:var(--fs-sm);font-weight:500;color:var(--ink);min-height:44px;text-decoration:none}
 button.sm{min-height:44px;min-width:44px;padding:5px 12px}
 button.pp,.pp.v,#who{min-height:44px}
 .chips button,.seg button,details summary{min-height:44px}
@@ -320,10 +321,11 @@ textarea.plain{font-family:inherit;font-size:var(--fs-md);min-height:72px}
 <script>
 'use strict';
 /* ============ Constantes ============ */
-const VERSION = '1.12.0';
+const VERSION = '1.12.1';
 const SCHEMA = 4; // versión de la estructura de datos guardados (ver MIGRATIONS)
 /* Novedades: la primera es la versión actual. "hechas" = ítems del plan de 100 tildados hasta esa versión. */
 const NEWS = [
+  {v:'1.12.1', d:'2026-11-16', hechas:32, items:['Links a la web de cada negocio: en Compras, cada negocio tiene un botón «🌐 Abrir web» que lo abre en el navegador. MercadoLibre ya viene con su dirección; en Berardi y el súper tocá «🔗 Poner web» y pegá el enlace de tu pedido (se guarda y se comparte con todos).']},
   {v:'1.12.0', d:'2026-11-17', hechas:31, items:['Plantillas de pedido: en cada negocio hay un botón «📋 Plantillas» con pedidos armados de antemano (Súper semanal, MercadoLibre mensual, Berardi quincenal). Con «Armar pedido» pasás todos sus productos a la lista de una vez, con «Deshacer».','Podés editarlas, crear las tuyas o guardar la lista de ese momento como plantilla nueva. Tus datos quedan como estaban: solo se suman las plantillas.']},
   {v:'1.11.0', d:'2026-11-16', hechas:30, items:['Gasto del mes: al final de Compras hay un resumen de cuánto se gastó en cada negocio, con los precios que quedaron en el historial al marcar como comprado. Con las flechas ‹ › mirás otros meses.','Solo suma las compras con precio cargado; si alguna no lo tenía, el resumen te avisa cuántas quedaron afuera.']},
   {v:'1.10.0', d:'2026-11-15', hechas:29, items:['Precios: en cada producto podés anotar cuánto costó el último pedido. Cada negocio muestra arriba el «Total estimado» de lo que hay en la lista (y cuántos productos tienen precio), también en el modo «Estoy en el negocio».','Al marcar algo como comprado, el precio queda en su historial. No hace falta cargarlos todos: el total suma los que tienen precio.']},
@@ -788,6 +790,9 @@ function buy(i){ const h = histOf(i); i.state = 'ok'; i.last = Date.now(); i.las
   const l = isAuto(i) && learned(i); if(l && l.days !== i.every){ const antes = i.every; i.every = l.days; return `${i.name}: ahora cada ${dias(l.days)} (antes ${antes})`; } return ''; }
 const dias = n => n === 1 ? '1 día' : n + ' días';
 const tplItems = t => (t.items || []).map(k => S.items[k]).filter(Boolean);
+/* Link a la web del negocio (ítem 32): s.url opcional; MercadoLibre trae el suyo si nunca se tocó. */
+const storeUrl = s => typeof s.url === 'string' ? s.url : (s.id === 'ml' ? 'https://www.mercadolibre.com.ar/' : '');
+function parseUrl(v){ v = String(v || '').trim(); if(!v) return ''; if(!/^[a-z][a-z0-9+.-]*:/i.test(v)) v = 'https://' + v; try { const u = new URL(v); return /^https?:$/.test(u.protocol) && u.hostname.includes('.') ? u.href : null; } catch(e) { return null; } }
 function newItem(name, sid){ return {id:'i_'+uid(), name, store:S.stores[sid] ? sid : (S.stores.super ? 'super' : (sorted('stores')[0] || {}).id), every:7, last:null, state:'list', note:'', qty:null, unit:'', cat:guessCat(name), hist:[], auto:true}; }
 /* Modo «Estoy en el negocio» (ítem 28): lo tachado se guarda aparte (cm_shop) hasta tocar «Terminé»; no toca los datos de la familia. */
 function shopGet(){ try { const o = JSON.parse(localStorage.getItem(LS.shop) || '{}'); return o && typeof o === 'object' ? o : {}; } catch(e) { return {}; } }
@@ -1004,6 +1009,13 @@ const A = {
       <div class="btns"><button class="pri" onclick="A.saveItem('${i.id}')">Guardar</button>${id ? `<button onclick="A.delItem('${i.id}')">Borrar</button>` : ''}<button onclick="A.close()">Cancelar</button></div>`);
     A._draft = i;
   },
+  storeLink(sid){ const s = S.stores[sid]; if(!s) return;
+    A.open(`<h3>🌐 Web de ${esc(s.name)}</h3><p class="muted">Pegá la dirección de la página donde hacen el pedido. Queda guardada para todos.</p>
+      <label class="f">Enlace</label><input type="url" id="su_url" inputmode="url" autocomplete="off" placeholder="www.ejemplo.com.ar" value="${esc(storeUrl(s))}">
+      <div class="btns"><button class="pri" onclick="A.saveLink('${sid}')">Guardar</button>${storeUrl(s) ? `<button onclick="A.saveLink('${sid}', true)">Quitar enlace</button>` : ''}<button onclick="A.close()">Cancelar</button></div>`); },
+  saveLink(sid, quitar){ const s = S.stores[sid]; if(!s) return; const u = quitar ? '' : parseUrl($('#su_url').value);
+    if(u === null) return toast('Ese enlace no parece una página web');
+    s.url = u; A.close(); put('stores', s, u ? `cargó la web de ${s.name}` : `sacó el enlace de ${s.name}`); toast(u ? 'Enlace guardado ✔' : 'Enlace quitado'); },
   // Plantillas de pedido (ítem 31)
   tpls(sid){
     const st = S.stores[sid]; if(!st) return;
@@ -1378,7 +1390,7 @@ function vCompras(){
       ${totalTxt(estTotal(need)) ? `<div class="total" role="status">${esc(totalTxt(estTotal(need)))}</div>` : ''}
       ${need.length ? byCat(need, i => `<div class="item">${chk(`<input type="checkbox" onchange="A.bought('${i.id}')" aria-label="Comprado: ${esc(i.name)}">`)}<div class="t" onclick="A.itemForm('${i.id}')" ${KB} aria-label="Editar ${esc(i.name)}"><div>${iname(i)}</div><div class="meta">${i.state === 'list' ? `anotado por ${esc(M[i.by]?.n || '—')}` : `<span class="tag w">toca reponer</span> última ${ago(i.last)}`}${i.note ? ' · ' + esc(i.note) : ''}${priceOf(i) ? ' · ' + fmoney(priceOf(i)) : ''}</div></div><button class="b sm" onclick="A.unlist('${i.id}')" aria-label="Sacar ${esc(i.name)} de la lista">✕</button></div>`, cats) : empty('compras', 'Nada para comprar', 'La despensa está al día. Si algo se acaba, tocá «Se acaba».', '', true)}
       <details ${need.length ? "" : "open"}><summary>Habituales (${rest.length})</summary>${byCat(rest, i => `<div class="item"><div class="t" onclick="A.itemForm('${i.id}')" ${KB} aria-label="Editar ${esc(i.name)}"><div>${iname(i)}</div><div class="meta">${soonLeft(i) ? `<span class="tag w">${soonTxt(soonLeft(i))}</span> ` : ''}cada ${dias(i.every)}${isAuto(i) && (learned(i) || {}).days === i.every ? ' <span class="tag">aprendido</span>' : ''} · última ${ago(i.last)}${i.lastBy ? ' (' + esc(M[i.lastBy]?.n) + ')' : ''}</div></div><button class="b sm" onclick="A.need('${i.id}')" aria-label="Se acaba ${esc(i.name)}">Se acaba</button></div>`, cats)}</details>
-      <div class="btns">${need.length ? `<button class="pri" onclick="A.shopMode('${s.id}')">🛒 Estoy en el negocio</button>` : ''}<button onclick="A.share('${s.id}')">📲 Mandar lista</button>${need.length > 1 ? `<button onclick="A.boughtAll('${s.id}')">✔ Compré todo</button>` : ''}<button onclick="A.allList('${s.id}')">Pedido habitual</button><button onclick="A.tpls('${s.id}')">📋 Plantillas</button><button onclick="A.itemForm(null,'${s.id}')">+ Producto</button></div></section>`;
+      <div class="btns">${need.length ? `<button class="pri" onclick="A.shopMode('${s.id}')">🛒 Estoy en el negocio</button>` : ''}<button onclick="A.share('${s.id}')">📲 Mandar lista</button>${need.length > 1 ? `<button onclick="A.boughtAll('${s.id}')">✔ Compré todo</button>` : ''}<button onclick="A.allList('${s.id}')">Pedido habitual</button><button onclick="A.tpls('${s.id}')">📋 Plantillas</button>${storeUrl(s) ? `<a class="btn" href="${esc(storeUrl(s))}" target="_blank" rel="noopener noreferrer">🌐 Abrir web</a><button onclick="A.storeLink('${s.id}')" aria-label="Cambiar el enlace de ${esc(s.name)}">✎ Enlace</button>` : `<button onclick="A.storeLink('${s.id}')">🔗 Poner web</button>`}<button onclick="A.itemForm(null,'${s.id}')">+ Producto</button></div></section>`;
   });
   if(storeFilter === 'todos') h += spendHtml();
   h += `<p class="muted">Tocá un producto para editar la cantidad, la categoría o cada cuánto se repone, y para ver su historial. Cuando pasa ese tiempo desde la última compra, vuelve solo a la lista. Desde la tercera compra, la app ajusta sola ese tiempo con el promedio real.</p></div>`;

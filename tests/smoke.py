@@ -17,6 +17,7 @@ Levanta un servidor local, abre la app en un celular simulado (390x844) y recorr
   10. v1.8.0: modo «Estoy en el negocio» (tachado, persistencia, «Terminé» y deshacer).
   11. v1.10.0: precio por producto, total estimado de cada lista (sin migración) y precio en el historial.
   12. v1.11.0: gasto mensual por negocio (suma del historial, meses, compras sin precio).
+  14. v1.12.1: links a la web de cada negocio (sin migración).
   13. v1.12.0: migración al esquema 4 (datos de v1.11.0) y plantillas de pedido (armar, editar, crear, borrar, deshacer).
 Falla si hay errores de JavaScript o de consola, o si la página se ensancha más de 390 px.
 Guarda capturas en /tmp/cm-*.png para revisarlas.
@@ -549,7 +550,7 @@ with sync_playwright() as p:
         check(it['i_agua']['cat'] == 'bebidas' and it['i_mio']['cat'] == 'frescos' and it['i_huerfano']['cat'] == 'almacen', f"v1.5: categorías mal asignadas {[x['cat'] for x in it.values()]}")
         check(all(x['qty'] is None and x['unit'] == '' for x in it.values()), 'v1.5: cantidad/unidad iniciales')
         check(it['i_mio']['hist'] == [{'at': 1762000000000, 'by': None}] and it['i_agua']['hist'] == [], f"v1.5: historial inicial {it['i_mio']['hist']}")
-        check(pg.locator('#sheet >> text=31/100').count() > 0, 'v1.5: Novedades no muestra 31/100')
+        check(pg.locator('#sheet >> text=32/100').count() > 0, 'v1.5: Novedades no muestra 32/100')
         pg.screenshot(path=f'/tmp/cm-v15-novedades-{scheme}.png')
         pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
         pg.reload(); pg.wait_for_timeout(1800)
@@ -688,7 +689,7 @@ with sync_playwright() as p:
         for x in d0['items'].values(): x.pop('auto', None)
         check(d0 == pre, 'v1.6: la migración cambió o perdió datos de v1.5.0')
         check(json.loads(pg.evaluate('localStorage.getItem("cm_backup_v2")') or 'null') == pre, 'v1.6: no quedó la copia cm_backup_v2 idéntica')
-        check(pg.locator('#sheet >> text=31/100').count() > 0, 'v1.6: Novedades no se abrió con 31/100')
+        check(pg.locator('#sheet >> text=32/100').count() > 0, 'v1.6: Novedades no se abrió con 32/100')
         pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
         # Cálculo del promedio
         calc = pg.evaluate("""() => { const D = 86400000, t = 1e12, h = a => ({hist: a.map(n => ({at: t + n * D}))});
@@ -759,7 +760,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---------- 10. v1.7.0: aviso anticipado («se acaba en 2 días») ----------
-    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.12.0');"
+    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.12.1');"
               " if(!localStorage.getItem('cm_data')){ const d = %s; d._v = 4; d.tpls = {}; Object.values(d.items).forEach(i => i.auto = true);"
               " localStorage.setItem('cm_pre', JSON.stringify(d)); localStorage.setItem('cm_data', JSON.stringify(d)); }") % json.dumps(V15)
     for scheme in ['light', 'dark']:
@@ -895,7 +896,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---- v1.12.0: plantillas de pedido (migración al esquema 4) ----
-    init18 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.12.0');"
+    init18 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.12.1');"
               " if(!localStorage.getItem('cm_data')){ const d = %s; d._v = 3; Object.values(d.items).forEach(i => i.auto = true);"
               " localStorage.setItem('cm_pre', JSON.stringify(d)); localStorage.setItem('cm_data', JSON.stringify(d)); }") % json.dumps(V15)
     for scheme in ['light', 'dark']:
@@ -943,6 +944,33 @@ with sync_playwright() as p:
         check('tp_ml' not in S(pg)['tpls'], 'v1.12: reapareció una plantilla borrada')
         # usuario nuevo: trae las de fábrica
         check(pg.evaluate("Object.keys(seed().tpls).length") >= 3, 'v1.12: seed sin plantillas')
+        ctx.close()
+
+    # ---- v1.12.1: links a la web de cada negocio ----
+    for scheme in ['light', 'dark']:
+        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init17)
+        pg = ctx.new_page()
+        pg.on('pageerror', lambda e: errs.append(f'[v1.12.1] JS: {e}'))
+        pg.on('console', lambda m: errs.append(f'[v1.12.1] consola: {m.text}') if m.type == 'error' else None)
+        pg.goto(URL); pg.wait_for_timeout(1500)
+        pre = json.loads(pg.evaluate('localStorage.getItem("cm_pre")')); check(S(pg) == pre, 'v1.12.1: los datos cambiaron al abrir')
+        r = pg.evaluate("['www.ejemplo.com.ar', 'https://a.com/x?y=1', 'javascript:alert(1)', 'hola', '', 'ftp://a.com'].map(parseUrl)")
+        check(r == ['https://www.ejemplo.com.ar/', 'https://a.com/x?y=1', None, None, '', None], f'v1.12.1: parseUrl {r}')
+        sid = next((k for k in pre['stores'] if k != 'ml'), None)
+        pg.evaluate(f"A.go('compras'); storeFilter = '{sid}'; render()"); pg.wait_for_timeout(300)
+        check(pg.locator('main a:has-text("Abrir web")').count() == 0 and pg.locator('main button:has-text("Poner web")').count() == 1, 'v1.12.1: negocio sin web')
+        pg.locator('main button:has-text("Poner web")').click(); pg.wait_for_timeout(300)
+        pg.fill('#su_url', 'hola'); pg.locator('#sheet button:has-text("Guardar")').click(); pg.wait_for_timeout(200)
+        check('no parece una página web' in pg.locator('#toast').inner_text() and not S(pg)['stores'][sid].get('url'), 'v1.12.1: aceptó un enlace inválido')
+        pg.fill('#su_url', 'www.ejemplo.com.ar'); pg.locator('#sheet button:has-text("Guardar")').click(); pg.wait_for_timeout(300)
+        check(S(pg)['stores'][sid]['url'] == 'https://www.ejemplo.com.ar/', 'v1.12.1: no guardó el enlace')
+        a = pg.locator('main a:has-text("Abrir web")'); check(a.count() == 1 and a.get_attribute('href') == 'https://www.ejemplo.com.ar/' and a.get_attribute('target') == '_blank' and 'noopener' in a.get_attribute('rel'), 'v1.12.1: el link no abre en otra pestaña')
+        check(a.bounding_box()['height'] >= 44, 'v1.12.1: link menor a 44 px')
+        pg.screenshot(path=f'/tmp/cm-v1121-web-{scheme}.png', full_page=True); width_ok(pg, 'v1.12.1 web')
+        pg.locator('main button:has-text("Enlace")').click(); pg.wait_for_timeout(300)
+        pg.locator('#sheet button:has-text("Quitar enlace")').click(); pg.wait_for_timeout(300)
+        check(S(pg)['stores'][sid]['url'] == '' and pg.locator('main button:has-text("Poner web")').count() == 1, 'v1.12.1: no quitó el enlace')
+        check('mercadolibre.com.ar' in pg.evaluate("storeUrl({id:'ml'})") and pg.evaluate("storeUrl({id:'ml', url:''})") == '' and pg.evaluate("storeUrl({id:'x'})") == '', 'v1.12.1: enlace de MercadoLibre')
         ctx.close()
 
     b.close()

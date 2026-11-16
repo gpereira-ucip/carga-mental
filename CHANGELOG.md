@@ -1,5 +1,10 @@
 # Novedades de Carga Mental
 
+## v1.12.1 — 2026-11-16
+- Links a la web de cada negocio (ítem 32): en Compras, cada negocio muestra «🌐 Abrir web» (abre en otra pestaña) y «✎ Enlace» para cambiarlo o quitarlo; si no tiene, «🔗 Poner web». MercadoLibre trae por defecto https://www.mercadolibre.com.ar/. Pendiente de Gonzalo: cargar el enlace de Berardi y del súper desde la app (no se inventaron direcciones). Solo se aceptan enlaces http/https; se guarda en el negocio y se sincroniza.
+- Estructura de datos: sin cambios (SCHEMA sigue en 4, sin migración): `url` es un campo opcional del negocio.
+- Pruebas: datos intactos al abrir, validación de enlaces (rechaza javascript: y texto suelto), guardar, link con rel noopener y ≥ 44 px, quitar, valor por defecto de MercadoLibre y 390 px en claro y oscuro. Paleta azul marino y Poppins sin cambios.
+
 ## v1.12.0 — 2026-11-17
 - Plantillas de pedido (ítem 31): cada negocio tiene el botón «📋 Plantillas» con pedidos armados de antemano. De fábrica: «Súper semanal» (los productos del súper que se reponen cada 7 días o menos), «MercadoLibre mensual» y «Berardi quincenal» (todos los productos de cada uno). «Armar pedido» pasa a la lista los productos de la plantilla que todavía no estaban, avisa cuántos anotó y tiene «Deshacer». Se pueden editar (nombre y productos), borrar (con «Deshacer»), crear nuevas y guardar la lista actual de un negocio como plantilla.
 - Estructura de datos: SCHEMA pasa a 4. La migración 4 solo agrega la colección `tpls` (plantillas de fábrica armadas con los productos que ya existen); no toca productos ni negocios, y antes guarda la copia `cm_backup_v3`. Una plantilla borrada no reaparece al sincronizar. Se sincroniza con la nube como las demás colecciones.
