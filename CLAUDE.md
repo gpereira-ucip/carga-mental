@@ -26,3 +26,6 @@ Se publica en https://gpereira-ucip.github.io/carga-mental/ (repo propio gpereir
 
 ## Publicación (14/11/2026)
 - GitHub Pages se publica desde la rama gh-pages. `.github/workflows/publicar.yml` copia main a gh-pages en cada push: no lo borres ni toques gh-pages a mano.
+
+## Estética (desde v1.9.0, 14/11/2026, pedido de Gonzalo)
+- Paleta azul marino (#24476b), sin marrón ni crema. Letra Poppins (carpeta fonts/). Ícono y portada: el camión con el cerebro sobre blanco, sin bandera. Esto manda sobre cualquier instrucción vieja que hable de «arcilla, crema y marrón».
