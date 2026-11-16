@@ -16,6 +16,7 @@ Levanta un servidor local, abre la app en un celular simulado (390x844) y recorr
      aviso y deshacer, opción por producto y «Compré todo».
   10. v1.8.0: modo «Estoy en el negocio» (tachado, persistencia, «Terminé» y deshacer).
   11. v1.10.0: precio por producto, total estimado de cada lista (sin migración) y precio en el historial.
+  12. v1.11.0: gasto mensual por negocio (suma del historial, meses, compras sin precio).
 Falla si hay errores de JavaScript o de consola, o si la página se ensancha más de 390 px.
 Guarda capturas en /tmp/cm-*.png para revisarlas.
 """
@@ -547,7 +548,7 @@ with sync_playwright() as p:
         check(it['i_agua']['cat'] == 'bebidas' and it['i_mio']['cat'] == 'frescos' and it['i_huerfano']['cat'] == 'almacen', f"v1.5: categorías mal asignadas {[x['cat'] for x in it.values()]}")
         check(all(x['qty'] is None and x['unit'] == '' for x in it.values()), 'v1.5: cantidad/unidad iniciales')
         check(it['i_mio']['hist'] == [{'at': 1762000000000, 'by': None}] and it['i_agua']['hist'] == [], f"v1.5: historial inicial {it['i_mio']['hist']}")
-        check(pg.locator('#sheet >> text=29/100').count() > 0, 'v1.5: Novedades no muestra 29/100')
+        check(pg.locator('#sheet >> text=30/100').count() > 0, 'v1.5: Novedades no muestra 30/100')
         pg.screenshot(path=f'/tmp/cm-v15-novedades-{scheme}.png')
         pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
         pg.reload(); pg.wait_for_timeout(1800)
@@ -686,7 +687,7 @@ with sync_playwright() as p:
         for x in d0['items'].values(): x.pop('auto', None)
         check(d0 == pre, 'v1.6: la migración cambió o perdió datos de v1.5.0')
         check(json.loads(pg.evaluate('localStorage.getItem("cm_backup_v2")') or 'null') == pre, 'v1.6: no quedó la copia cm_backup_v2 idéntica')
-        check(pg.locator('#sheet >> text=29/100').count() > 0, 'v1.6: Novedades no se abrió con 29/100')
+        check(pg.locator('#sheet >> text=30/100').count() > 0, 'v1.6: Novedades no se abrió con 30/100')
         pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
         # Cálculo del promedio
         calc = pg.evaluate("""() => { const D = 86400000, t = 1e12, h = a => ({hist: a.map(n => ({at: t + n * D}))});
@@ -757,7 +758,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---------- 10. v1.7.0: aviso anticipado («se acaba en 2 días») ----------
-    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.10.0');"
+    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.11.0');"
               " if(!localStorage.getItem('cm_data')){ const d = %s; d._v = 3; Object.values(d.items).forEach(i => i.auto = true);"
               " localStorage.setItem('cm_pre', JSON.stringify(d)); localStorage.setItem('cm_data', JSON.stringify(d)); }") % json.dumps(V15)
     for scheme in ['light', 'dark']:
@@ -860,6 +861,36 @@ with sync_playwright() as p:
         pg.evaluate(f"A.itemForm('{ids[0]}')"); pg.wait_for_timeout(300)
         pg.fill('#f_price', ''); pg.locator('#sheet button:has-text("Guardar")').click(); pg.wait_for_timeout(300)
         check(S(pg)['items'][ids[0]]['price'] is None, 'v1.10: no se pudo borrar el precio')
+        ctx.close()
+
+    # ---- v1.11.0: gasto mensual por negocio ----
+    for scheme in ['light', 'dark']:
+        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init17)
+        pg = ctx.new_page()
+        pg.on('pageerror', lambda e: errs.append(f'[v1.11] JS: {e}'))
+        pg.on('console', lambda m: errs.append(f'[v1.11] consola: {m.text}') if m.type == 'error' else None)
+        pg.goto(URL); pg.wait_for_timeout(1500)
+        pre = json.loads(pg.evaluate('localStorage.getItem("cm_pre")')); check(S(pg) == pre, 'v1.11: los datos cambiaron al abrir')
+        pg.evaluate("""(() => { const n = new Date(), ts = (dm, day) => new Date(n.getFullYear(), n.getMonth() - dm, day, 12).getTime();
+          const its = Object.values(S.items); its.forEach(i => { i.hist = []; });
+          const a = its.find(i => i.store === 'super'), c = its.find(i => i.store !== 'super');
+          a.hist = [{at:ts(0,1), by:'dani', price:1000}, {at:ts(0,1), by:'dani', price:500}, {at:ts(0,1), by:'dani'}, {at:ts(1,15), by:'dani', price:300}];
+          c.hist = [{at:ts(0,1), by:'dani', price:250}];
+          window.__a = a.store; window.__c = c.store; save(); A.go('compras'); storeFilter = 'todos'; spendOff = 0; render(); })()""")
+        pg.wait_for_timeout(300)
+        r = pg.evaluate("(() => { const n = new Date(); const x = spendOf(n.getFullYear(), n.getMonth()); const p = spendOf(n.getFullYear(), n.getMonth() - 1); const o = spendOf(n.getFullYear() - 5, 0); return [x.by[__a], x.by[__c], x.t.sum, x.t.sin, x.t.n, p.t.sum, o.t.n]; })()")
+        check(r == [1500, 250, 1750, 1, 4, 300, 0], f'v1.11: spendOf {r}')
+        t = pg.locator('#gasto').inner_text()
+        check('Total: $1.750' in t and '$1.500' in t and '$250' in t and '1 de 4 compras' in t, f'v1.11: tarjeta «{t}»')
+        pg.locator('#gasto').scroll_into_view_if_needed(); pg.screenshot(path=f'/tmp/cm-v111-gasto-{scheme}.png'); width_ok(pg, 'v1.11 gasto')
+        pg.locator('#gasto button[aria-label="Mes anterior"]').click(); pg.wait_for_timeout(300)
+        check('Total: $300' in pg.locator('#gasto').inner_text(), 'v1.11: mes anterior')
+        check(pg.locator('#gasto button[aria-label="Mes siguiente"]').is_enabled(), 'v1.11: flecha siguiente deshabilitada')
+        pg.locator('#gasto button[aria-label="Mes anterior"]').click(); pg.wait_for_timeout(300)
+        check('ninguna con precio' not in pg.locator('#gasto').inner_text() and 'Todavía no hay compras' in pg.locator('#gasto').inner_text(), 'v1.11: mes vacío')
+        pg.evaluate("A.filter('" + "' + __c + '" + "')") if False else None
+        pg.evaluate("A.filter(__c)"); pg.wait_for_timeout(300)
+        check(pg.locator('#gasto').count() == 0, 'v1.11: el gasto aparece filtrando un negocio')
         ctx.close()
 
     b.close()

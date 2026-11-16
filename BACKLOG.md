@@ -38,7 +38,7 @@ Las marcadas 🔑 necesitan algo de Gonzalo (una cuenta, una clave, un dato). En
 - [x] 27. Aviso anticipado: "se acaba en 2 días". — ✔ 2026-11-13 (v1.7.0)
 - [x] 28. Modo "estoy en el negocio": letra grande, solo pendientes, tachado al tocar. — ✔ 2026-11-14 (v1.8.0)
 - [x] 29. Precio del último pedido y total estimado de cada lista. — ✔ 2026-11-15 (v1.10.0)
-- [ ] 30. Resumen de gasto mensual por negocio.
+- [x] 30. Resumen de gasto mensual por negocio. — ✔ 2026-11-16 (v1.11.0)
 - [ ] 31. Plantillas de pedido (súper semanal, MercadoLibre mensual, Berardi quincenal).
 - [ ] 32. Links directos a la web de Berardi, a MercadoLibre (yerba) y al súper.
 - [ ] 33. Día fijo de pedido por negocio con recordatorio (ej.: súper los domingos).

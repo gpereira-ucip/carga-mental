@@ -1,5 +1,10 @@
 # Novedades de Carga Mental
 
+## v1.11.0 — 2026-11-16
+- Gasto mensual por negocio (ítem 30): al final de Compras (con el filtro «Todos») aparece «Gasto de <mes>» con el total y lo gastado en cada negocio, con barras proporcionales y de mayor a menor. Suma los precios guardados en el historial de compras (los que quedan al marcar algo como comprado con precio cargado). Las flechas ‹ › cambian de mes; si hubo compras sin precio, avisa cuántas no se suman.
+- Estructura de datos: sin cambios (SCHEMA sigue en 3, sin migración); solo lee el historial existente.
+- Pruebas: datos de v1.10.0 intactos, suma por negocio y mes (mes anterior, compras sin precio, otro año), tarjeta, navegación de meses y 390 px en claro y oscuro.
+
 ## v1.10.0 — 2026-11-15
 - Precios y total estimado (ítem 29): cada producto tiene «Precio del último pedido» (para la cantidad indicada; acepta 1500, 1.500 o 1.234,50). En cada negocio, arriba de la lista, aparece «Total estimado: $X» con la suma de lo pendiente y, si faltan precios, «N de M con precio»; el mismo total se ve en el modo «Estoy en el negocio». Al marcar algo como comprado, el precio queda en su historial. En la lista, cada producto muestra su precio.
 - Estructura de datos: sin cambios (SCHEMA sigue en 3, sin migración): `price` es un campo opcional que, si falta, se lee como «sin precio». Los datos guardados no se tocan.

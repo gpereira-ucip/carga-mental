@@ -229,6 +229,7 @@ nav button .nic{position:relative;display:grid;place-items:center;height:32px;wi
 .empty.sm .ill .ic{width:24px;height:24px}
 .empty.sm .ill::after,.empty.sm .ill .sp{display:none}
 /* ---------- v1.10.0: precios y total estimado ---------- */
+.spend .bar{height:8px;border-radius:99px;background:var(--pri-tx);opacity:.35;margin:4px 0 2px}.spend .nav{display:flex;align-items:center;justify-content:space-between;gap:8px}.spend .nav button{min-width:44px;min-height:44px}.spend .srow{margin:8px 0}.spend .srow>div:first-child{display:flex;justify-content:space-between;gap:8px}
 .total{font-weight:700;color:var(--pri-tx);margin:6px 0 2px}
 .total small{font-weight:500;color:var(--mut)}
 .shop .total{font-size:var(--fs-lg)}
@@ -319,10 +320,11 @@ textarea.plain{font-family:inherit;font-size:var(--fs-md);min-height:72px}
 <script>
 'use strict';
 /* ============ Constantes ============ */
-const VERSION = '1.10.0';
+const VERSION = '1.11.0';
 const SCHEMA = 3; // versión de la estructura de datos guardados (ver MIGRATIONS)
 /* Novedades: la primera es la versión actual. "hechas" = ítems del plan de 100 tildados hasta esa versión. */
 const NEWS = [
+  {v:'1.11.0', d:'2026-11-16', hechas:30, items:['Gasto del mes: al final de Compras hay un resumen de cuánto se gastó en cada negocio, con los precios que quedaron en el historial al marcar como comprado. Con las flechas ‹ › mirás otros meses.','Solo suma las compras con precio cargado; si alguna no lo tenía, el resumen te avisa cuántas quedaron afuera.']},
   {v:'1.10.0', d:'2026-11-15', hechas:29, items:['Precios: en cada producto podés anotar cuánto costó el último pedido. Cada negocio muestra arriba el «Total estimado» de lo que hay en la lista (y cuántos productos tienen precio), también en el modo «Estoy en el negocio».','Al marcar algo como comprado, el precio queda en su historial. No hace falta cargarlos todos: el total suma los que tienen precio.']},
   {v:'1.9.1', d:'2026-11-14', hechas:28, items:['Se sacó el último resto de marrón (la sombra de la barra de abajo).']},
   {v:'1.9.0', d:'2026-11-14', hechas:28, items:['Portada nueva: el camión sin bandera, sobre blanco, como el ícono.','Colores nuevos sin marrón (azul marino) y letra más agradable (Poppins).','Teléfonos de Gonzalo, Dani y Daniela en ⚙ Ajustes: la lista del súper y las indicaciones para Daniela se mandan directo por WhatsApp.']},
@@ -634,6 +636,25 @@ if(migrate(S) || fresh) try { localStorage.setItem(LS.data, JSON.stringify(S)); 
 let me = localStorage.getItem(LS.me) || '';
 let tab = localStorage.getItem(LS.tab) || 'hoy';
 let storeFilter = 'todos';
+let spendOff = 0; // meses hacia atrás en el resumen de gasto
+const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+/* Gasto de un mes (y = año, m = 0-11): suma los precios de las compras del historial, por negocio. */
+function spendOf(y, m){
+  const by = {}, t = {sum:0, n:0, sin:0};
+  Object.values(S.items).forEach(i => histOf(i).forEach(x => {
+    const d = new Date(+x.at); if(!(+x.at > 0) || d.getFullYear() !== y || d.getMonth() !== m) return;
+    t.n++; const p = +x.price; if(!(p > 0)){ t.sin++; return; }
+    by[i.store] = (by[i.store] || 0) + p; t.sum += p;
+  }));
+  return {by, t};
+}
+function spendHtml(){
+  const now = new Date(), d = new Date(now.getFullYear(), now.getMonth() - spendOff, 1), r = spendOf(d.getFullYear(), d.getMonth());
+  const rows = Object.keys(r.by).map(k => ({k, v:r.by[k]})).sort((a, b) => b.v - a.v), mx = rows.length ? rows[0].v : 1;
+  return `<section class="card spend" id="gasto"><div class="nav"><button onclick="A.spendMonth(1)" aria-label="Mes anterior">‹</button><h3>Gasto de ${MESES[d.getMonth()]} ${d.getFullYear()}</h3><button onclick="A.spendMonth(-1)" aria-label="Mes siguiente" ${spendOff <= 0 ? 'disabled' : ''}>›</button></div>
+    ${rows.length ? `<div class="total" role="status">Total: ${fmoney(r.t.sum)}</div>${rows.map(x => `<div class="srow"><div><span>${esc(S.stores[x.k] ? S.stores[x.k].icon + ' ' + S.stores[x.k].name : 'Otro negocio')}</span><b>${fmoney(x.v)}</b></div><div class="bar" style="width:${Math.max(4, Math.round(x.v / mx * 100))}%"></div></div>`).join('')}${r.t.sin ? `<p class="muted">${r.t.sin} de ${r.t.n} compras no tenían precio y no se suman.</p>` : ''}`
+    : `<p class="muted">${r.t.n ? `Hubo ${r.t.n} compras, pero ninguna con precio cargado.` : 'Todavía no hay compras este mes.'} Cuando anotes el precio de un producto y lo marques como comprado, el gasto aparece acá.</p>`}</section>`;
+}
 let searchQ = '';
 let weekOffset = 0;
 function save(){ try { localStorage.setItem(LS.data, JSON.stringify(S)); } catch(e) {} }
@@ -914,6 +935,7 @@ const A = {
 
   // Compras
   filter(s){ storeFilter = s; render(); },
+  spendMonth(n){ spendOff = Math.max(0, spendOff + n); render(); },
   shopMode(sid){ const st = S.stores[sid]; if(!st) return; const l = shopNeed(sid), tk = new Set(shopStruck(sid)), cats = new Set(l.map(catOf)).size > 1;
     $('#sheetbox').classList.add('shop');
     A.open(`<div class="shop" data-sid="${sid}"><h3>${st.icon} ${esc(st.name)}</h3><div class="count" id="shopcount" aria-live="polite"></div>${totalTxt(estTotal(l)) ? `<div class="total" id="shoptotal">${esc(totalTxt(estTotal(l)))}</div>` : ''}
@@ -1309,6 +1331,7 @@ function vCompras(){
       <details ${need.length ? "" : "open"}><summary>Habituales (${rest.length})</summary>${byCat(rest, i => `<div class="item"><div class="t" onclick="A.itemForm('${i.id}')" ${KB} aria-label="Editar ${esc(i.name)}"><div>${iname(i)}</div><div class="meta">${soonLeft(i) ? `<span class="tag w">${soonTxt(soonLeft(i))}</span> ` : ''}cada ${dias(i.every)}${isAuto(i) && (learned(i) || {}).days === i.every ? ' <span class="tag">aprendido</span>' : ''} · última ${ago(i.last)}${i.lastBy ? ' (' + esc(M[i.lastBy]?.n) + ')' : ''}</div></div><button class="b sm" onclick="A.need('${i.id}')" aria-label="Se acaba ${esc(i.name)}">Se acaba</button></div>`, cats)}</details>
       <div class="btns">${need.length ? `<button class="pri" onclick="A.shopMode('${s.id}')">🛒 Estoy en el negocio</button>` : ''}<button onclick="A.share('${s.id}')">📲 Mandar lista</button>${need.length > 1 ? `<button onclick="A.boughtAll('${s.id}')">✔ Compré todo</button>` : ''}<button onclick="A.allList('${s.id}')">Pedido habitual</button><button onclick="A.itemForm(null,'${s.id}')">+ Producto</button></div></section>`;
   });
+  if(storeFilter === 'todos') h += spendHtml();
   h += `<p class="muted">Tocá un producto para editar la cantidad, la categoría o cada cuánto se repone, y para ver su historial. Cuando pasa ese tiempo desde la última compra, vuelve solo a la lista. Desde la tercera compra, la app ajusta sola ese tiempo con el promedio real.</p></div>`;
   return h;
 }
