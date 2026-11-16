@@ -320,10 +320,11 @@ textarea.plain{font-family:inherit;font-size:var(--fs-md);min-height:72px}
 <script>
 'use strict';
 /* ============ Constantes ============ */
-const VERSION = '1.11.0';
-const SCHEMA = 3; // versión de la estructura de datos guardados (ver MIGRATIONS)
+const VERSION = '1.12.0';
+const SCHEMA = 4; // versión de la estructura de datos guardados (ver MIGRATIONS)
 /* Novedades: la primera es la versión actual. "hechas" = ítems del plan de 100 tildados hasta esa versión. */
 const NEWS = [
+  {v:'1.12.0', d:'2026-11-17', hechas:31, items:['Plantillas de pedido: en cada negocio hay un botón «📋 Plantillas» con pedidos armados de antemano (Súper semanal, MercadoLibre mensual, Berardi quincenal). Con «Armar pedido» pasás todos sus productos a la lista de una vez, con «Deshacer».','Podés editarlas, crear las tuyas o guardar la lista de ese momento como plantilla nueva. Tus datos quedan como estaban: solo se suman las plantillas.']},
   {v:'1.11.0', d:'2026-11-16', hechas:30, items:['Gasto del mes: al final de Compras hay un resumen de cuánto se gastó en cada negocio, con los precios que quedaron en el historial al marcar como comprado. Con las flechas ‹ › mirás otros meses.','Solo suma las compras con precio cargado; si alguna no lo tenía, el resumen te avisa cuántas quedaron afuera.']},
   {v:'1.10.0', d:'2026-11-15', hechas:29, items:['Precios: en cada producto podés anotar cuánto costó el último pedido. Cada negocio muestra arriba el «Total estimado» de lo que hay en la lista (y cuántos productos tienen precio), también en el modo «Estoy en el negocio».','Al marcar algo como comprado, el precio queda en su historial. No hace falta cargarlos todos: el total suma los que tienen precio.']},
   {v:'1.9.1', d:'2026-11-14', hechas:28, items:['Se sacó el último resto de marrón (la sombra de la barra de abajo).']},
@@ -383,7 +384,7 @@ const NEWS = [
   ]}
 ];
 const DAY = 86400000;
-const COLS = ['stores','items','tasks','checks','salud','indic','areas','msgs','weeks','log'];
+const COLS = ['stores','items','tasks','checks','salud','indic','areas','msgs','weeks','log','tpls'];
 const M = {
   gonzalo:{n:'Gonzalo', r:'Papá', c:'#2563eb', ini:'G'},
   dani:{n:'Dani', r:'Mamá · Daniela, esposa', c:'#db2777', ini:'D'},
@@ -532,6 +533,16 @@ function snapshot(refs){
 }
 
 /* ============ Datos iniciales ============ */
+/* Plantillas de pedido (v1.12.0): {id, name, store, items:[ids], ord}. Las de fábrica salen de los productos de cada negocio. */
+function defaultTpls(D){
+  const o = {}, its = s => Object.values(D.items || {}).filter(i => i.store === s).sort((a, b) => a.name.localeCompare(b.name));
+  [['super','Súper semanal', i => i.every <= 7],['ml','MercadoLibre mensual', () => true],['berardi','Berardi quincenal', () => true]].forEach(([s, name, f], n) => {
+    if(!D.stores || !D.stores[s]) return;
+    const ids = its(s).filter(f).map(i => i.id); if(!ids.length) return;
+    o['tp_' + s] = {id:'tp_' + s, name, store:s, items:ids, ord:n + 1};
+  });
+  return o;
+}
 function seed(){
   const S = {}; COLS.forEach(c => S[c] = {});
   const add = (c, o) => S[c][o.id] = o;
@@ -585,6 +596,7 @@ function seed(){
     4:{lleva:'gonzalo', busca:'gonzalo'},
     5:{lleva:'dani', busca:'dani'}
   }});
+  S.tpls = defaultTpls(S);
   return S;
 }
 
@@ -619,6 +631,10 @@ const MIGRATIONS = {
   },
   3(D){ // v1.5.0 → esquema 3 (v1.6.0): frecuencia aprendida. No toca «every»: recién se ajusta con la próxima compra.
     Object.values(D.items).forEach(i => { if(i.auto === undefined) i.auto = true; });
+  },
+  4(D){ // v1.11.0 → esquema 4 (v1.12.0): plantillas de pedido. Solo agrega la colección; no toca productos ni negocios.
+    if(!D.tpls || typeof D.tpls !== 'object') D.tpls = {};
+    if(!(+D._v >= 4) && !Object.keys(D.tpls).length) D.tpls = defaultTpls(D); // _v ya es 4 cuando vuelve de la nube: no revive las que se borraron
   }
 };
 function migrate(D){
@@ -631,8 +647,9 @@ let S;
 try { S = JSON.parse(localStorage.getItem(LS.data)); } catch(e) {}
 let fresh = false;
 if(!S || typeof S !== 'object'){ S = seed(); S._v = SCHEMA; fresh = true; }
-COLS.forEach(c => S[c] = S[c] || {});
-if(migrate(S) || fresh) try { localStorage.setItem(LS.data, JSON.stringify(S)); } catch(e) {}
+COLS.forEach(c => { if(c !== 'tpls') S[c] = S[c] || {}; }); // «tpls» la crea la migración 4 (así la copia de seguridad queda idéntica)
+const migrado = migrate(S); S.tpls = S.tpls || {};
+if(migrado || fresh) try { localStorage.setItem(LS.data, JSON.stringify(S)); } catch(e) {}
 let me = localStorage.getItem(LS.me) || '';
 let tab = localStorage.getItem(LS.tab) || 'hoy';
 let storeFilter = 'todos';
@@ -770,6 +787,7 @@ const isAuto = i => i.auto !== false;
 function buy(i){ const h = histOf(i); i.state = 'ok'; i.last = Date.now(); i.lastBy = me; const e = {at:i.last, by:me}; if(+i.qty > 0){ e.qty = +i.qty; e.unit = i.unit || ''; } if(priceOf(i)) e.price = priceOf(i); i.hist = h.concat([e]).slice(-30);
   const l = isAuto(i) && learned(i); if(l && l.days !== i.every){ const antes = i.every; i.every = l.days; return `${i.name}: ahora cada ${dias(l.days)} (antes ${antes})`; } return ''; }
 const dias = n => n === 1 ? '1 día' : n + ' días';
+const tplItems = t => (t.items || []).map(k => S.items[k]).filter(Boolean);
 function newItem(name, sid){ return {id:'i_'+uid(), name, store:S.stores[sid] ? sid : (S.stores.super ? 'super' : (sorted('stores')[0] || {}).id), every:7, last:null, state:'list', note:'', qty:null, unit:'', cat:guessCat(name), hist:[], auto:true}; }
 /* Modo «Estoy en el negocio» (ítem 28): lo tachado se guarda aparte (cm_shop) hasta tocar «Terminé»; no toca los datos de la familia. */
 function shopGet(){ try { const o = JSON.parse(localStorage.getItem(LS.shop) || '{}'); return o && typeof o === 'object' ? o : {}; } catch(e) { return {}; } }
@@ -985,6 +1003,37 @@ const A = {
       ${id ? `<details class="histd"><summary>Historial de compras (${h.length})</summary>${h.length ? h.slice(0, 15).map(x => `<div class="log">${AV(x.by)}<div><b>${x.by ? esc(pm(x.by).n) : 'Sin dato de quién'}</b> · ${fdate(dk(new Date(x.at)))}${qtyTxt(x) ? ' · ' + esc(qtyTxt(x)) : ''}${+x.price > 0 ? ' · ' + fmoney(+x.price) : ''} <span class="meta">· ${ago(x.at)}</span></div></div>`).join('') : '<p class="muted">Todavía no hay compras registradas. Cuando alguien lo tilde como comprado, queda anotado acá quién fue y cuándo.</p>'}</details>` : ''}
       <div class="btns"><button class="pri" onclick="A.saveItem('${i.id}')">Guardar</button>${id ? `<button onclick="A.delItem('${i.id}')">Borrar</button>` : ''}<button onclick="A.close()">Cancelar</button></div>`);
     A._draft = i;
+  },
+  // Plantillas de pedido (ítem 31)
+  tpls(sid){
+    const st = S.stores[sid]; if(!st) return;
+    const l = sorted('tpls').filter(t => t.store === sid), need = Object.values(S.items).filter(i => i.store === sid && needs(i));
+    A.open(`<h3>📋 Plantillas · ${esc(st.name)}</h3><p class="muted">Pedidos armados de antemano: con un toque pasan todos sus productos a la lista.</p>
+      ${l.length ? l.map(t => { const n = tplItems(t).length; return `<div class="item"><div class="t"><div><b>${esc(t.name)}</b></div><div class="meta">${n} producto${n === 1 ? '' : 's'}: ${esc(tplItems(t).slice(0, 4).map(i => i.name).join(', '))}${n > 4 ? '…' : ''}</div></div><button class="b sm" onclick="A.tplForm('${t.id}')" aria-label="Editar ${esc(t.name)}">Editar</button><button class="b sm pri" onclick="A.tplApply('${t.id}')" aria-label="Armar pedido ${esc(t.name)}">Armar pedido</button></div>`; }).join('') : empty('compras', 'Sin plantillas', 'Creá una con los productos que pedís siempre juntos.', '', true)}
+      <div class="btns"><button class="pri" onclick="A.tplForm(null,'${sid}')">+ Plantilla nueva</button>${need.length ? `<button onclick="A.tplForm(null,'${sid}',true)">Guardar la lista actual</button>` : ''}<button onclick="A.close()">Cerrar</button></div>`);
+  },
+  tplForm(id, sid, fromList){
+    const t = id ? S.tpls[id] : {id:'tp_' + uid(), name:fromList ? 'Pedido del ' + fdate(dk()) : '', store:sid, items:fromList ? Object.values(S.items).filter(i => i.store === sid && needs(i)).map(i => i.id) : [], ord:99};
+    const its = Object.values(S.items).filter(i => i.store === t.store).sort((a, b) => a.name.localeCompare(b.name)), sel = new Set(t.items);
+    A.open(`<h3>${id ? 'Editar' : 'Nueva'} plantilla</h3>
+      <label class="f">Nombre</label><input type="text" id="tp_name" value="${esc(t.name)}" placeholder="Ej: Súper semanal">
+      <label class="f">Productos</label>
+      ${its.length ? its.map(i => `<label class="item"><input type="checkbox" name="tp" value="${i.id}" ${sel.has(i.id) ? 'checked' : ''}><div class="t"><div>${iname(i)}</div></div></label>`).join('') : '<p class="muted">Este negocio todavía no tiene productos. Sumalos con «+ Producto».</p>'}
+      <div class="btns"><button class="pri" onclick="A.tplSave()">Guardar</button>${id ? `<button onclick="A.tplDel('${id}')">Borrar</button>` : ''}<button onclick="A.tpls('${t.store}')">Volver</button></div>`);
+    A._tpl = t;
+  },
+  tplSave(){
+    const t = A._tpl; if(!t) return; const name = $('#tp_name').value.trim(); if(!name) return toast('Poné un nombre');
+    const items = [...document.querySelectorAll('#sheet input[name=tp]:checked')].map(x => x.value); if(!items.length) return toast('Elegí al menos un producto');
+    t.name = name; t.items = items; A._tpl = null; const sid = t.store; put('tpls', t, `guardó la plantilla ${t.name}`); A.tpls(sid); toast('Plantilla guardada ✔');
+  },
+  tplDel(id){ const t = S.tpls[id]; if(!t) return; const u = snapshot([['tpls', id]]), sid = t.store; del('tpls', id, `borró la plantilla ${t.name}`); A.tpls(sid); toast('Plantilla borrada', u); },
+  tplApply(id){
+    const t = S.tpls[id]; if(!t) return; const l = tplItems(t); if(!l.length) return toast('Esta plantilla no tiene productos');
+    const nuevos = l.filter(i => !needs(i)), u = snapshot(nuevos.map(i => ['items', i.id]));
+    nuevos.forEach(i => { i.state = 'list'; i.at = Date.now(); i.by = me; S.items[i.id] = i; if(fs) remotePath('items').doc(i.id).set(clean(i)).catch(() => {}); });
+    save(); logAct(`armó el pedido «${t.name}» (${S.stores[t.store]?.name})`); A.close(); render();
+    toast(nuevos.length ? `Pedido armado: ${nuevos.length} producto${nuevos.length === 1 ? '' : 's'} anotado${nuevos.length === 1 ? '' : 's'}${l.length > nuevos.length ? ` (${l.length - nuevos.length} ya estaba${l.length - nuevos.length === 1 ? '' : 'n'})` : ''}` : 'Todo eso ya estaba en la lista', nuevos.length ? u : undefined);
   },
   saveItem(id){
     const i = S.items[id] || A._draft; i.name = $('#f_name').value.trim(); if(!i.name) return toast('Poné un nombre');
@@ -1329,7 +1378,7 @@ function vCompras(){
       ${totalTxt(estTotal(need)) ? `<div class="total" role="status">${esc(totalTxt(estTotal(need)))}</div>` : ''}
       ${need.length ? byCat(need, i => `<div class="item">${chk(`<input type="checkbox" onchange="A.bought('${i.id}')" aria-label="Comprado: ${esc(i.name)}">`)}<div class="t" onclick="A.itemForm('${i.id}')" ${KB} aria-label="Editar ${esc(i.name)}"><div>${iname(i)}</div><div class="meta">${i.state === 'list' ? `anotado por ${esc(M[i.by]?.n || '—')}` : `<span class="tag w">toca reponer</span> última ${ago(i.last)}`}${i.note ? ' · ' + esc(i.note) : ''}${priceOf(i) ? ' · ' + fmoney(priceOf(i)) : ''}</div></div><button class="b sm" onclick="A.unlist('${i.id}')" aria-label="Sacar ${esc(i.name)} de la lista">✕</button></div>`, cats) : empty('compras', 'Nada para comprar', 'La despensa está al día. Si algo se acaba, tocá «Se acaba».', '', true)}
       <details ${need.length ? "" : "open"}><summary>Habituales (${rest.length})</summary>${byCat(rest, i => `<div class="item"><div class="t" onclick="A.itemForm('${i.id}')" ${KB} aria-label="Editar ${esc(i.name)}"><div>${iname(i)}</div><div class="meta">${soonLeft(i) ? `<span class="tag w">${soonTxt(soonLeft(i))}</span> ` : ''}cada ${dias(i.every)}${isAuto(i) && (learned(i) || {}).days === i.every ? ' <span class="tag">aprendido</span>' : ''} · última ${ago(i.last)}${i.lastBy ? ' (' + esc(M[i.lastBy]?.n) + ')' : ''}</div></div><button class="b sm" onclick="A.need('${i.id}')" aria-label="Se acaba ${esc(i.name)}">Se acaba</button></div>`, cats)}</details>
-      <div class="btns">${need.length ? `<button class="pri" onclick="A.shopMode('${s.id}')">🛒 Estoy en el negocio</button>` : ''}<button onclick="A.share('${s.id}')">📲 Mandar lista</button>${need.length > 1 ? `<button onclick="A.boughtAll('${s.id}')">✔ Compré todo</button>` : ''}<button onclick="A.allList('${s.id}')">Pedido habitual</button><button onclick="A.itemForm(null,'${s.id}')">+ Producto</button></div></section>`;
+      <div class="btns">${need.length ? `<button class="pri" onclick="A.shopMode('${s.id}')">🛒 Estoy en el negocio</button>` : ''}<button onclick="A.share('${s.id}')">📲 Mandar lista</button>${need.length > 1 ? `<button onclick="A.boughtAll('${s.id}')">✔ Compré todo</button>` : ''}<button onclick="A.allList('${s.id}')">Pedido habitual</button><button onclick="A.tpls('${s.id}')">📋 Plantillas</button><button onclick="A.itemForm(null,'${s.id}')">+ Producto</button></div></section>`;
   });
   if(storeFilter === 'todos') h += spendHtml();
   h += `<p class="muted">Tocá un producto para editar la cantidad, la categoría o cada cuánto se repone, y para ver su historial. Cuando pasa ese tiempo desde la última compra, vuelve solo a la lista. Desde la tercera compra, la app ajusta sola ese tiempo con el promedio real.</p></div>`;

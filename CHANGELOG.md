@@ -1,5 +1,9 @@
 # Novedades de Carga Mental
 
+## v1.12.0 — 2026-11-17
+- Plantillas de pedido (ítem 31): cada negocio tiene el botón «📋 Plantillas» con pedidos armados de antemano. De fábrica: «Súper semanal» (los productos del súper que se reponen cada 7 días o menos), «MercadoLibre mensual» y «Berardi quincenal» (todos los productos de cada uno). «Armar pedido» pasa a la lista los productos de la plantilla que todavía no estaban, avisa cuántos anotó y tiene «Deshacer». Se pueden editar (nombre y productos), borrar (con «Deshacer»), crear nuevas y guardar la lista actual de un negocio como plantilla.
+- Estructura de datos: SCHEMA pasa a 4. La migración 4 solo agrega la colección `tpls` (plantillas de fábrica armadas con los productos que ya existen); no toca productos ni negocios, y antes guarda la copia `cm_backup_v3`. Una plantilla borrada no reaparece al sincronizar. Se sincroniza con la nube como las demás colecciones.
+- Pruebas: migración desde v1.11.0 (nada cambia salvo `tpls`, copia idéntica), plantillas de fábrica coherentes, armar pedido y su deshacer, crear desde la lista, validación de nombre (sin alterar la plantilla guardada), borrar y deshacer, que una borrada no reaparezca, y 390 px en claro y oscuro. Las pruebas viejas se adaptaron al esquema 4 y a 31/100.
 ## v1.11.0 — 2026-11-16
 - Gasto mensual por negocio (ítem 30): al final de Compras (con el filtro «Todos») aparece «Gasto de <mes>» con el total y lo gastado en cada negocio, con barras proporcionales y de mayor a menor. Suma los precios guardados en el historial de compras (los que quedan al marcar algo como comprado con precio cargado). Las flechas ‹ › cambian de mes; si hubo compras sin precio, avisa cuántas no se suman.
 - Estructura de datos: sin cambios (SCHEMA sigue en 3, sin migración); solo lee el historial existente.
