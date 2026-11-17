@@ -41,7 +41,7 @@ Las marcadas 🔑 necesitan algo de Gonzalo (una cuenta, una clave, un dato). En
 - [x] 30. Resumen de gasto mensual por negocio. — ✔ 2026-11-16 (v1.11.0)
 - [x] 31. Plantillas de pedido (súper semanal, MercadoLibre mensual, Berardi quincenal). — ✔ 2026-11-17 (v1.12.0)
 - [x] 32. Links directos a la web de Berardi, a MercadoLibre (yerba) y al súper. — ✔ 2026-11-16 (v1.12.1) · Falta que Gonzalo cargue desde la app el enlace de Berardi y del súper (MercadoLibre ya viene).
-- [ ] 33. Día fijo de pedido por negocio con recordatorio (ej.: súper los domingos).
+- [x] 33. Día fijo de pedido por negocio con recordatorio (ej.: súper los domingos). — ✔ 2026-11-17 (v1.13.0) · El recordatorio se ve dentro de la app (Hoy); con la app cerrada depende de los ítems 91/92.
 - [ ] 34. "Lo traigo yo": asignar quién compra un ítem puntual.
 - [ ] 35. "No había": nota y reintento en otro negocio.
 - [ ] 36. Lista de ideas y antojos no urgentes.

@@ -1,5 +1,10 @@
 # Novedades de Carga Mental
 
+## v1.13.0 — 2026-11-17
+- Día fijo de pedido (ítem 33): cada negocio tiene «📅 Día de pedido», con los siete días de la semana o «Sin día fijo». El negocio muestra «Se pide los domingos» y, el día anterior y el mismo día, aparece «Mañana/Hoy es el día de pedir en <negocio>» en «Hoy» (en «Te toca» de quien se encarga, con cuántos productos hay anotados) y una etiqueta en la tarjeta. No se cargó ningún día de fábrica: lo elige la familia.
+- Estructura de datos: sin cambios (SCHEMA sigue en 4, sin migración): `orderDay` es un campo opcional del negocio (0 = domingo … 6 = sábado); si falta, no hay día fijo. Se sincroniza con el negocio.
+- Pruebas: validación de `orderDay`, días que faltan, guardar, recordatorio de mañana y de hoy, que no aparezca fuera de fecha, quitar el día, chips ≥ 44 px y 390 px en claro y oscuro. Los recordatorios con la app cerrada quedan para el ítem 91/92.
+
 ## v1.12.1 — 2026-11-16
 - Links a la web de cada negocio (ítem 32): en Compras, cada negocio muestra «🌐 Abrir web» (abre en otra pestaña) y «✎ Enlace» para cambiarlo o quitarlo; si no tiene, «🔗 Poner web». MercadoLibre trae por defecto https://www.mercadolibre.com.ar/. Pendiente de Gonzalo: cargar el enlace de Berardi y del súper desde la app (no se inventaron direcciones). Solo se aceptan enlaces http/https; se guarda en el negocio y se sincroniza.
 - Estructura de datos: sin cambios (SCHEMA sigue en 4, sin migración): `url` es un campo opcional del negocio.

@@ -321,10 +321,11 @@ textarea.plain{font-family:inherit;font-size:var(--fs-md);min-height:72px}
 <script>
 'use strict';
 /* ============ Constantes ============ */
-const VERSION = '1.12.1';
+const VERSION = '1.13.0';
 const SCHEMA = 4; // versión de la estructura de datos guardados (ver MIGRATIONS)
 /* Novedades: la primera es la versión actual. "hechas" = ítems del plan de 100 tildados hasta esa versión. */
 const NEWS = [
+  {v:'1.13.0', d:'2026-11-17', hechas:33, items:['Día fijo de pedido: en cada negocio tocá «📅 Día de pedido» y elegí qué día de la semana lo hacen (por ejemplo, el súper los domingos). El negocio muestra «Se pide los domingos» y, el día anterior y ese mismo día, el recordatorio aparece en «Hoy» para quien se encarga, con cuántos productos hay anotados.']},
   {v:'1.12.1', d:'2026-11-16', hechas:32, items:['Links a la web de cada negocio: en Compras, cada negocio tiene un botón «🌐 Abrir web» que lo abre en el navegador. MercadoLibre ya viene con su dirección; en Berardi y el súper tocá «🔗 Poner web» y pegá el enlace de tu pedido (se guarda y se comparte con todos).']},
   {v:'1.12.0', d:'2026-11-17', hechas:31, items:['Plantillas de pedido: en cada negocio hay un botón «📋 Plantillas» con pedidos armados de antemano (Súper semanal, MercadoLibre mensual, Berardi quincenal). Con «Armar pedido» pasás todos sus productos a la lista de una vez, con «Deshacer».','Podés editarlas, crear las tuyas o guardar la lista de ese momento como plantilla nueva. Tus datos quedan como estaban: solo se suman las plantillas.']},
   {v:'1.11.0', d:'2026-11-16', hechas:30, items:['Gasto del mes: al final de Compras hay un resumen de cuánto se gastó en cada negocio, con los precios que quedaron en el historial al marcar como comprado. Con las flechas ‹ › mirás otros meses.','Solo suma las compras con precio cargado; si alguna no lo tenía, el resumen te avisa cuántas quedaron afuera.']},
@@ -793,6 +794,13 @@ const tplItems = t => (t.items || []).map(k => S.items[k]).filter(Boolean);
 /* Link a la web del negocio (ítem 32): s.url opcional; MercadoLibre trae el suyo si nunca se tocó. */
 const storeUrl = s => typeof s.url === 'string' ? s.url : (s.id === 'ml' ? 'https://www.mercadolibre.com.ar/' : '');
 function parseUrl(v){ v = String(v || '').trim(); if(!v) return ''; if(!/^[a-z][a-z0-9+.-]*:/i.test(v)) v = 'https://' + v; try { const u = new URL(v); return /^https?:$/.test(u.protocol) && u.hostname.includes('.') ? u.href : null; } catch(e) { return null; } }
+/* Día fijo de pedido (ítem 33): s.orderDay opcional (0 = domingo … 6 = sábado). Sin migración: si falta, no hay día fijo. */
+const orderDay = s => Number.isInteger(s.orderDay) && s.orderDay >= 0 && s.orderDay <= 6 ? s.orderDay : null;
+const orderIn = (s, now = new Date()) => { const d = orderDay(s); return d === null ? null : (d - now.getDay() + 7) % 7; };
+const losDias = d => 'los ' + DOWL[d] + (DOWL[d].endsWith('s') ? '' : 's');
+const orderTxt = s => orderDay(s) === null ? '' : `Se pide ${losDias(orderDay(s))}`;
+function orderRemind(s, now = new Date()){ const k = orderIn(s, now); if(k === null || k > 1) return ''; const n = Object.values(S.items).filter(i => i.store === s.id && needs(i)).length;
+  return `${s.icon} ${k === 0 ? 'Hoy es el día de pedir' : 'Mañana es el día de pedir'} en <b>${esc(s.name)}</b> · ${n ? (n === 1 ? '1 producto anotado' : n + ' productos anotados') : 'todavía no hay nada anotado'}`; }
 function newItem(name, sid){ return {id:'i_'+uid(), name, store:S.stores[sid] ? sid : (S.stores.super ? 'super' : (sorted('stores')[0] || {}).id), every:7, last:null, state:'list', note:'', qty:null, unit:'', cat:guessCat(name), hist:[], auto:true}; }
 /* Modo «Estoy en el negocio» (ítem 28): lo tachado se guarda aparte (cm_shop) hasta tocar «Terminé»; no toca los datos de la familia. */
 function shopGet(){ try { const o = JSON.parse(localStorage.getItem(LS.shop) || '{}'); return o && typeof o === 'object' ? o : {}; } catch(e) { return {}; } }
@@ -1016,6 +1024,12 @@ const A = {
   saveLink(sid, quitar){ const s = S.stores[sid]; if(!s) return; const u = quitar ? '' : parseUrl($('#su_url').value);
     if(u === null) return toast('Ese enlace no parece una página web');
     s.url = u; A.close(); put('stores', s, u ? `cargó la web de ${s.name}` : `sacó el enlace de ${s.name}`); toast(u ? 'Enlace guardado ✔' : 'Enlace quitado'); },
+  orderDay(sid){ const s = S.stores[sid]; if(!s) return; const d = orderDay(s);
+    A.open(`<h3>📅 Día de pedido de ${esc(s.name)}</h3><p class="muted">Elegí el día de la semana en que hacen el pedido. El día anterior y ese día, «Hoy» le recuerda a ${esc(M[s.owner].n)}.</p>
+      <div class="chips" role="group" aria-label="Día de la semana">${[1,2,3,4,5,6,0].map(k => `<button class="${d === k ? 'on' : ''}" aria-pressed="${d === k}" onclick="A.saveOrderDay('${sid}', ${k})">${DOW[k]}</button>`).join('')}</div>
+      <div class="btns">${d !== null ? `<button onclick="A.saveOrderDay('${sid}', null)">Sin día fijo</button>` : ''}<button onclick="A.close()">Cancelar</button></div>`); },
+  saveOrderDay(sid, d){ const s = S.stores[sid]; if(!s) return; s.orderDay = d; A.close();
+    put('stores', s, d === null ? `sacó el día de pedido de ${s.name}` : `puso el pedido de ${s.name} ${losDias(d)}`); toast(d === null ? 'Sin día fijo' : `Se pide ${losDias(d)} ✔`); },
   // Plantillas de pedido (ítem 31)
   tpls(sid){
     const st = S.stores[sid]; if(!st) return;
@@ -1343,6 +1357,7 @@ function ringsCard(){
 /* Lo pendiente de hoy, de todos. Lo usan «Te toca» y los globitos de la barra inferior. */
 function todoList(now = new Date(), j = joacoDay(now)){
   const todo = [];
+  sorted('stores').forEach(s => { const r = orderRemind(s, now); if(r) todo.push({own:s.owner, html:'📅 ' + r, go:`A.filter('${s.id}');A.go('compras')`}); });
   sorted('stores').forEach(s => { const n = Object.values(S.items).filter(i => i.store === s.id && needs(i)); if(n.length) todo.push({own:s.owner, html:`${s.icon} <b>${esc(s.name)}</b>: ${n.length} para comprar`, go:`A.filter('${s.id}');A.go('compras')`}); });
   sorted('tasks').forEach(t => {
     if(t.kind === 'rec' && recDue(t)) todo.push({own:t.owner, html:`${t.icon} ${esc(t.name)} <span class="meta">· ${ago(t.last)}</span>`, btn:`<button class="b sm" onclick="A.recDone('${t.id}')">Hecho</button>`});
@@ -1386,11 +1401,12 @@ function vCompras(){
     const its = Object.values(S.items).filter(i => i.store === s.id).sort((a,b) => a.name.localeCompare(b.name));
     const need = its.filter(needs), rest = its.filter(i => !needs(i)), cats = new Set(its.map(catOf)).size > 1;
     h += `<section class="card${pc('s:' + s.id)}"><div class="row"><h3>${s.icon} ${esc(s.name)}</h3>${PB(s.owner, `A.cycleStore('${s.id}')`)}</div><div class="sub">${esc(s.how)} · se encarga ${esc(M[s.owner].n)}</div>
+      ${orderDay(s) !== null ? `<div class="sub ordday">📅 ${esc(orderTxt(s))}${orderIn(s) <= 1 ? ` · <span class="tag w">${orderIn(s) === 0 ? 'hoy toca pedir' : 'mañana toca pedir'}</span>` : ''}</div>` : ''}
       ${soonHtml(its)}
       ${totalTxt(estTotal(need)) ? `<div class="total" role="status">${esc(totalTxt(estTotal(need)))}</div>` : ''}
       ${need.length ? byCat(need, i => `<div class="item">${chk(`<input type="checkbox" onchange="A.bought('${i.id}')" aria-label="Comprado: ${esc(i.name)}">`)}<div class="t" onclick="A.itemForm('${i.id}')" ${KB} aria-label="Editar ${esc(i.name)}"><div>${iname(i)}</div><div class="meta">${i.state === 'list' ? `anotado por ${esc(M[i.by]?.n || '—')}` : `<span class="tag w">toca reponer</span> última ${ago(i.last)}`}${i.note ? ' · ' + esc(i.note) : ''}${priceOf(i) ? ' · ' + fmoney(priceOf(i)) : ''}</div></div><button class="b sm" onclick="A.unlist('${i.id}')" aria-label="Sacar ${esc(i.name)} de la lista">✕</button></div>`, cats) : empty('compras', 'Nada para comprar', 'La despensa está al día. Si algo se acaba, tocá «Se acaba».', '', true)}
       <details ${need.length ? "" : "open"}><summary>Habituales (${rest.length})</summary>${byCat(rest, i => `<div class="item"><div class="t" onclick="A.itemForm('${i.id}')" ${KB} aria-label="Editar ${esc(i.name)}"><div>${iname(i)}</div><div class="meta">${soonLeft(i) ? `<span class="tag w">${soonTxt(soonLeft(i))}</span> ` : ''}cada ${dias(i.every)}${isAuto(i) && (learned(i) || {}).days === i.every ? ' <span class="tag">aprendido</span>' : ''} · última ${ago(i.last)}${i.lastBy ? ' (' + esc(M[i.lastBy]?.n) + ')' : ''}</div></div><button class="b sm" onclick="A.need('${i.id}')" aria-label="Se acaba ${esc(i.name)}">Se acaba</button></div>`, cats)}</details>
-      <div class="btns">${need.length ? `<button class="pri" onclick="A.shopMode('${s.id}')">🛒 Estoy en el negocio</button>` : ''}<button onclick="A.share('${s.id}')">📲 Mandar lista</button>${need.length > 1 ? `<button onclick="A.boughtAll('${s.id}')">✔ Compré todo</button>` : ''}<button onclick="A.allList('${s.id}')">Pedido habitual</button><button onclick="A.tpls('${s.id}')">📋 Plantillas</button>${storeUrl(s) ? `<a class="btn" href="${esc(storeUrl(s))}" target="_blank" rel="noopener noreferrer">🌐 Abrir web</a><button onclick="A.storeLink('${s.id}')" aria-label="Cambiar el enlace de ${esc(s.name)}">✎ Enlace</button>` : `<button onclick="A.storeLink('${s.id}')">🔗 Poner web</button>`}<button onclick="A.itemForm(null,'${s.id}')">+ Producto</button></div></section>`;
+      <div class="btns">${need.length ? `<button class="pri" onclick="A.shopMode('${s.id}')">🛒 Estoy en el negocio</button>` : ''}<button onclick="A.share('${s.id}')">📲 Mandar lista</button>${need.length > 1 ? `<button onclick="A.boughtAll('${s.id}')">✔ Compré todo</button>` : ''}<button onclick="A.allList('${s.id}')">Pedido habitual</button><button onclick="A.tpls('${s.id}')">📋 Plantillas</button><button onclick="A.orderDay('${s.id}')">📅 Día de pedido</button>${storeUrl(s) ? `<a class="btn" href="${esc(storeUrl(s))}" target="_blank" rel="noopener noreferrer">🌐 Abrir web</a><button onclick="A.storeLink('${s.id}')" aria-label="Cambiar el enlace de ${esc(s.name)}">✎ Enlace</button>` : `<button onclick="A.storeLink('${s.id}')">🔗 Poner web</button>`}<button onclick="A.itemForm(null,'${s.id}')">+ Producto</button></div></section>`;
   });
   if(storeFilter === 'todos') h += spendHtml();
   h += `<p class="muted">Tocá un producto para editar la cantidad, la categoría o cada cuánto se repone, y para ver su historial. Cuando pasa ese tiempo desde la última compra, vuelve solo a la lista. Desde la tercera compra, la app ajusta sola ese tiempo con el promedio real.</p></div>`;

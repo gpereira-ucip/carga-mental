@@ -18,6 +18,7 @@ Levanta un servidor local, abre la app en un celular simulado (390x844) y recorr
   11. v1.10.0: precio por producto, total estimado de cada lista (sin migración) y precio en el historial.
   12. v1.11.0: gasto mensual por negocio (suma del historial, meses, compras sin precio).
   14. v1.12.1: links a la web de cada negocio (sin migración).
+  15. v1.13.0: día fijo de pedido por negocio con recordatorio (sin migración).
   13. v1.12.0: migración al esquema 4 (datos de v1.11.0) y plantillas de pedido (armar, editar, crear, borrar, deshacer).
 Falla si hay errores de JavaScript o de consola, o si la página se ensancha más de 390 px.
 Guarda capturas en /tmp/cm-*.png para revisarlas.
@@ -550,7 +551,7 @@ with sync_playwright() as p:
         check(it['i_agua']['cat'] == 'bebidas' and it['i_mio']['cat'] == 'frescos' and it['i_huerfano']['cat'] == 'almacen', f"v1.5: categorías mal asignadas {[x['cat'] for x in it.values()]}")
         check(all(x['qty'] is None and x['unit'] == '' for x in it.values()), 'v1.5: cantidad/unidad iniciales')
         check(it['i_mio']['hist'] == [{'at': 1762000000000, 'by': None}] and it['i_agua']['hist'] == [], f"v1.5: historial inicial {it['i_mio']['hist']}")
-        check(pg.locator('#sheet >> text=32/100').count() > 0, 'v1.5: Novedades no muestra 32/100')
+        check(pg.locator('#sheet >> text=33/100').count() > 0, 'v1.5: Novedades no muestra 33/100')
         pg.screenshot(path=f'/tmp/cm-v15-novedades-{scheme}.png')
         pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
         pg.reload(); pg.wait_for_timeout(1800)
@@ -689,7 +690,7 @@ with sync_playwright() as p:
         for x in d0['items'].values(): x.pop('auto', None)
         check(d0 == pre, 'v1.6: la migración cambió o perdió datos de v1.5.0')
         check(json.loads(pg.evaluate('localStorage.getItem("cm_backup_v2")') or 'null') == pre, 'v1.6: no quedó la copia cm_backup_v2 idéntica')
-        check(pg.locator('#sheet >> text=32/100').count() > 0, 'v1.6: Novedades no se abrió con 32/100')
+        check(pg.locator('#sheet >> text=33/100').count() > 0, 'v1.6: Novedades no se abrió con 33/100')
         pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
         # Cálculo del promedio
         calc = pg.evaluate("""() => { const D = 86400000, t = 1e12, h = a => ({hist: a.map(n => ({at: t + n * D}))});
@@ -760,7 +761,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---------- 10. v1.7.0: aviso anticipado («se acaba en 2 días») ----------
-    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.12.1');"
+    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.13.0');"
               " if(!localStorage.getItem('cm_data')){ const d = %s; d._v = 4; d.tpls = {}; Object.values(d.items).forEach(i => i.auto = true);"
               " localStorage.setItem('cm_pre', JSON.stringify(d)); localStorage.setItem('cm_data', JSON.stringify(d)); }") % json.dumps(V15)
     for scheme in ['light', 'dark']:
@@ -896,7 +897,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---- v1.12.0: plantillas de pedido (migración al esquema 4) ----
-    init18 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.12.1');"
+    init18 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.13.0');"
               " if(!localStorage.getItem('cm_data')){ const d = %s; d._v = 3; Object.values(d.items).forEach(i => i.auto = true);"
               " localStorage.setItem('cm_pre', JSON.stringify(d)); localStorage.setItem('cm_data', JSON.stringify(d)); }") % json.dumps(V15)
     for scheme in ['light', 'dark']:
@@ -971,6 +972,40 @@ with sync_playwright() as p:
         pg.locator('#sheet button:has-text("Quitar enlace")').click(); pg.wait_for_timeout(300)
         check(S(pg)['stores'][sid]['url'] == '' and pg.locator('main button:has-text("Poner web")').count() == 1, 'v1.12.1: no quitó el enlace')
         check('mercadolibre.com.ar' in pg.evaluate("storeUrl({id:'ml'})") and pg.evaluate("storeUrl({id:'ml', url:''})") == '' and pg.evaluate("storeUrl({id:'x'})") == '', 'v1.12.1: enlace de MercadoLibre')
+        ctx.close()
+
+    # ---- v1.13.0: día fijo de pedido ----
+    for scheme in ['light', 'dark']:
+        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init17)
+        pg = ctx.new_page()
+        pg.on('pageerror', lambda e: errs.append(f'[v1.13.0] JS: {e}'))
+        pg.on('console', lambda m: errs.append(f'[v1.13.0] consola: {m.text}') if m.type == 'error' else None)
+        pg.goto(URL); pg.wait_for_timeout(1500)
+        pre = json.loads(pg.evaluate('localStorage.getItem("cm_pre")')); check(S(pg) == pre, 'v1.13.0: los datos cambiaron al abrir')
+        check(pg.evaluate("[undefined, null, 3, 7, -1, '2', 0].map(x => orderDay({orderDay:x}))") == [None, None, 3, None, None, None, 0], 'v1.13.0: orderDay')
+        r = pg.evaluate("[[0,0],[0,6],[1,0],[5,3],[3,3]].map(([d,w]) => orderIn({orderDay:d}, new Date(2026,10,15+w)))")
+        check(r == [0, 1, 1, 2, 0], f'v1.13.0: orderIn {r}')
+        check(pg.evaluate("[0,3,6].map(d => orderTxt({orderDay:d}))") == ['Se pide los domingos', 'Se pide los miércoles', 'Se pide los sábados'], 'v1.13.0: plural de los días')
+        sid = next(k for k in pre['stores'] if k != 'ml')
+        pg.evaluate(f"A.go('compras'); storeFilter = '{sid}'; render()"); pg.wait_for_timeout(300)
+        check(pg.locator('main .ordday').count() == 0, 'v1.13.0: muestra día sin haberlo puesto')
+        pg.locator('main button:has-text("Día de pedido")').click(); pg.wait_for_timeout(300)
+        hoy = pg.evaluate('new Date().getDay()'); mañana = (hoy + 1) % 7
+        check(pg.locator('#sheet .chips button').count() == 7 and pg.locator('#sheet .chips button').first.bounding_box()['height'] >= 44, 'v1.13.0: chips de días')
+        pg.evaluate(f"A.saveOrderDay('{sid}', {mañana})"); pg.wait_for_timeout(300)
+        check(S(pg)['stores'][sid]['orderDay'] == mañana and 'mañana toca pedir' in pg.locator('main .ordday').inner_text(), 'v1.13.0: no guardó o no avisó mañana')
+        pg.screenshot(path=f'/tmp/cm-v1130-compras-{scheme}.png', full_page=True); width_ok(pg, 'v1.13.0 compras')
+        pg.evaluate("A.go('hoy')"); pg.wait_for_timeout(300)
+        check(pg.locator('main >> text=Mañana es el día de pedir').count() == 1, 'v1.13.0: Hoy no muestra el recordatorio de mañana')
+        pg.screenshot(path=f'/tmp/cm-v1130-hoy-{scheme}.png', full_page=True); width_ok(pg, 'v1.13.0 hoy')
+        pg.evaluate(f"A.saveOrderDay('{sid}', {hoy})"); pg.wait_for_timeout(300); pg.evaluate("render()")
+        check(pg.locator('main >> text=Hoy es el día de pedir').count() == 1, 'v1.13.0: Hoy no muestra el recordatorio de hoy')
+        pg.evaluate(f"A.saveOrderDay('{sid}', {(hoy + 3) % 7})"); pg.wait_for_timeout(300); pg.evaluate("render()")
+        check(pg.locator('main >> text=día de pedir').count() == 0, 'v1.13.0: recordatorio fuera de fecha')
+        pg.evaluate(f"A.go('compras'); storeFilter = '{sid}'; render()"); pg.wait_for_timeout(300)
+        pg.locator('main button:has-text("Día de pedido")').click(); pg.wait_for_timeout(300)
+        pg.locator('#sheet button:has-text("Sin día fijo")').click(); pg.wait_for_timeout(300)
+        check(S(pg)['stores'][sid]['orderDay'] is None and pg.locator('main .ordday').count() == 0, 'v1.13.0: no quitó el día')
         ctx.close()
 
     b.close()
