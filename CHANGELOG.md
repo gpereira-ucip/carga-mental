@@ -1,5 +1,11 @@
 # Novedades de Carga Mental
 
+## v1.14.0 — 2026-11-18
+- «Lo traigo yo» (ítem 34): en la lista de cada negocio, cada producto tiene «🙋 Lo traigo». Queda «Lo trae Gonzalo/Dani» en el producto y a esa persona le aparece en «Hoy» (en «Te toca») «Lo traés vos: …». «Ya no» lo libera y «Cambiar» lo toma otra persona. Si quien toca es Daniela u otra persona, se abre una hoja para elegir quién lo trae. Al comprarlo o sacarlo de la lista, el responsable se limpia solo; lleva «Deshacer».
+- Estructura de datos: sin cambios (SCHEMA sigue en 4, sin migración): `bring` es un campo opcional del producto; si falta, nadie lo trae.
+- Pruebas: datos intactos al abrir, asignar, mostrar en Compras y en Hoy, liberar, cambiar, hoja para otros usuarios, limpieza al comprar y al sacar de la lista, botón ≥ 44 px y 390 px en claro y oscuro.
+
+
 ## v1.13.0 — 2026-11-17
 - Día fijo de pedido (ítem 33): cada negocio tiene «📅 Día de pedido», con los siete días de la semana o «Sin día fijo». El negocio muestra «Se pide los domingos» y, el día anterior y el mismo día, aparece «Mañana/Hoy es el día de pedir en <negocio>» en «Hoy» (en «Te toca» de quien se encarga, con cuántos productos hay anotados) y una etiqueta en la tarjeta. No se cargó ningún día de fábrica: lo elige la familia.
 - Estructura de datos: sin cambios (SCHEMA sigue en 4, sin migración): `orderDay` es un campo opcional del negocio (0 = domingo … 6 = sábado); si falta, no hay día fijo. Se sincroniza con el negocio.
