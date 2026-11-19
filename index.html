@@ -114,7 +114,9 @@ button.pp .ic{width:14px;height:14px;color:var(--mut);margin-left:-2px}
 .tag.b{background:var(--badbg);color:var(--bad)}
 .item{display:flex;align-items:center;gap:10px;padding:var(--s2) 0;border-top:1px solid var(--line);min-height:44px}
 .item:first-of-type{border-top:0}
-.item .t{flex:1;min-width:0}
+.item{flex-wrap:wrap}
+.item .t{flex:1 1 150px;min-width:0}
+.item .t ~ .b.sm:first-of-type{margin-left:auto}
 .item .t div:first-child{font-weight:600}
 .item .meta,.meta{font-size:var(--fs-xs);color:var(--mut)}
 .done-tx{text-decoration:line-through;color:var(--mut)}
@@ -321,10 +323,11 @@ textarea.plain{font-family:inherit;font-size:var(--fs-md);min-height:72px}
 <script>
 'use strict';
 /* ============ Constantes ============ */
-const VERSION = '1.14.0';
+const VERSION = '1.15.0';
 const SCHEMA = 4; // versión de la estructura de datos guardados (ver MIGRATIONS)
 /* Novedades: la primera es la versión actual. "hechas" = ítems del plan de 100 tildados hasta esa versión. */
 const NEWS = [
+  {v:'1.15.0', d:'2026-11-19', hechas:35, items:['«No había»: si en el negocio no encontraste algo, tocá «🚫 No había» en ese producto. Podés dejar una nota («tenían solo el grande») y, si querés, pasarlo a otro negocio para reintentar ahí. Queda marcado «No había en … (fecha)» para que nadie lo busque de nuevo en el mismo lugar. Al comprarlo, la marca se limpia sola.']},
   {v:'1.14.0', d:'2026-11-18', hechas:34, items:['«Lo traigo yo»: en la lista de cada negocio, cada producto tiene el botón «🙋 Lo traigo yo». Queda anotado «Lo trae Dani» (o Gonzalo) en el producto y a esa persona le aparece en «Hoy» lo que se comprometió a traer. Si cambian los planes, «Ya no lo traigo» lo libera. Al comprarlo o sacarlo de la lista, se limpia solo.']},
   {v:'1.13.0', d:'2026-11-17', hechas:33, items:['Día fijo de pedido: en cada negocio tocá «📅 Día de pedido» y elegí qué día de la semana lo hacen (por ejemplo, el súper los domingos). El negocio muestra «Se pide los domingos» y, el día anterior y ese mismo día, el recordatorio aparece en «Hoy» para quien se encarga, con cuántos productos hay anotados.']},
   {v:'1.12.1', d:'2026-11-16', hechas:32, items:['Links a la web de cada negocio: en Compras, cada negocio tiene un botón «🌐 Abrir web» que lo abre en el navegador. MercadoLibre ya viene con su dirección; en Berardi y el súper tocá «🔗 Poner web» y pegá el enlace de tu pedido (se guarda y se comparte con todos).']},
@@ -788,10 +791,13 @@ function learned(i){
 }
 const isAuto = i => i.auto !== false;
 /* Registra la compra. Si el producto se ajusta solo y el promedio cambió, actualiza «every» y devuelve el aviso. */
-function buy(i){ const h = histOf(i); i.state = 'ok'; i.bring = null; i.last = Date.now(); i.lastBy = me; const e = {at:i.last, by:me}; if(+i.qty > 0){ e.qty = +i.qty; e.unit = i.unit || ''; } if(priceOf(i)) e.price = priceOf(i); i.hist = h.concat([e]).slice(-30);
+function buy(i){ const h = histOf(i); i.state = 'ok'; i.bring = null; i.miss = null; i.last = Date.now(); i.lastBy = me; const e = {at:i.last, by:me}; if(+i.qty > 0){ e.qty = +i.qty; e.unit = i.unit || ''; } if(priceOf(i)) e.price = priceOf(i); i.hist = h.concat([e]).slice(-30);
   const l = isAuto(i) && learned(i); if(l && l.days !== i.every){ const antes = i.every; i.every = l.days; return `${i.name}: ahora cada ${dias(l.days)} (antes ${antes})`; } return ''; }
 /* «Lo traigo yo»: campo opcional `bring` del producto (gonzalo | dani | nada). Solo vale mientras el producto está en la lista. */
 const bringer = i => (i && needs(i) && (i.bring === 'gonzalo' || i.bring === 'dani')) ? i.bring : null;
+/* «No había» (ítem 35): campo opcional `miss` del producto {at, by, from (id del negocio), note}. Solo vale mientras está en la lista; si falta, no hubo faltante. */
+const missOf = i => (i && needs(i) && i.miss && typeof i.miss === 'object' && +i.miss.at > 0) ? i.miss : null;
+const missTxt = i => { const m = missOf(i); if(!m) return ''; const n = S.stores[m.from]?.name || 'el negocio'; const d = new Date(+m.at); return `No había en ${n} (${d.getDate()}/${d.getMonth()+1})${m.note ? ': ' + m.note : ''}`; };
 const dias = n => n === 1 ? '1 día' : n + ' días';
 const tplItems = t => (t.items || []).map(k => S.items[k]).filter(Boolean);
 /* Link a la web del negocio (ítem 32): s.url opcional; MercadoLibre trae el suyo si nunca se tocó. */
@@ -995,7 +1001,17 @@ const A = {
     if(me === 'gonzalo' || me === 'dani'){ const u = snapshot([['items', id]]); i.bring = cur === me ? null : me; put('items', i, i.bring ? `se comprometió a traer ${i.name}` : `ya no trae ${i.name}`); toast(i.bring ? `Listo, ${i.name} lo traés vos 🙋` : `${i.name} quedó sin responsable`, u); return; }
     A.open(`<h3>¿Quién lo trae?</h3><p class="muted">${esc(i.name)}</p><div class="chips">${[['gonzalo','Gonzalo'],['dani','Dani'],['',' Nadie']].map(([k, l]) => `<button class="${(cur || '') === k ? 'on' : ''}" aria-pressed="${(cur || '') === k}" onclick="A.setBring('${id}','${k}')">${l.trim()}</button>`).join('')}</div><div class="btns"><button onclick="A.close()">Cancelar</button></div>`); },
   setBring(id, who){ const i = S.items[id]; if(!i) return; i.bring = (who === 'gonzalo' || who === 'dani') ? who : null; A.close(); put('items', i, i.bring ? `${M[who].n} trae ${i.name}` : `sin responsable para ${i.name}`); },
-  unlist(id){ const i = S.items[id]; const u = snapshot([['items', id]]); i.state = 'ok'; i.bring = null; if(isDue(i)) i.last = Date.now(); put('items', i, `sacó ${i.name} de la lista`); toast('Sacado de la lista', u); },
+  noHabia(id){ const i = S.items[id]; if(!i || !needs(i)) return; const m = missOf(i), otros = sorted('stores').filter(s => s.id !== i.store);
+    A.open(`<h3>🚫 No había</h3><p class="muted">${esc(i.name)} · en ${esc(S.stores[i.store]?.name || 'este negocio')}</p>
+      <label class="f" for="f_miss">Nota (opcional)</label><input type="text" id="f_miss" maxlength="80" value="${esc(m?.note || '')}" placeholder="Ej: tenían solo el grande" autocomplete="off">
+      ${otros.length ? `<label class="f">Reintentar en otro negocio</label><div class="chips">${otros.map(s => `<button onclick="A.missGo('${id}','${s.id}')">${s.icon} ${esc(s.name)}</button>`).join('')}</div>` : ''}
+      <div class="btns"><button onclick="A.close()">Cancelar</button>${m ? `<button onclick="A.missClear('${id}')">Quitar marca</button>` : ''}<button class="pri" onclick="A.missGo('${id}','')">Solo dejar la nota</button></div>`); },
+  missGo(id, sid){ const i = S.items[id]; if(!i) return; const u = snapshot([['items', id]]); const note = ($('#f_miss')?.value || '').trim().slice(0, 80), from = i.store;
+    i.miss = {at:Date.now(), by:me, from, note}; if(sid && S.stores[sid] && sid !== from) i.store = sid; A.close();
+    put('items', i, sid && sid !== from ? `no había ${i.name} en ${S.stores[from]?.name}: lo pasó a ${S.stores[sid]?.name}` : `no había ${i.name} en ${S.stores[from]?.name}`);
+    toast(sid && sid !== from ? `Anotado. ${i.name} pasó a ${S.stores[sid].name}` : 'Anotado: no había', u); },
+  missClear(id){ const i = S.items[id]; if(!i) return; const u = snapshot([['items', id]]); i.miss = null; A.close(); put('items', i, `quitó la marca «no había» de ${i.name}`); toast('Marca quitada', u); },
+  unlist(id){ const i = S.items[id]; const u = snapshot([['items', id]]); i.state = 'ok'; i.bring = null; i.miss = null; if(isDue(i)) i.last = Date.now(); put('items', i, `sacó ${i.name} de la lista`); toast('Sacado de la lista', u); },
   allList(sid){ const u = snapshot(Object.values(S.items).filter(i => i.store === sid).map(i => ['items', i.id])); Object.values(S.items).filter(i => i.store === sid).forEach(i => { i.state = 'list'; i.at = Date.now(); i.by = me; S.items[i.id] = i; if(fs) remotePath('items').doc(i.id).set(clean(i)); }); save(); logAct(`armó el pedido habitual de ${S.stores[sid].name}`); render(); toast('Pedido habitual armado', u); },
   boughtAll(sid){ let aj = 0; const u = snapshot(Object.values(S.items).filter(i => i.store === sid && needs(i)).map(i => ['items', i.id])); Object.values(S.items).filter(i => i.store === sid && needs(i)).forEach(i => { if(buy(i)) aj++; i.at = Date.now(); i.by = me; if(fs) remotePath('items').doc(i.id).set(clean(i)); }); save(); logAct(`hizo la compra de ${S.stores[sid].name}`); pop('s:' + sid); render(); confetti(); toast('Compra registrada ✔ 🎉' + (aj ? (aj === 1 ? ' Se ajustó la frecuencia de 1 producto.' : ` Se ajustó la frecuencia de ${aj} productos.`) : ''), u); },
   cycleStore(sid){ const s = S.stores[sid]; const o = ['gonzalo','dani','ambos']; s.owner = o[(o.indexOf(s.owner)+1) % o.length]; put('stores', s, `ahora ${M[s.owner].n} se encarga de ${s.name}`); },
@@ -1412,7 +1428,7 @@ function vCompras(){
       ${orderDay(s) !== null ? `<div class="sub ordday">📅 ${esc(orderTxt(s))}${orderIn(s) <= 1 ? ` · <span class="tag w">${orderIn(s) === 0 ? 'hoy toca pedir' : 'mañana toca pedir'}</span>` : ''}</div>` : ''}
       ${soonHtml(its)}
       ${totalTxt(estTotal(need)) ? `<div class="total" role="status">${esc(totalTxt(estTotal(need)))}</div>` : ''}
-      ${need.length ? byCat(need, i => `<div class="item">${chk(`<input type="checkbox" onchange="A.bought('${i.id}')" aria-label="Comprado: ${esc(i.name)}">`)}<div class="t" onclick="A.itemForm('${i.id}')" ${KB} aria-label="Editar ${esc(i.name)}"><div>${iname(i)}</div><div class="meta">${i.state === 'list' ? `anotado por ${esc(M[i.by]?.n || '—')}` : `<span class="tag w">toca reponer</span> última ${ago(i.last)}`}${i.note ? ' · ' + esc(i.note) : ''}${priceOf(i) ? ' · ' + fmoney(priceOf(i)) : ''}${bringer(i) ? ` · <span class="tag">🙋 Lo trae ${esc(M[bringer(i)].n)}</span>` : ''}</div></div><button class="b sm" onclick="A.bring('${i.id}')" aria-label="${bringer(i) === me ? 'Ya no traigo' : bringer(i) ? 'Cambiar quién trae' : 'Lo traigo yo:'} ${esc(i.name)}">${bringer(i) && bringer(i) === me ? 'Ya no' : bringer(i) ? 'Cambiar' : '🙋 Lo traigo'}</button><button class="b sm" onclick="A.unlist('${i.id}')" aria-label="Sacar ${esc(i.name)} de la lista">✕</button></div>`, cats) : empty('compras', 'Nada para comprar', 'La despensa está al día. Si algo se acaba, tocá «Se acaba».', '', true)}
+      ${need.length ? byCat(need, i => `<div class="item">${chk(`<input type="checkbox" onchange="A.bought('${i.id}')" aria-label="Comprado: ${esc(i.name)}">`)}<div class="t" onclick="A.itemForm('${i.id}')" ${KB} aria-label="Editar ${esc(i.name)}"><div>${iname(i)}</div><div class="meta">${i.state === 'list' ? `anotado por ${esc(M[i.by]?.n || '—')}` : `<span class="tag w">toca reponer</span> última ${ago(i.last)}`}${i.note ? ' · ' + esc(i.note) : ''}${priceOf(i) ? ' · ' + fmoney(priceOf(i)) : ''}${bringer(i) ? ` · <span class="tag">🙋 Lo trae ${esc(M[bringer(i)].n)}</span>` : ''}${missOf(i) ? ` · <span class="tag w">🚫 ${esc(missTxt(i))}</span>` : ''}</div></div><button class="b sm" onclick="A.bring('${i.id}')" aria-label="${bringer(i) === me ? 'Ya no traigo' : bringer(i) ? 'Cambiar quién trae' : 'Lo traigo yo:'} ${esc(i.name)}">${bringer(i) && bringer(i) === me ? 'Ya no' : bringer(i) ? 'Cambiar' : '🙋 Lo traigo'}</button><button class="b sm" onclick="A.noHabia('${i.id}')" aria-label="No había: ${esc(i.name)}">🚫 No había</button><button class="b sm" onclick="A.unlist('${i.id}')" aria-label="Sacar ${esc(i.name)} de la lista">✕</button></div>`, cats) : empty('compras', 'Nada para comprar', 'La despensa está al día. Si algo se acaba, tocá «Se acaba».', '', true)}
       <details ${need.length ? "" : "open"}><summary>Habituales (${rest.length})</summary>${byCat(rest, i => `<div class="item"><div class="t" onclick="A.itemForm('${i.id}')" ${KB} aria-label="Editar ${esc(i.name)}"><div>${iname(i)}</div><div class="meta">${soonLeft(i) ? `<span class="tag w">${soonTxt(soonLeft(i))}</span> ` : ''}cada ${dias(i.every)}${isAuto(i) && (learned(i) || {}).days === i.every ? ' <span class="tag">aprendido</span>' : ''} · última ${ago(i.last)}${i.lastBy ? ' (' + esc(M[i.lastBy]?.n) + ')' : ''}</div></div><button class="b sm" onclick="A.need('${i.id}')" aria-label="Se acaba ${esc(i.name)}">Se acaba</button></div>`, cats)}</details>
       <div class="btns">${need.length ? `<button class="pri" onclick="A.shopMode('${s.id}')">🛒 Estoy en el negocio</button>` : ''}<button onclick="A.share('${s.id}')">📲 Mandar lista</button>${need.length > 1 ? `<button onclick="A.boughtAll('${s.id}')">✔ Compré todo</button>` : ''}<button onclick="A.allList('${s.id}')">Pedido habitual</button><button onclick="A.tpls('${s.id}')">📋 Plantillas</button><button onclick="A.orderDay('${s.id}')">📅 Día de pedido</button>${storeUrl(s) ? `<a class="btn" href="${esc(storeUrl(s))}" target="_blank" rel="noopener noreferrer">🌐 Abrir web</a><button onclick="A.storeLink('${s.id}')" aria-label="Cambiar el enlace de ${esc(s.name)}">✎ Enlace</button>` : `<button onclick="A.storeLink('${s.id}')">🔗 Poner web</button>`}<button onclick="A.itemForm(null,'${s.id}')">+ Producto</button></div></section>`;
   });
