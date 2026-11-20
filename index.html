@@ -323,10 +323,11 @@ textarea.plain{font-family:inherit;font-size:var(--fs-md);min-height:72px}
 <script>
 'use strict';
 /* ============ Constantes ============ */
-const VERSION = '1.16.0';
+const VERSION = '1.17.0';
 const SCHEMA = 5; // versión de la estructura de datos guardados (ver MIGRATIONS)
 /* Novedades: la primera es la versión actual. "hechas" = ítems del plan de 100 tildados hasta esa versión. */
 const NEWS = [
+  {v:'1.17.0', d:'2026-11-20', hechas:37, items:['Snacks de Joaco: en la pestaña Joaco hay una tarjeta «🍎 Snacks de la semana» con el snack de cada día, de lunes a viernes. «Armar rotación» los reparte para que no se repita el mismo dos días seguidos y la semana siguiente sigue desde donde quedó. Tocá un día para cambiarlo a mano y en «Opciones» editás la lista de snacks que le gustan.','Tus datos quedan como estaban: la lista arranca con ideas comunes que podés cambiar.']},
   {v:'1.16.0', d:'2026-11-20', hechas:36, items:['Ideas y antojos: al final de Compras hay una lista aparte para lo que no es urgente (un queso nuevo, una idea para el cumpleaños de Joaco). Anotá con el campito y «Sumar»; cuando se anime alguien, «A la lista» lo pasa al negocio que elijas. No cuenta como pendiente ni molesta en Hoy.','Tus datos quedan como estaban: solo se suma la lista de ideas, vacía al principio.']},
   {v:'1.15.0', d:'2026-11-19', hechas:35, items:['«No había»: si en el negocio no encontraste algo, tocá «🚫 No había» en ese producto. Podés dejar una nota («tenían solo el grande») y, si querés, pasarlo a otro negocio para reintentar ahí. Queda marcado «No había en … (fecha)» para que nadie lo busque de nuevo en el mismo lugar. Al comprarlo, la marca se limpia sola.']},
   {v:'1.14.0', d:'2026-11-18', hechas:34, items:['«Lo traigo yo»: en la lista de cada negocio, cada producto tiene el botón «🙋 Lo traigo yo». Queda anotado «Lo trae Dani» (o Gonzalo) en el producto y a esa persona le aparece en «Hoy» lo que se comprometió a traer. Si cambian los planes, «Ya no lo traigo» lo libera. Al comprarlo o sacarlo de la lista, se limpia solo.']},
@@ -675,6 +676,16 @@ function spendOf(y, m){
     by[i.store] = (by[i.store] || 0) + p; t.sum += p;
   }));
   return {by, t};
+}
+/* Snacks de Joaco (ítem 37): documento opcional checks.snacks {opts:[...], plan:{1..5:texto}, cur:número}. Si falta, se lee con valores por defecto. */
+const SNACK_OPTS = ['Fruta', 'Yogur', 'Frutos secos', 'Galletitas de arroz', 'Barrita de cereal'];
+function snk(){ const d = S.checks.snacks, o = d && Array.isArray(d.opts) ? d.opts.filter(x => typeof x === 'string' && x.trim()) : SNACK_OPTS.slice(); return {id:'snacks', opts:o, plan:(d && d.plan && typeof d.plan === 'object') ? d.plan : {}, cur:(d && +d.cur > 0) ? Math.floor(+d.cur) : 0}; }
+function snackToday(){ const dw = new Date().getDay(); return dw >= 1 && dw <= 5 ? (snk().plan[dw] || '') : ''; }
+function snacksHtml(){
+  const d = snk();
+  return `<div class="card" id="snacks"><div class="row"><h3>🍎 Snacks de la semana</h3><button class="b sm" onclick="A.snackOpts()">Opciones</button></div>
+    ${[1,2,3,4,5].map(x => `<div class="item"><div class="t" onclick="A.snackDay(${x})" ${KB} aria-label="Cambiar el snack del ${DOWL[x]}"><div><b>${DOWL[x][0].toUpperCase() + DOWL[x].slice(1)}</b>: ${d.plan[x] ? esc(d.plan[x]) : '<span class="muted">sin elegir</span>'}</div></div><button class="b sm" onclick="A.snackDay(${x})" aria-label="Cambiar el snack del ${DOWL[x]}">Cambiar</button></div>`).join('')}
+    <div class="btns"><button class="pri" onclick="A.snackRot()">Armar rotación</button></div><div class="sub">Que no se repita el mismo dos días seguidos.</div></div>`;
 }
 /* Ideas y antojos (ítem 36): lista aparte, sin urgencia; no cuenta como pendiente. */
 function ideasHtml(){
@@ -1242,6 +1253,23 @@ const A = {
       <div class="btns"><button class="pri" onclick="A.saveMochila()">Guardar</button><button onclick="A.close()">Cancelar</button></div>`);
   },
   saveMochila(){ const c = S.checks.mochila; c.list = $('#f_list').value.split('\n').map(s => s.trim()).filter(Boolean); c.done = {}; A.close(); put('checks', c, 'editó la checklist de la mochila'); },
+  snackSave(d, act, msg, u){ d.id = 'snacks'; A.close(); put('checks', d, act); toast(msg, u); },
+  snackRot(){ const d = snk(); if(!d.opts.length) return toast('Primero cargá algunas opciones'); const u = snapshot([['checks', 'snacks']]), n = d.opts.length;
+    [1,2,3,4,5].forEach((x, i) => { d.plan[x] = d.opts[(d.cur + i) % n]; }); d.cur = (d.cur + 5) % n;
+    put('checks', d, 'armó la rotación de snacks de Joaco'); toast(n < 2 ? 'Armado (con una sola opción se repite: sumá más)' : 'Rotación armada 🍎', u); },
+  snackDay(x){ const d = snk(); A._snk = x;
+    A.open(`<h3>🍎 Snack del ${DOWL[x]}</h3><div class="chips">${d.opts.map((o, i) => `<button class="${d.plan[x] === o ? 'on' : ''}" onclick="A.snackSet(${x},${i})">${esc(o)}</button>`).join('')}</div>
+      <label class="f" for="f_snk">Otro (a mano)</label><input type="text" id="f_snk" maxlength="40" value="${d.opts.includes(d.plan[x]) ? '' : esc(d.plan[x] || '')}" autocomplete="off">
+      <div class="btns"><button class="pri" onclick="A.snackSet(${x},-1)">Guardar</button><button onclick="A.snackSet(${x},-2)">Dejar sin elegir</button><button onclick="A.close()">Cancelar</button></div>`); },
+  snackSet(x, i){ const d = snk(), u = snapshot([['checks', 'snacks']]); let t = '';
+    if(i >= 0) t = d.opts[i] || ''; else if(i === -1) t = ($('#f_snk').value || '').trim().replace(/\s+/g, ' ').slice(0, 40);
+    if(i === -1 && !t) return toast('Escribí un snack o elegí uno');
+    if(t) d.plan[x] = t; else delete d.plan[x]; A.snackSave(d, `eligió el snack del ${DOWL[x]}: ${t || 'sin elegir'}`, 'Listo ✔', u); },
+  snackOpts(){ const d = snk();
+    A.open(`<h3>Opciones de snack</h3><p class="muted">Uno por renglón. La rotación usa esta lista en orden.</p><textarea id="f_sopts" style="font-family:inherit;font-size:14px;min-height:160px">${esc(d.opts.join('\n'))}</textarea>
+      <div class="btns"><button class="pri" onclick="A.snackOptsSave()">Guardar</button><button onclick="A.close()">Cancelar</button></div>`); },
+  snackOptsSave(){ const d = snk(), u = snapshot([['checks', 'snacks']]); const o = [...new Set($('#f_sopts').value.split('\n').map(x => x.trim().replace(/\s+/g, ' ').slice(0, 40)).filter(Boolean))];
+    if(!o.length) return toast('Dejá al menos una opción'); d.opts = o; d.cur = 0; A.snackSave(d, 'editó las opciones de snack', 'Opciones guardadas ✔', u); },
   saludForm(id){
     const s = id ? S.salud[id] : {id:'s_'+uid(), name:'', every:365, last:'', next:'', owner:'gonzalo', note:''};
     A._draft = s;
@@ -1521,6 +1549,7 @@ function vJoaco(){
     ${c.list.map((x, i) => `<label class="item"><input type="checkbox" class="${pc('m:' + i).trim()}" ${done[i] ? 'checked' : ''} onchange="A.mochila(${i})"><div class="t"><div>${esc(x)}</div>${done[i] ? `<div class="meta">${esc(M[done[i]]?.n)}</div>` : ''}</div></label>`).join('')}
     <div class="sub">Se reinicia cada día.</div></div>`;
 
+  h += snacksHtml();
   h += `<div class="card"><div class="row"><h3>${hic('salud')} Salud</h3><button class="b sm" onclick="A.saludForm()">+ Control</button></div>
     ${Object.keys(S.salud).length ? '' : empty('salud', 'Sin controles cargados', 'Agregá pediatra, dentista u oculista para que la app avise cuándo sacar turno.', '', true)}
     ${Object.values(S.salud).sort((a,b) => a.name.localeCompare(b.name)).map(s => {

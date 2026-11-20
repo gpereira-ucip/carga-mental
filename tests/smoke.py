@@ -22,6 +22,7 @@ Levanta un servidor local, abre la app en un celular simulado (390x844) y recorr
   16. v1.14.0: «Lo traigo yo» (quién compra un ítem puntual, sin migración).
   17. v1.15.0: «No había» (nota y reintento en otro negocio, sin migración).
   18. v1.16.0: ideas y antojos (migración al esquema 5).
+  19. v1.17.0: snacks de Joaco (documento opcional checks.snacks, sin migración).
   13. v1.12.0: migración al esquema 4 (datos de v1.11.0) y plantillas de pedido (armar, editar, crear, borrar, deshacer).
 Falla si hay errores de JavaScript o de consola, o si la página se ensancha más de 390 px.
 Guarda capturas en /tmp/cm-*.png para revisarlas.
@@ -554,7 +555,7 @@ with sync_playwright() as p:
         check(it['i_agua']['cat'] == 'bebidas' and it['i_mio']['cat'] == 'frescos' and it['i_huerfano']['cat'] == 'almacen', f"v1.5: categorías mal asignadas {[x['cat'] for x in it.values()]}")
         check(all(x['qty'] is None and x['unit'] == '' for x in it.values()), 'v1.5: cantidad/unidad iniciales')
         check(it['i_mio']['hist'] == [{'at': 1762000000000, 'by': None}] and it['i_agua']['hist'] == [], f"v1.5: historial inicial {it['i_mio']['hist']}")
-        check(pg.locator('#sheet >> text=36/100').count() > 0, 'v1.5: Novedades no muestra 36/100')
+        check(pg.locator('#sheet >> text=37/100').count() > 0, 'v1.5: Novedades no muestra 37/100')
         pg.screenshot(path=f'/tmp/cm-v15-novedades-{scheme}.png')
         pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
         pg.reload(); pg.wait_for_timeout(1800)
@@ -693,7 +694,7 @@ with sync_playwright() as p:
         for x in d0['items'].values(): x.pop('auto', None)
         check(d0 == pre, 'v1.6: la migración cambió o perdió datos de v1.5.0')
         check(json.loads(pg.evaluate('localStorage.getItem("cm_backup_v2")') or 'null') == pre, 'v1.6: no quedó la copia cm_backup_v2 idéntica')
-        check(pg.locator('#sheet >> text=36/100').count() > 0, 'v1.6: Novedades no se abrió con 36/100')
+        check(pg.locator('#sheet >> text=37/100').count() > 0, 'v1.6: Novedades no se abrió con 37/100')
         pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
         # Cálculo del promedio
         calc = pg.evaluate("""() => { const D = 86400000, t = 1e12, h = a => ({hist: a.map(n => ({at: t + n * D}))});
@@ -764,7 +765,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---------- 10. v1.7.0: aviso anticipado («se acaba en 2 días») ----------
-    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.16.0');"
+    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.17.0');"
               " if(!localStorage.getItem('cm_data')){ const d = %s; d._v = 5; d.tpls = {}; d.ideas = {}; Object.values(d.items).forEach(i => i.auto = true);"
               " localStorage.setItem('cm_pre', JSON.stringify(d)); localStorage.setItem('cm_data', JSON.stringify(d)); }") % json.dumps(V15)
     for scheme in ['light', 'dark']:
@@ -900,7 +901,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---- v1.12.0: plantillas de pedido (migración al esquema 4) ----
-    init18 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.16.0');"
+    init18 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.17.0');"
               " if(!localStorage.getItem('cm_data')){ const d = %s; d._v = 3; Object.values(d.items).forEach(i => i.auto = true);"
               " localStorage.setItem('cm_pre', JSON.stringify(d)); localStorage.setItem('cm_data', JSON.stringify(d)); }") % json.dumps(V15)
     for scheme in ['light', 'dark']:
@@ -1129,6 +1130,43 @@ with sync_playwright() as p:
         check(iid in S(pg)['ideas'], 'v1.16.0: deshacer del borrado')
         pg.evaluate("storeFilter = 'todos'; render()"); width_ok(pg, 'v1.16.0 final')
         ctx.close()
+
+    # ---- v1.17.0: snacks de Joaco (sin migración) ----
+    for scheme in ['light', 'dark']:
+        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init17)
+        pg = ctx.new_page()
+        pg.on('pageerror', lambda e: errs.append(f'[v1.17.0] JS: {e}'))
+        pg.on('console', lambda m: errs.append(f'[v1.17.0] consola: {m.text}') if m.type == 'error' else None)
+        pg.goto(URL); pg.wait_for_timeout(1500)
+        pre = json.loads(pg.evaluate('localStorage.getItem("cm_pre")')); check(S(pg) == pre, 'v1.17.0: los datos cambiaron al abrir')
+        check('snacks' not in S(pg)['checks'], 'v1.17.0: creó el documento sin que lo pidan')
+        pg.evaluate("A.go('joaco'); render()"); pg.wait_for_timeout(300)
+        check(pg.locator('#snacks >> text=sin elegir').count() == 5, 'v1.17.0: no muestra los 5 días sin elegir')
+        check(pg.locator('#snacks button:has-text("Armar rotación")').bounding_box()['height'] >= 44, 'v1.17.0: botón chico')
+        pg.locator('#snacks button:has-text("Armar rotación")').click(); pg.wait_for_timeout(300)
+        pl = S(pg)['checks']['snacks']['plan']; v = [pl[str(k)] for k in range(1, 6)]
+        check(len(v) == 5 and all(v[i] != v[i + 1] for i in range(4)), f'v1.17.0: se repite un snack seguido: {v}')
+        pg.screenshot(path=f'/tmp/cm-v1170-snacks-{scheme}.png', full_page=True); width_ok(pg, 'v1.17.0 snacks')
+        pg.evaluate("document.querySelector('#toast button').click()"); pg.wait_for_timeout(300)
+        check('snacks' not in S(pg)['checks'] or not S(pg)['checks']['snacks'].get('plan'), 'v1.17.0: el deshacer no restauró')
+        pg.evaluate("A.snackOpts()"); pg.wait_for_timeout(300)
+        pg.locator('#f_sopts').fill('   '); pg.locator('#sheet button:has-text("Guardar")').click(); pg.wait_for_timeout(200)
+        check(pg.locator('#f_sopts').count() == 1, 'v1.17.0: aceptó una lista vacía')
+        pg.locator('#f_sopts').fill('Fruta\nYogur\nFruta\nQueso'); pg.locator('#sheet button:has-text("Guardar")').click(); pg.wait_for_timeout(300)
+        check(S(pg)['checks']['snacks']['opts'] == ['Fruta', 'Yogur', 'Queso'], 'v1.17.0: no guardó las opciones sin repetidas')
+        pg.evaluate("A.snackRot()"); pg.wait_for_timeout(200)
+        d = S(pg)['checks']['snacks']; a = [d['plan'][str(k)] for k in range(1, 6)]; c1 = d['cur']
+        pg.evaluate("A.snackRot()"); pg.wait_for_timeout(200)
+        d = S(pg)['checks']['snacks']; a2 = [d['plan'][str(k)] for k in range(1, 6)]
+        check(a[-1] != a2[0] and all(a2[i] != a2[i + 1] for i in range(4)) and c1 == 2, f'v1.17.0: la semana siguiente no sigue la rotación {a} {a2} {c1}')
+        pg.evaluate("A.snackDay(3)"); pg.wait_for_timeout(300)
+        pg.locator('#f_snk').fill('Tostadas con queso'); pg.locator('#sheet button:has-text("Guardar")').click(); pg.wait_for_timeout(300)
+        check(S(pg)['checks']['snacks']['plan']['3'] == 'Tostadas con queso', 'v1.17.0: no guardó el snack a mano')
+        pg.evaluate("A.snackDay(3)"); pg.wait_for_timeout(300); pg.locator('#sheet .chips button').first.click(); pg.wait_for_timeout(300)
+        check(S(pg)['checks']['snacks']['plan']['3'] == 'Fruta', 'v1.17.0: no eligió de la lista')
+        pg.evaluate("A.snackDay(3)"); pg.wait_for_timeout(300); pg.locator('#sheet button:has-text("Dejar sin elegir")').click(); pg.wait_for_timeout(300)
+        check('3' not in S(pg)['checks']['snacks']['plan'], 'v1.17.0: no dejó sin elegir')
+        width_ok(pg, 'v1.17.0 final'); ctx.close()
 
     b.close()
 srv.shutdown()

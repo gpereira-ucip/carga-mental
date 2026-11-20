@@ -45,7 +45,7 @@ Las marcadas 🔑 necesitan algo de Gonzalo (una cuenta, una clave, un dato). En
 - [x] 34. "Lo traigo yo": asignar quién compra un ítem puntual. — ✔ 2026-11-18 (v1.14.0)
 - [x] 35. "No había": nota y reintento en otro negocio. — ✔ 2026-11-19 (v1.15.0)
 - [x] 36. Lista de ideas y antojos no urgentes. — ✔ 2026-11-20 (v1.16.0)
-- [ ] 37. Rotación de snacks de Joaco para variar en la semana.
+- [x] 37. Rotación de snacks de Joaco para variar en la semana. — ✔ 2026-11-20 (v1.17.0)
 - [ ] 38. Compartir con el menú nativo (Web Share) y copiar como texto, además de WhatsApp.
 - [ ] 39. Marca o variedad preferida por producto (y foto opcional).
 - [ ] 40. Huevos de gallinas alimentadas a maíz y productos del naturista con nota de calidad y dónde comprarlos.

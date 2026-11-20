@@ -1,5 +1,10 @@
 # Novedades de Carga Mental
 
+## v1.17.0 — 2026-11-20
+- Snacks de Joaco (ítem 37): en la pestaña Joaco, tarjeta «🍎 Snacks de la semana» con el snack de lunes a viernes. «Armar rotación» reparte las opciones en orden para que no se repita el mismo dos días seguidos, y la próxima vez sigue desde donde quedó (también entre semanas). Tocar un día permite elegir de la lista, escribir otro o dejarlo sin elegir; «Opciones» edita la lista (sin repetidas). Todo lleva «Deshacer». Las opciones de arranque (fruta, yogur, frutos secos, galletitas de arroz, barrita de cereal) son ideas comunes y se cambian a gusto; no son indicaciones médicas.
+- Estructura de datos: sin cambios (SCHEMA sigue en 5, sin migración): `checks.snacks` ({opts, plan, cur}) es un documento opcional que recién se crea al usar la tarjeta; si falta, se leen las opciones por defecto.
+- Pruebas: datos intactos al abrir, sin documento hasta usarlo, rotación sin repetidos seguidos y continuidad entre semanas, deshacer, validación de lista vacía y duplicados, elegir/escribir/vaciar un día, botón ≥ 44 px y 390 px en claro y oscuro. Pruebas viejas adaptadas a 37/100.
+
 ## v1.16.0 — 2026-11-20
 - Ideas y antojos (ítem 36): al final de Compras (con el filtro «Todos») hay una tarjeta «💡 Ideas y antojos» para lo que no es urgente. Se anota con el campito y «Sumar» (o Enter); tocar una idea la edita; «A la lista» abre una hoja para elegir el negocio y la pasa a la lista de compras (si el producto ya existe ahí, lo reutiliza); «✕» la borra. Todo lleva «Deshacer». Las ideas no cuentan como pendientes ni aparecen en «Hoy».
 - Estructura de datos: SCHEMA pasa a 5. La migración 5 solo agrega la colección `ideas` (vacía) y antes guarda la copia `cm_backup_v4`; no toca productos, negocios ni plantillas. Se sincroniza con la nube como las demás colecciones.
