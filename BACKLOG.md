@@ -44,7 +44,7 @@ Las marcadas 🔑 necesitan algo de Gonzalo (una cuenta, una clave, un dato). En
 - [x] 33. Día fijo de pedido por negocio con recordatorio (ej.: súper los domingos). — ✔ 2026-11-17 (v1.13.0) · El recordatorio se ve dentro de la app (Hoy); con la app cerrada depende de los ítems 91/92.
 - [x] 34. "Lo traigo yo": asignar quién compra un ítem puntual. — ✔ 2026-11-18 (v1.14.0)
 - [x] 35. "No había": nota y reintento en otro negocio. — ✔ 2026-11-19 (v1.15.0)
-- [ ] 36. Lista de ideas y antojos no urgentes.
+- [x] 36. Lista de ideas y antojos no urgentes. — ✔ 2026-11-20 (v1.16.0)
 - [ ] 37. Rotación de snacks de Joaco para variar en la semana.
 - [ ] 38. Compartir con el menú nativo (Web Share) y copiar como texto, además de WhatsApp.
 - [ ] 39. Marca o variedad preferida por producto (y foto opcional).

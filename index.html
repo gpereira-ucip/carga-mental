@@ -323,10 +323,11 @@ textarea.plain{font-family:inherit;font-size:var(--fs-md);min-height:72px}
 <script>
 'use strict';
 /* ============ Constantes ============ */
-const VERSION = '1.15.0';
-const SCHEMA = 4; // versión de la estructura de datos guardados (ver MIGRATIONS)
+const VERSION = '1.16.0';
+const SCHEMA = 5; // versión de la estructura de datos guardados (ver MIGRATIONS)
 /* Novedades: la primera es la versión actual. "hechas" = ítems del plan de 100 tildados hasta esa versión. */
 const NEWS = [
+  {v:'1.16.0', d:'2026-11-20', hechas:36, items:['Ideas y antojos: al final de Compras hay una lista aparte para lo que no es urgente (un queso nuevo, una idea para el cumpleaños de Joaco). Anotá con el campito y «Sumar»; cuando se anime alguien, «A la lista» lo pasa al negocio que elijas. No cuenta como pendiente ni molesta en Hoy.','Tus datos quedan como estaban: solo se suma la lista de ideas, vacía al principio.']},
   {v:'1.15.0', d:'2026-11-19', hechas:35, items:['«No había»: si en el negocio no encontraste algo, tocá «🚫 No había» en ese producto. Podés dejar una nota («tenían solo el grande») y, si querés, pasarlo a otro negocio para reintentar ahí. Queda marcado «No había en … (fecha)» para que nadie lo busque de nuevo en el mismo lugar. Al comprarlo, la marca se limpia sola.']},
   {v:'1.14.0', d:'2026-11-18', hechas:34, items:['«Lo traigo yo»: en la lista de cada negocio, cada producto tiene el botón «🙋 Lo traigo yo». Queda anotado «Lo trae Dani» (o Gonzalo) en el producto y a esa persona le aparece en «Hoy» lo que se comprometió a traer. Si cambian los planes, «Ya no lo traigo» lo libera. Al comprarlo o sacarlo de la lista, se limpia solo.']},
   {v:'1.13.0', d:'2026-11-17', hechas:33, items:['Día fijo de pedido: en cada negocio tocá «📅 Día de pedido» y elegí qué día de la semana lo hacen (por ejemplo, el súper los domingos). El negocio muestra «Se pide los domingos» y, el día anterior y ese mismo día, el recordatorio aparece en «Hoy» para quien se encarga, con cuántos productos hay anotados.']},
@@ -391,7 +392,7 @@ const NEWS = [
   ]}
 ];
 const DAY = 86400000;
-const COLS = ['stores','items','tasks','checks','salud','indic','areas','msgs','weeks','log','tpls'];
+const COLS = ['stores','items','tasks','checks','salud','indic','areas','msgs','weeks','log','tpls','ideas'];
 const M = {
   gonzalo:{n:'Gonzalo', r:'Papá', c:'#2563eb', ini:'G'},
   dani:{n:'Dani', r:'Mamá · Daniela, esposa', c:'#db2777', ini:'D'},
@@ -642,6 +643,9 @@ const MIGRATIONS = {
   4(D){ // v1.11.0 → esquema 4 (v1.12.0): plantillas de pedido. Solo agrega la colección; no toca productos ni negocios.
     if(!D.tpls || typeof D.tpls !== 'object') D.tpls = {};
     if(!(+D._v >= 4) && !Object.keys(D.tpls).length) D.tpls = defaultTpls(D); // _v ya es 4 cuando vuelve de la nube: no revive las que se borraron
+  },
+  5(D){ // v1.15.0 → esquema 5 (v1.16.0): ideas y antojos. Solo agrega la colección (vacía); no toca nada más.
+    if(!D.ideas || typeof D.ideas !== 'object') D.ideas = {};
   }
 };
 function migrate(D){
@@ -654,8 +658,8 @@ let S;
 try { S = JSON.parse(localStorage.getItem(LS.data)); } catch(e) {}
 let fresh = false;
 if(!S || typeof S !== 'object'){ S = seed(); S._v = SCHEMA; fresh = true; }
-COLS.forEach(c => { if(c !== 'tpls') S[c] = S[c] || {}; }); // «tpls» la crea la migración 4 (así la copia de seguridad queda idéntica)
-const migrado = migrate(S); S.tpls = S.tpls || {};
+COLS.forEach(c => { if(c !== 'tpls' && c !== 'ideas') S[c] = S[c] || {}; }); // «tpls» e «ideas» las crean las migraciones 4 y 5 (así la copia de seguridad queda idéntica)
+const migrado = migrate(S); S.tpls = S.tpls || {}; S.ideas = S.ideas || {};
 if(migrado || fresh) try { localStorage.setItem(LS.data, JSON.stringify(S)); } catch(e) {}
 let me = localStorage.getItem(LS.me) || '';
 let tab = localStorage.getItem(LS.tab) || 'hoy';
@@ -671,6 +675,13 @@ function spendOf(y, m){
     by[i.store] = (by[i.store] || 0) + p; t.sum += p;
   }));
   return {by, t};
+}
+/* Ideas y antojos (ítem 36): lista aparte, sin urgencia; no cuenta como pendiente. */
+function ideasHtml(){
+  const l = Object.values(S.ideas || {}).filter(x => x && x.text).sort((a, b) => (b.at || 0) - (a.at || 0));
+  return `<section class="card" id="ideas"><h3>💡 Ideas y antojos</h3><p class="muted">Cosas para algún día, sin apuro. No cuentan como pendientes.</p>
+    ${l.map(x => `<div class="item"><div class="t" onclick="A.ideaForm('${x.id}')" ${KB} aria-label="Editar: ${esc(x.text)}"><div>${esc(x.text)}</div><div class="meta">${x.by && M[x.by] ? 'anotó ' + esc(M[x.by].n) + ' · ' : ''}${ago(x.at)}</div></div><button class="b sm pri" onclick="A.ideaGo('${x.id}')" aria-label="Pasar a la lista: ${esc(x.text)}">A la lista</button><button class="b sm" onclick="A.ideaDel('${x.id}')" aria-label="Borrar la idea: ${esc(x.text)}">✕</button></div>`).join('') || '<p class="muted">Todavía no hay ideas. Anotá la primera acá abajo.</p>'}
+    <div class="btns"><input type="text" id="idea_in" maxlength="80" placeholder="Ej: probar el queso azul" autocomplete="off" aria-label="Nueva idea o antojo" onkeydown="if(event.key==='Enter'){event.preventDefault();A.ideaAdd()}"><button class="pri" onclick="A.ideaAdd()">Sumar</button></div></section>`;
 }
 function spendHtml(){
   const now = new Date(), d = new Date(now.getFullYear(), now.getMonth() - spendOff, 1), r = spendOf(d.getFullYear(), d.getMonth());
@@ -1084,6 +1095,20 @@ const A = {
     save(); logAct(`armó el pedido «${t.name}» (${S.stores[t.store]?.name})`); A.close(); render();
     toast(nuevos.length ? `Pedido armado: ${nuevos.length} producto${nuevos.length === 1 ? '' : 's'} anotado${nuevos.length === 1 ? '' : 's'}${l.length > nuevos.length ? ` (${l.length - nuevos.length} ya estaba${l.length - nuevos.length === 1 ? '' : 'n'})` : ''}` : 'Todo eso ya estaba en la lista', nuevos.length ? u : undefined);
   },
+  ideaAdd(){ const el = $('#idea_in'), t = (el ? el.value : '').trim().replace(/\s+/g, ' ').slice(0, 80); if(!t) return toast('Escribí la idea');
+    const x = {id:'id_' + uid(), text:t}, u = snapshot([['ideas', x.id]]); put('ideas', x, `anotó la idea «${t}»`); toast('Idea anotada 💡', u); },
+  ideaForm(id){ const x = S.ideas[id]; if(!x) return;
+    A.open(`<h3>💡 Editar idea</h3><label class="f" for="f_idea">Idea o antojo</label><input type="text" id="f_idea" maxlength="80" value="${esc(x.text)}" autocomplete="off">
+      <div class="btns"><button class="pri" onclick="A.ideaSave('${id}')">Guardar</button><button onclick="A.ideaDel('${id}')">Borrar</button><button onclick="A.close()">Cancelar</button></div>`); },
+  ideaSave(id){ const x = S.ideas[id]; if(!x) return; const t = $('#f_idea').value.trim().replace(/\s+/g, ' ').slice(0, 80); if(!t) return toast('Escribí la idea');
+    x.text = t; A.close(); put('ideas', x, `editó la idea «${t}»`); toast('Guardado ✔'); },
+  ideaDel(id){ const x = S.ideas[id]; if(!x) return; const u = snapshot([['ideas', id]]); A.close(); del('ideas', id, `borró la idea «${x.text}»`); toast('Idea borrada', u); },
+  ideaGo(id){ const x = S.ideas[id]; if(!x) return; const ss = sorted('stores'); if(!ss.length) return toast('Primero creá un negocio');
+    A.open(`<h3>💡 A la lista</h3><p class="muted">${esc(x.text)}</p><label class="f">¿En qué negocio?</label><div class="chips">${ss.map(s => `<button onclick="A.ideaTo('${id}','${s.id}')">${s.icon} ${esc(s.name)}</button>`).join('')}</div><div class="btns"><button onclick="A.close()">Cancelar</button></div>`); },
+  ideaTo(id, sid){ const x = S.ideas[id]; if(!x || !S.stores[sid]) return; const q = norm(x.text), ex = Object.values(S.items).find(i => i.store === sid && norm(i.name) === q);
+    const i = ex || newItem(cap(x.text), sid), u = snapshot([['items', i.id], ['ideas', id]]);
+    i.state = 'list'; i.at = Date.now(); i.by = me; S.items[i.id] = i; if(fs) remotePath('items').doc(i.id).set(clean(i)).catch(() => {});
+    A.close(); del('ideas', id, `pasó la idea «${x.text}» a la lista de ${S.stores[sid].name}`); toast(`Anotado en ${S.stores[sid].name}`, u); },
   saveItem(id){
     const i = S.items[id] || A._draft; i.name = $('#f_name').value.trim(); if(!i.name) return toast('Poné un nombre');
     i.store = $('#f_store').value; i.every = Math.max(1, Math.round(+$('#f_every').value) || 7); i.auto = $('#f_auto').checked; i.note = $('#f_note').value.trim();
@@ -1432,7 +1457,7 @@ function vCompras(){
       <details ${need.length ? "" : "open"}><summary>Habituales (${rest.length})</summary>${byCat(rest, i => `<div class="item"><div class="t" onclick="A.itemForm('${i.id}')" ${KB} aria-label="Editar ${esc(i.name)}"><div>${iname(i)}</div><div class="meta">${soonLeft(i) ? `<span class="tag w">${soonTxt(soonLeft(i))}</span> ` : ''}cada ${dias(i.every)}${isAuto(i) && (learned(i) || {}).days === i.every ? ' <span class="tag">aprendido</span>' : ''} · última ${ago(i.last)}${i.lastBy ? ' (' + esc(M[i.lastBy]?.n) + ')' : ''}</div></div><button class="b sm" onclick="A.need('${i.id}')" aria-label="Se acaba ${esc(i.name)}">Se acaba</button></div>`, cats)}</details>
       <div class="btns">${need.length ? `<button class="pri" onclick="A.shopMode('${s.id}')">🛒 Estoy en el negocio</button>` : ''}<button onclick="A.share('${s.id}')">📲 Mandar lista</button>${need.length > 1 ? `<button onclick="A.boughtAll('${s.id}')">✔ Compré todo</button>` : ''}<button onclick="A.allList('${s.id}')">Pedido habitual</button><button onclick="A.tpls('${s.id}')">📋 Plantillas</button><button onclick="A.orderDay('${s.id}')">📅 Día de pedido</button>${storeUrl(s) ? `<a class="btn" href="${esc(storeUrl(s))}" target="_blank" rel="noopener noreferrer">🌐 Abrir web</a><button onclick="A.storeLink('${s.id}')" aria-label="Cambiar el enlace de ${esc(s.name)}">✎ Enlace</button>` : `<button onclick="A.storeLink('${s.id}')">🔗 Poner web</button>`}<button onclick="A.itemForm(null,'${s.id}')">+ Producto</button></div></section>`;
   });
-  if(storeFilter === 'todos') h += spendHtml();
+  if(storeFilter === 'todos') h += ideasHtml() + spendHtml();
   h += `<p class="muted">Tocá un producto para editar la cantidad, la categoría o cada cuánto se repone, y para ver su historial. Cuando pasa ese tiempo desde la última compra, vuelve solo a la lista. Desde la tercera compra, la app ajusta sola ese tiempo con el promedio real.</p></div>`;
   return h;
 }

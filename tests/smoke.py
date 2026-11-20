@@ -21,6 +21,7 @@ Levanta un servidor local, abre la app en un celular simulado (390x844) y recorr
   15. v1.13.0: día fijo de pedido por negocio con recordatorio (sin migración).
   16. v1.14.0: «Lo traigo yo» (quién compra un ítem puntual, sin migración).
   17. v1.15.0: «No había» (nota y reintento en otro negocio, sin migración).
+  18. v1.16.0: ideas y antojos (migración al esquema 5).
   13. v1.12.0: migración al esquema 4 (datos de v1.11.0) y plantillas de pedido (armar, editar, crear, borrar, deshacer).
 Falla si hay errores de JavaScript o de consola, o si la página se ensancha más de 390 px.
 Guarda capturas en /tmp/cm-*.png para revisarlas.
@@ -47,7 +48,7 @@ def check(cond, msg):
 def S(pg): return pg.evaluate('JSON.parse(localStorage.getItem("cm_data"))')
 def sin_v15(d):
     """Saca lo que agregó el esquema 2 (v1.5.0) para comparar con los datos guardados por versiones anteriores."""
-    d = json.loads(json.dumps(d)); d['_v'] = 1; d.pop('tpls', None)
+    d = json.loads(json.dumps(d)); d['_v'] = 1; d.pop('tpls', None); d.pop('ideas', None)
     for i in d['items'].values():
         for k in ('cat', 'qty', 'unit', 'hist', 'auto'): i.pop(k, None)
     return d
@@ -546,14 +547,14 @@ with sync_playwright() as p:
         pg.goto(URL); pg.wait_for_timeout(2200)
         d = S(pg)
         # Migración 1 → 2: nada se pierde, queda copia y se completan los campos nuevos
-        check(d['_v'] == 4, f"v1.5: _v={d['_v']} (esperaba 4)")
+        check(d['_v'] == 5, f"v1.5: _v={d['_v']} (esperaba 5)")
         check(sin_v15(d) == V12, 'v1.5: la migración cambió o perdió datos de v1.4.0')
         check(json.loads(pg.evaluate('localStorage.getItem("cm_backup_v1")') or 'null') == V12, 'v1.5: no quedó la copia cm_backup_v1 idéntica')
         it = d['items']
         check(it['i_agua']['cat'] == 'bebidas' and it['i_mio']['cat'] == 'frescos' and it['i_huerfano']['cat'] == 'almacen', f"v1.5: categorías mal asignadas {[x['cat'] for x in it.values()]}")
         check(all(x['qty'] is None and x['unit'] == '' for x in it.values()), 'v1.5: cantidad/unidad iniciales')
         check(it['i_mio']['hist'] == [{'at': 1762000000000, 'by': None}] and it['i_agua']['hist'] == [], f"v1.5: historial inicial {it['i_mio']['hist']}")
-        check(pg.locator('#sheet >> text=35/100').count() > 0, 'v1.5: Novedades no muestra 35/100')
+        check(pg.locator('#sheet >> text=36/100').count() > 0, 'v1.5: Novedades no muestra 36/100')
         pg.screenshot(path=f'/tmp/cm-v15-novedades-{scheme}.png')
         pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
         pg.reload(); pg.wait_for_timeout(1800)
@@ -686,13 +687,13 @@ with sync_playwright() as p:
         pg.goto(URL); pg.wait_for_timeout(2200)
         d = S(pg); pre = json.loads(pg.evaluate('localStorage.getItem("cm_pre")'))
         # Migración 2 → 3: solo agrega «auto», no cambia «every» ni nada más, y deja copia
-        check(d['_v'] == 4, f"v1.6: _v={d['_v']} (esperaba 4)")
+        check(d['_v'] == 5, f"v1.6: _v={d['_v']} (esperaba 5)")
         check(all(x.get('auto') is True for x in d['items'].values()), 'v1.6: la migración no puso auto=true')
-        d0 = json.loads(json.dumps(d)); d0['_v'] = 2; d0.pop('tpls', None)
+        d0 = json.loads(json.dumps(d)); d0['_v'] = 2; d0.pop('tpls', None); d0.pop('ideas', None)
         for x in d0['items'].values(): x.pop('auto', None)
         check(d0 == pre, 'v1.6: la migración cambió o perdió datos de v1.5.0')
         check(json.loads(pg.evaluate('localStorage.getItem("cm_backup_v2")') or 'null') == pre, 'v1.6: no quedó la copia cm_backup_v2 idéntica')
-        check(pg.locator('#sheet >> text=35/100').count() > 0, 'v1.6: Novedades no se abrió con 35/100')
+        check(pg.locator('#sheet >> text=36/100').count() > 0, 'v1.6: Novedades no se abrió con 36/100')
         pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
         # Cálculo del promedio
         calc = pg.evaluate("""() => { const D = 86400000, t = 1e12, h = a => ({hist: a.map(n => ({at: t + n * D}))});
@@ -763,8 +764,8 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---------- 10. v1.7.0: aviso anticipado («se acaba en 2 días») ----------
-    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.15.0');"
-              " if(!localStorage.getItem('cm_data')){ const d = %s; d._v = 4; d.tpls = {}; Object.values(d.items).forEach(i => i.auto = true);"
+    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.16.0');"
+              " if(!localStorage.getItem('cm_data')){ const d = %s; d._v = 5; d.tpls = {}; d.ideas = {}; Object.values(d.items).forEach(i => i.auto = true);"
               " localStorage.setItem('cm_pre', JSON.stringify(d)); localStorage.setItem('cm_data', JSON.stringify(d)); }") % json.dumps(V15)
     for scheme in ['light', 'dark']:
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init17)
@@ -835,7 +836,7 @@ with sync_playwright() as p:
         pg.on('console', lambda m: errs.append(f'[v1.10] consola: {m.text}') if m.type == 'error' else None)
         pg.goto(URL); pg.wait_for_timeout(1500)
         pre = json.loads(pg.evaluate('localStorage.getItem("cm_pre")')); check(S(pg) == pre, 'v1.10: los datos cambiaron al abrir (sin migración, SCHEMA sigue en 3)')
-        check(pg.evaluate('SCHEMA') == 4, 'v1.10: SCHEMA cambió')
+        check(pg.evaluate('SCHEMA') == 5, 'v1.10: SCHEMA cambió')
         r = pg.evaluate("[parsePrice('1500'), parsePrice('1.500'), parsePrice('$ 1.234,50'), parsePrice('12,5'), parsePrice(''), parsePrice('0'), parsePrice('abc'), fmoney(1234567), fmoney(999)]")
         check(r == [1500, 1500, 1234.5, 12.5, None, None, None, '$1.234.567', '$999'], f'v1.10: parsePrice/fmoney {r}')
         pg.evaluate("""(() => { ['i_agua','i_leche','i_pan'].forEach(k => { if(S.items[k]){ S.items[k].state = 'list'; S.items[k].by = 'dani'; delete S.items[k].price; } }); save(); A.go('compras'); storeFilter = 'todos'; render(); })()""")
@@ -899,7 +900,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---- v1.12.0: plantillas de pedido (migración al esquema 4) ----
-    init18 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.15.0');"
+    init18 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.16.0');"
               " if(!localStorage.getItem('cm_data')){ const d = %s; d._v = 3; Object.values(d.items).forEach(i => i.auto = true);"
               " localStorage.setItem('cm_pre', JSON.stringify(d)); localStorage.setItem('cm_data', JSON.stringify(d)); }") % json.dumps(V15)
     for scheme in ['light', 'dark']:
@@ -909,7 +910,7 @@ with sync_playwright() as p:
         pg.on('console', lambda m: errs.append(f'[v1.12] consola: {m.text}') if m.type == 'error' else None)
         pg.goto(URL); pg.wait_for_timeout(1500)
         pre = json.loads(pg.evaluate('localStorage.getItem("cm_pre")')); d = S(pg)
-        check(d['_v'] == 4, 'v1.12: no pasó al esquema 4')
+        check(d['_v'] == 5, 'v1.12: no pasó al esquema 5')
         check(all(d[c] == pre[c] for c in pre if c not in ('_v', 'tpls')), 'v1.12: la migración tocó datos existentes')
         check(json.loads(pg.evaluate('localStorage.getItem("cm_backup_v3")')) == pre, 'v1.12: la copia cm_backup_v3 no es idéntica')
         tp = d['tpls']; check('tp_super' in tp, f'v1.12: plantillas de fábrica {list(tp)}')
@@ -1083,6 +1084,50 @@ with sync_playwright() as p:
         pg.evaluate(f"A.noHabia('{iid}')"); pg.wait_for_timeout(200); pg.locator('#sheet button:has-text("Solo dejar la nota")').click(); pg.wait_for_timeout(200)
         pg.evaluate(f"A.bought('{iid}')"); pg.wait_for_timeout(300)
         check(not S(pg)['items'][iid].get('miss'), 'v1.15.0: comprar no limpió la marca')
+        ctx.close()
+
+    # ---- v1.16.0: ideas y antojos (esquema 5) ----
+    init19 = init17.replace("d._v = 5; d.tpls = {}; d.ideas = {};", "d._v = 4; d.tpls = {};")
+    for scheme in ['light', 'dark']:
+        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init19)
+        pg = ctx.new_page()
+        pg.on('pageerror', lambda e: errs.append(f'[v1.16.0] JS: {e}'))
+        pg.on('console', lambda m: errs.append(f'[v1.16.0] consola: {m.text}') if m.type == 'error' else None)
+        pg.goto(URL); pg.wait_for_timeout(1500)
+        pre = json.loads(pg.evaluate('localStorage.getItem("cm_pre")')); d = S(pg)
+        check(d['_v'] == 5 and d.get('ideas') == {}, 'v1.16.0: la migración 5 no agregó ideas vacías')
+        d0 = json.loads(json.dumps(d)); d0['_v'] = 4; d0.pop('ideas', None)
+        check(d0 == pre, 'v1.16.0: la migración cambió o perdió datos')
+        check(json.loads(pg.evaluate('localStorage.getItem("cm_backup_v4")') or 'null') == pre, 'v1.16.0: no quedó la copia cm_backup_v4 idéntica')
+        pg.evaluate("A.go('compras'); storeFilter = 'todos'; render()"); pg.wait_for_timeout(300)
+        check(pg.locator('#ideas').count() == 1 and pg.locator('#ideas >> text=Todavía no hay ideas').count() == 1, 'v1.16.0: no muestra la tarjeta vacía')
+        pg.screenshot(path=f'/tmp/cm-v1160-vacio-{scheme}.png', full_page=True); width_ok(pg, 'v1.16.0 vacío')
+        n0 = pg.evaluate("Object.values(S.items).filter(needs).length")
+        pg.locator('#idea_in').fill('Queso azul'); pg.locator('#ideas button:has-text("Sumar")').click(); pg.wait_for_timeout(300)
+        ids = list(S(pg)['ideas'].values()); check(len(ids) == 1 and ids[0]['text'] == 'Queso azul' and ids[0]['by'] == 'gonzalo', 'v1.16.0: no guardó la idea')
+        pg.locator('#idea_in').fill('  '); pg.locator('#ideas button:has-text("Sumar")').click(); pg.wait_for_timeout(200)
+        check(len(S(pg)['ideas']) == 1, 'v1.16.0: guardó una idea vacía')
+        pg.locator('#idea_in').fill('Torta para el cumple de Joaco'); pg.locator('#idea_in').press('Enter'); pg.wait_for_timeout(300)
+        check(len(S(pg)['ideas']) == 2, 'v1.16.0: Enter no sumó la idea')
+        pg.screenshot(path=f'/tmp/cm-v1160-ideas-{scheme}.png', full_page=True); width_ok(pg, 'v1.16.0 ideas')
+        check(pg.locator('#ideas button:has-text("A la lista")').first.bounding_box()['height'] >= 44, 'v1.16.0: botón chico')
+        check(pg.evaluate("Object.values(S.items).filter(needs).length") == n0, 'v1.16.0: las ideas cuentan como pendientes')
+        iid = next(k for k, v in S(pg)['ideas'].items() if v['text'] == 'Queso azul')
+        pg.evaluate(f"A.ideaForm('{iid}')"); pg.wait_for_timeout(300)
+        pg.locator('#f_idea').fill('Queso azul y nueces'); pg.locator('#sheet button:has-text("Guardar")').click(); pg.wait_for_timeout(300)
+        check(S(pg)['ideas'][iid]['text'] == 'Queso azul y nueces', 'v1.16.0: no editó')
+        pg.evaluate(f"A.ideaGo('{iid}')"); pg.wait_for_timeout(300)
+        pg.locator('#sheet .chips button').first.click(); pg.wait_for_timeout(300)
+        d = S(pg); check(iid not in d['ideas'], 'v1.16.0: la idea quedó después de pasarla')
+        nuevo = [i for i in d['items'].values() if i['name'] == 'Queso azul y nueces']
+        check(len(nuevo) == 1 and nuevo[0]['state'] == 'list', 'v1.16.0: no creó el producto en la lista')
+        pg.evaluate("document.querySelector('#toast button, .toast button').click()"); pg.wait_for_timeout(300)
+        d = S(pg); check(iid in d['ideas'] and not [i for i in d['items'].values() if i['name'] == 'Queso azul y nueces'], 'v1.16.0: el deshacer no restauró')
+        pg.evaluate(f"A.ideaDel('{iid}')"); pg.wait_for_timeout(300)
+        check(iid not in S(pg)['ideas'], 'v1.16.0: no borró')
+        pg.evaluate("document.querySelector('#toast button, .toast button').click()"); pg.wait_for_timeout(300)
+        check(iid in S(pg)['ideas'], 'v1.16.0: deshacer del borrado')
+        pg.evaluate("storeFilter = 'todos'; render()"); width_ok(pg, 'v1.16.0 final')
         ctx.close()
 
     b.close()

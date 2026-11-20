@@ -1,5 +1,10 @@
 # Novedades de Carga Mental
 
+## v1.16.0 — 2026-11-20
+- Ideas y antojos (ítem 36): al final de Compras (con el filtro «Todos») hay una tarjeta «💡 Ideas y antojos» para lo que no es urgente. Se anota con el campito y «Sumar» (o Enter); tocar una idea la edita; «A la lista» abre una hoja para elegir el negocio y la pasa a la lista de compras (si el producto ya existe ahí, lo reutiliza); «✕» la borra. Todo lleva «Deshacer». Las ideas no cuentan como pendientes ni aparecen en «Hoy».
+- Estructura de datos: SCHEMA pasa a 5. La migración 5 solo agrega la colección `ideas` (vacía) y antes guarda la copia `cm_backup_v4`; no toca productos, negocios ni plantillas. Se sincroniza con la nube como las demás colecciones.
+- Pruebas: migración desde esquema 4 (solo se suma `ideas`, copia idéntica), tarjeta vacía, alta (con botón y con Enter, rechaza vacías), edición, pasar a la lista y su deshacer, borrar y deshacer, botón ≥ 44 px, ideas que no cuentan como pendientes y 390 px en claro y oscuro. Las pruebas viejas se adaptaron al esquema 5 y a 36/100.
+
 ## v1.15.0 — 2026-11-19
 - «No había» (ítem 35): en la lista de cada negocio, cada producto tiene «🚫 No había». Se abre una hoja para dejar una nota opcional («tenían solo el grande») y, si se quiere, pasar el producto a otro negocio para reintentar ahí (queda en la lista del nuevo negocio). El producto muestra «No había en <negocio> (fecha): nota» para que nadie lo busque de nuevo en el mismo lugar; «Quitar marca» la saca y todo lleva «Deshacer». Al comprarlo o sacarlo de la lista, la marca se limpia sola.
 - Estructura de datos: sin cambios (SCHEMA sigue en 4, sin migración): `miss` ({at, by, from, note}) es un campo opcional del producto; si falta, no hubo faltante.
