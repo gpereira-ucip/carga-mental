@@ -23,6 +23,7 @@ Levanta un servidor local, abre la app en un celular simulado (390x844) y recorr
   17. v1.15.0: «No había» (nota y reintento en otro negocio, sin migración).
   18. v1.16.0: ideas y antojos (migración al esquema 5).
   19. v1.17.0: snacks de Joaco (documento opcional checks.snacks, sin migración).
+  20. v1.18.0: compartir lista (WhatsApp, menú nativo, copiar), sin migración.
   13. v1.12.0: migración al esquema 4 (datos de v1.11.0) y plantillas de pedido (armar, editar, crear, borrar, deshacer).
 Falla si hay errores de JavaScript o de consola, o si la página se ensancha más de 390 px.
 Guarda capturas en /tmp/cm-*.png para revisarlas.
@@ -555,7 +556,7 @@ with sync_playwright() as p:
         check(it['i_agua']['cat'] == 'bebidas' and it['i_mio']['cat'] == 'frescos' and it['i_huerfano']['cat'] == 'almacen', f"v1.5: categorías mal asignadas {[x['cat'] for x in it.values()]}")
         check(all(x['qty'] is None and x['unit'] == '' for x in it.values()), 'v1.5: cantidad/unidad iniciales')
         check(it['i_mio']['hist'] == [{'at': 1762000000000, 'by': None}] and it['i_agua']['hist'] == [], f"v1.5: historial inicial {it['i_mio']['hist']}")
-        check(pg.locator('#sheet >> text=37/100').count() > 0, 'v1.5: Novedades no muestra 37/100')
+        check(pg.locator('#sheet >> text=38/100').count() > 0, 'v1.5: Novedades no muestra 38/100')
         pg.screenshot(path=f'/tmp/cm-v15-novedades-{scheme}.png')
         pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
         pg.reload(); pg.wait_for_timeout(1800)
@@ -694,7 +695,7 @@ with sync_playwright() as p:
         for x in d0['items'].values(): x.pop('auto', None)
         check(d0 == pre, 'v1.6: la migración cambió o perdió datos de v1.5.0')
         check(json.loads(pg.evaluate('localStorage.getItem("cm_backup_v2")') or 'null') == pre, 'v1.6: no quedó la copia cm_backup_v2 idéntica')
-        check(pg.locator('#sheet >> text=37/100').count() > 0, 'v1.6: Novedades no se abrió con 37/100')
+        check(pg.locator('#sheet >> text=38/100').count() > 0, 'v1.6: Novedades no se abrió con 38/100')
         pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
         # Cálculo del promedio
         calc = pg.evaluate("""() => { const D = 86400000, t = 1e12, h = a => ({hist: a.map(n => ({at: t + n * D}))});
@@ -765,7 +766,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---------- 10. v1.7.0: aviso anticipado («se acaba en 2 días») ----------
-    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.17.0');"
+    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.18.0');"
               " if(!localStorage.getItem('cm_data')){ const d = %s; d._v = 5; d.tpls = {}; d.ideas = {}; Object.values(d.items).forEach(i => i.auto = true);"
               " localStorage.setItem('cm_pre', JSON.stringify(d)); localStorage.setItem('cm_data', JSON.stringify(d)); }") % json.dumps(V15)
     for scheme in ['light', 'dark']:
@@ -901,7 +902,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---- v1.12.0: plantillas de pedido (migración al esquema 4) ----
-    init18 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.17.0');"
+    init18 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.18.0');"
               " if(!localStorage.getItem('cm_data')){ const d = %s; d._v = 3; Object.values(d.items).forEach(i => i.auto = true);"
               " localStorage.setItem('cm_pre', JSON.stringify(d)); localStorage.setItem('cm_data', JSON.stringify(d)); }") % json.dumps(V15)
     for scheme in ['light', 'dark']:
@@ -1167,6 +1168,40 @@ with sync_playwright() as p:
         pg.evaluate("A.snackDay(3)"); pg.wait_for_timeout(300); pg.locator('#sheet button:has-text("Dejar sin elegir")').click(); pg.wait_for_timeout(300)
         check('3' not in S(pg)['checks']['snacks']['plan'], 'v1.17.0: no dejó sin elegir')
         width_ok(pg, 'v1.17.0 final'); ctx.close()
+
+    # ---- v1.18.0: compartir (WhatsApp / menú nativo / copiar), sin migración ----
+    for scheme in ['light', 'dark']:
+        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme, permissions=['clipboard-read', 'clipboard-write'])
+        ctx.add_init_script(init17)
+        ctx.add_init_script("window.__shared = null; navigator.share = (d) => { window.__shared = d; return Promise.resolve(); };")
+        pg = ctx.new_page()
+        pg.on('pageerror', lambda e: errs.append(f'[v1.18.0] JS: {e}'))
+        pg.on('console', lambda m: errs.append(f'[v1.18.0] consola: {m.text}') if m.type == 'error' else None)
+        pg.goto(URL); pg.wait_for_timeout(1500)
+        pre = json.loads(pg.evaluate('localStorage.getItem("cm_pre")')); check(S(pg) == pre, 'v1.18.0: los datos cambiaron al abrir')
+        sid = pg.evaluate("(() => { const s = Object.keys(S.stores)[0]; A.allList(s); return s; })()"); pg.wait_for_timeout(300)
+        pg.evaluate("A.go('compras'); render()"); pg.wait_for_timeout(300)
+        pg.evaluate(f"A.share('{sid}')"); pg.wait_for_timeout(300)
+        txt = pg.locator('#sharePre').inner_text()
+        check('Carga Mental' in txt and '•' in txt, 'v1.18.0: la hoja no muestra el mensaje')
+        for t in ['WhatsApp', 'Compartir…', 'Copiar texto']:
+            check(pg.locator(f'#sheet button:has-text("{t}")').bounding_box()['height'] >= 44, f'v1.18.0: botón chico {t}')
+        pg.screenshot(path=f'/tmp/cm-v1180-compartir-{scheme}.png', full_page=True); width_ok(pg, 'v1.18.0 hoja')
+        pg.locator('#sheet button:has-text("Compartir…")').click(); pg.wait_for_timeout(300)
+        sh = pg.evaluate('window.__shared'); check(sh and sh['text'].strip() == txt.strip(), 'v1.18.0: navigator.share con otro texto')
+        check(pg.locator('#sharePre').count() == 0 or not pg.locator('#sharePre').is_visible(), 'v1.18.0: la hoja no se cerró al compartir')
+        pg.evaluate(f"A.share('{sid}')"); pg.wait_for_timeout(300)
+        pg.locator('#sheet button:has-text("Copiar texto")').click(); pg.wait_for_timeout(400)
+        check(pg.evaluate('navigator.clipboard.readText()').strip() == txt.strip(), 'v1.18.0: el portapapeles no tiene el texto')
+        check('Texto copiado' in pg.locator('#toast').inner_text(), 'v1.18.0: sin aviso de copiado')
+        pg.evaluate("window.__nav = []; Object.defineProperty(window, '__x', {value: 1}); A.shareSheet('hola', 'daniela', 'Prueba')"); pg.wait_for_timeout(300)
+        check(pg.locator('#sheet button:has-text("WhatsApp")').count() == 1, 'v1.18.0: falta WhatsApp')
+        pg.evaluate("A.close(); navigator.share = undefined; A.shareSheet('hola', null, 'Prueba')"); pg.wait_for_timeout(300)
+        check(pg.locator('#sheet button:has-text("Compartir…")').count() == 0, 'v1.18.0: muestra Compartir… sin Web Share')
+        pg.evaluate("A.close(); A.go('hoy'); A.go('mas')") if False else None
+        pg.evaluate("A.close()"); pg.evaluate("A.shareDaniela()"); pg.wait_for_timeout(300)
+        check(pg.locator('#sheet').inner_text().count('Daniela') >= 0, 'v1.18.0: indicaciones')
+        width_ok(pg, 'v1.18.0 final'); ctx.close()
 
     b.close()
 srv.shutdown()

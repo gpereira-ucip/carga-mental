@@ -304,7 +304,8 @@ textarea.plain{font-family:inherit;font-size:var(--fs-md);min-height:72px}
 .mic.on{background:var(--badbg);border-color:var(--bad);color:var(--bad);animation:glow 1.2s ease-out infinite}
 .histd .log:first-of-type{border-top:0}
 .newp{margin-top:var(--s3)}
-@media (prefers-reduced-motion: reduce){ *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important} }
+@media (prefers-reduced-motion: reduce){ *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important} }.sharepre{white-space:pre-wrap;word-break:break-word;font:inherit;font-size:.9rem;max-height:40vh;overflow:auto;background:var(--sheet);border-radius:12px;padding:10px 12px;margin:8px 0}
+
 </style>
 </head>
 <body>
@@ -323,10 +324,11 @@ textarea.plain{font-family:inherit;font-size:var(--fs-md);min-height:72px}
 <script>
 'use strict';
 /* ============ Constantes ============ */
-const VERSION = '1.17.0';
+const VERSION = '1.18.0';
 const SCHEMA = 5; // versión de la estructura de datos guardados (ver MIGRATIONS)
 /* Novedades: la primera es la versión actual. "hechas" = ítems del plan de 100 tildados hasta esa versión. */
 const NEWS = [
+  {v:'1.18.0', d:'2026-11-21', hechas:38, items:['Compartir de más formas: al tocar «📲 Mandar lista» (o «Mandar indicaciones» a Daniela) se abre una hoja con tres opciones: «WhatsApp» (como antes, directo a quien corresponde), «Compartir…» (el menú de Android, para mandarlo por cualquier app) y «Copiar texto» (para pegarlo donde quieras). El mensaje es el mismo en las tres.']},
   {v:'1.17.0', d:'2026-11-20', hechas:37, items:['Snacks de Joaco: en la pestaña Joaco hay una tarjeta «🍎 Snacks de la semana» con el snack de cada día, de lunes a viernes. «Armar rotación» los reparte para que no se repita el mismo dos días seguidos y la semana siguiente sigue desde donde quedó. Tocá un día para cambiarlo a mano y en «Opciones» editás la lista de snacks que le gustan.','Tus datos quedan como estaban: la lista arranca con ideas comunes que podés cambiar.']},
   {v:'1.16.0', d:'2026-11-20', hechas:36, items:['Ideas y antojos: al final de Compras hay una lista aparte para lo que no es urgente (un queso nuevo, una idea para el cumpleaños de Joaco). Anotá con el campito y «Sumar»; cuando se anime alguien, «A la lista» lo pasa al negocio que elijas. No cuenta como pendiente ni molesta en Hoy.','Tus datos quedan como estaban: solo se suma la lista de ideas, vacía al principio.']},
   {v:'1.15.0', d:'2026-11-19', hechas:35, items:['«No había»: si en el negocio no encontraste algo, tocá «🚫 No había» en ese producto. Podés dejar una nota («tenían solo el grande») y, si querés, pasarlo a otro negocio para reintentar ahí. Queda marcado «No había en … (fecha)» para que nadie lo busque de nuevo en el mismo lugar. Al comprarlo, la marca se limpia sola.']},
@@ -1042,7 +1044,22 @@ const A = {
     if(!list.length) return toast('No hay nada pendiente');
     const txt = `${s.icon} *${s.name}* — lista\n` + list.map(i => `• ${i.name}${qtyTxt(i) ? ': ' + qtyTxt(i) : ''}${i.note ? ' ('+i.note+')' : ''}`).join('\n') + `\n\n— Carga Mental`;
     const to = s.owner === 'ambos' ? ({gonzalo:'dani', dani:'gonzalo'})[me] : (s.owner !== me ? s.owner : null);
-    waTo(to, txt);
+    A.shareSheet(txt, to, `${s.icon} ${s.name}`);
+  },
+  shareSheet(txt, to, titulo){
+    A._sh = {txt, to, titulo};
+    A.open(`<h3>📲 Mandar</h3><p class="muted">${esc(titulo)}</p><pre class="sharepre" id="sharePre">${esc(txt)}</pre>
+      <div class="btns"><button class="pri" onclick="A.shareGo('wa')">WhatsApp</button>${navigator.share ? '<button onclick="A.shareGo(\'nat\')">Compartir…</button>' : ''}<button onclick="A.shareGo('copy')">Copiar texto</button><button onclick="A.close()">Cancelar</button></div>`);
+  },
+  async shareGo(how){
+    const h = A._sh; if(!h) return;
+    if(how === 'wa'){ A.close(); waTo(h.to, h.txt); return; }
+    if(how === 'nat'){ try { await navigator.share({title: h.titulo, text: h.txt}); A.close(); } catch(e) { if(e && e.name !== 'AbortError') toast('No se pudo abrir el menú de compartir'); } return; }
+    let ok = false;
+    try { await navigator.clipboard.writeText(h.txt); ok = true; } catch(e) {
+      try { const t = document.createElement('textarea'); t.value = h.txt; t.setAttribute('readonly', ''); t.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(t); t.select(); ok = document.execCommand('copy'); t.remove(); } catch(e2) {}
+    }
+    A.close(); toast(ok ? 'Texto copiado ✔' : 'No se pudo copiar: probá con WhatsApp o Compartir');
   },
   itemForm(id, sid){
     const i = id ? S.items[id] : newItem('', sid || 'super');
@@ -1230,7 +1247,7 @@ const A = {
     if(tareas.length) t += '\n🧹 *Tareas*\n' + tareas.map(n => '• ' + n.text).join('\n');
     if(comidas.length) t += '\n\n🍲 *Para cocinar*\n' + comidas.map(n => '• ' + n.text).join('\n');
     t += '\n\nGracias! 🙌';
-    waTo('daniela', t);
+    A.shareSheet(t, 'daniela', 'Indicaciones para Daniela');
   },
 
   // Joaco

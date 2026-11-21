@@ -1,5 +1,10 @@
 # Novedades de Carga Mental
 
+## v1.18.0 — 2026-11-21
+- Compartir de más formas (ítem 38): «📲 Mandar lista» de cada negocio y «Mandar indicaciones» a Daniela abren una hoja con el mensaje y tres botones: «WhatsApp» (igual que antes, directo a quien corresponde), «Compartir…» (menú nativo de Android vía Web Share; solo aparece si el navegador lo permite) y «Copiar texto» (portapapeles, con respaldo para navegadores viejos). Cancelar el menú nativo no da error.
+- Estructura de datos: sin cambios (SCHEMA sigue en 5, sin migración).
+- Pruebas: la hoja muestra el texto, WhatsApp abre wa.me con el mensaje, Compartir… llama a navigator.share con el mismo texto, Copiar deja el texto en el portapapeles, sin Web Share no aparece el botón, indicaciones a Daniela, botones ≥ 44 px y 390 px en claro y oscuro.
+
 ## v1.17.0 — 2026-11-20
 - Snacks de Joaco (ítem 37): en la pestaña Joaco, tarjeta «🍎 Snacks de la semana» con el snack de lunes a viernes. «Armar rotación» reparte las opciones en orden para que no se repita el mismo dos días seguidos, y la próxima vez sigue desde donde quedó (también entre semanas). Tocar un día permite elegir de la lista, escribir otro o dejarlo sin elegir; «Opciones» edita la lista (sin repetidas). Todo lleva «Deshacer». Las opciones de arranque (fruta, yogur, frutos secos, galletitas de arroz, barrita de cereal) son ideas comunes y se cambian a gusto; no son indicaciones médicas.
 - Estructura de datos: sin cambios (SCHEMA sigue en 5, sin migración): `checks.snacks` ({opts, plan, cur}) es un documento opcional que recién se crea al usar la tarjeta; si falta, se leen las opciones por defecto.
