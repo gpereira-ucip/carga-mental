@@ -1,5 +1,14 @@
 # Novedades de Carga Mental
 
+## v1.20.0 — 2026-11-22
+- Pedido de Gonzalo (22/11), fuera del plan de 100 mejoras:
+  - Casa reordenada en «Tareas diarias» (lavavajillas, ropa con lavarropas, sacar la basura), «Orden de la casa» (orden de la cocina y orden de las habitaciones, separados) y «Otras tareas que se repiten». Las tareas nuevas eligen sección.
+  - Sale «Fertilizar el limonero» (nadie la hace).
+  - «Turnos médicos y odontología de Joaco» sale de «Quién se encarga de qué» y pasa a un desplegable «Turnos médicos» en la pestaña Joaco, con todos los controles y quién se encarga. Se suma Fonoaudiología (frecuencia según indicación).
+  - Calendario de feriados (pestaña Joaco): mes con los feriados marcados, próximo feriado y aviso en Hoy el día anterior. Regla de Gonzalo: si el feriado cae en su día de guardia lo trabaja, y si cae lunes es guardia de 24 h. Ese día la semana de Joaco muestra «Feriado» en lugar de lleva/busca. Fuente: calendario oficial 2026 (Ley 27.399, Res. 164/2025); 2027 solo con los inamovibles, falta sumar trasladables y no laborables cuando se publiquen.
+  - Estética: encabezado con degradé y bordes redondeados, tarjetas sin borde con sombra suave, títulos con ícono, botones redondeados, barra inferior flotante.
+- Estructura de datos: SCHEMA 6 con migración (copia previa en cm_backup_v5). Agrega `grp` a las tareas, borra `t_fert`, renombra «Orden general» y «Ropa» solo si conservan el nombre original, y suma «Orden de las habitaciones», «Sacar la basura» y Fonoaudiología. Corre una sola vez por hogar (marca `checks.m6`, que viaja a la nube).
+
 ## v1.19.0 — 2026-11-22
 - Marca o variedad preferida y foto (ítem 39): al editar un producto hay un campo «Marca o variedad preferida» y una foto opcional («📷 Agregar foto», con cámara o galería; se achica sola a 160 px y JPEG, unos pocos KB). La marca se ve junto al nombre en las listas, la encuentra el buscador y viaja en el mensaje al negocio («Leche — La Serenísima entera: 2 L»); la foto aparece como miniatura en la lista de compras. «Quitar foto» la borra. El campo «Detalle» sigue existiendo para presentación o comentarios.
 - Estructura de datos: sin cambios (SCHEMA sigue en 5, sin migración): `brand` y `photo` son campos opcionales del producto; si faltan, el producto se ve igual que antes.

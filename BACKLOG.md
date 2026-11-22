@@ -119,3 +119,7 @@ Las marcadas 🔑 necesitan algo de Gonzalo (una cuenta, una clave, un dato). En
 - [ ] 98. Idioma y textos centralizados (preparar la traducción).
 - [ ] 99. Ayuda integrada: "¿cómo se usa?" por sección.
 - [ ] 100. Revisión final: auditoría visual completa, Lighthouse PWA y pulido general.
+
+## Pedidos sueltos de Gonzalo
+- [x] 22/11 · v1.20.0: casa en tareas diarias / orden de la casa (cocina y habitaciones) / otras; sin «Fertilizar el limonero»; turnos médicos como desplegable en Joaco con Fonoaudiología; calendario de feriados con su regla de guardias; estética renovada.
+- [ ] Sumar los feriados trasladables y días no laborables de 2027 cuando salga la resolución oficial (fines de 2026).

@@ -310,6 +310,60 @@ textarea.plain{font-family:inherit;font-size:var(--fs-md);min-height:72px}
 .newp{margin-top:var(--s3)}
 @media (prefers-reduced-motion: reduce){ *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important} }.sharepre{white-space:pre-wrap;word-break:break-word;font:inherit;font-size:.9rem;max-height:40vh;overflow:auto;background:var(--sheet);border-radius:12px;padding:10px 12px;margin:8px 0}
 
+/* ---------- v1.20.0: estética renovada (pedido de Gonzalo 22/11). Solo capa de estilo: misma paleta azul marino y Poppins. ---------- */
+:root{--r3:20px;--sh1:0 1px 2px rgba(20,40,70,.04),0 6px 18px -6px rgba(20,40,70,.10);--bg:#eef2f7;--line:#e6ebf1}
+:root[data-theme="dark"]{--bg:#0d1218}
+
+header{background:linear-gradient(135deg,#1d3a59 0%,#24476b 55%,#2f5b86 100%);border-radius:0 0 22px 22px;padding:14px 16px 14px;box-shadow:0 8px 24px -12px rgba(20,40,70,.55)}
+:root[data-theme="dark"] header{background:linear-gradient(135deg,#111b26,#172330 60%,#1e2f42)}
+.sync{margin-top:2px}
+.card{border:0;box-shadow:var(--sh1);padding:14px 16px}
+:root[data-theme="dark"] .card{border:1px solid var(--line)}
+h2{font-size:18px;margin:26px 4px 6px}
+h2 .hic{width:34px;height:34px;border-radius:11px;background:linear-gradient(135deg,var(--pri2),#fff);box-shadow:inset 0 0 0 1px var(--pri2-line)}
+:root[data-theme="dark"] h2 .hic{background:var(--pri2)}
+h3 .hic{border-radius:10px}
+.item{border-top:1px solid var(--line);padding:10px 0}
+.card > .item:first-of-type,.card > h3 + .item,.card > .row + .item{border-top:0}
+button.b,.btns button{border-radius:var(--rp);padding:8px 14px;transition:transform .12s,background-color .2s,box-shadow .2s}
+button.b:active,.btns button:active{transform:scale(.97)}
+.btns button.pri,button.pri{box-shadow:0 6px 14px -8px rgba(36,71,107,.9)}
+.tag{border-radius:var(--rp);padding:2px 9px}
+.tag.w{background:var(--warnbg);color:var(--warn)}
+.steps button{border-radius:14px;border-style:solid;border-color:var(--line)}
+.steps button.next{box-shadow:0 0 0 3px var(--pri2)}
+.tic{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:10px;background:var(--pri2);margin-right:8px;font-size:16px;vertical-align:middle;flex:none}
+.card.task h3{font-size:16px}
+.day{border-radius:14px;border-color:var(--line)}
+.day.today{box-shadow:0 0 0 2px var(--pri)}
+nav{border-top:0;border-radius:20px 20px 0 0;box-shadow:0 -6px 24px -10px rgba(20,40,70,.25)}
+nav button.on .nic{background:var(--pri2);border-radius:14px}
+/* desplegable de turnos médicos */
+details.fold > summary{list-style:none;display:flex;align-items:center;gap:12px;cursor:pointer;min-height:52px}
+details.fold > summary::-webkit-details-marker{display:none}
+.fic{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--pri2);color:var(--pri-tx);flex:none}
+.ft{flex:1;display:flex;flex-direction:column;line-height:1.25}.ft b{font-size:16px}.ft small{color:var(--mut);font-size:12px}
+.chev{font-size:24px;color:var(--mut);transition:transform .2s}
+details.fold[open] .chev{transform:rotate(90deg)}
+/* calendario de feriados */
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:6px 0 10px;text-align:center}
+.cal .cw{font-size:11px;color:var(--mut);font-weight:600}
+.cal .cd{display:grid;place-items:center;height:34px;border-radius:10px;font-size:13px;font-variant-numeric:tabular-nums}
+.cal .cd.fin{color:var(--mut)}
+.cal .cd.fer{background:#dbe8f6;color:#1d3a59;font-weight:700}
+.cal .cd.fer.nl{background:var(--warnbg);color:var(--warn)}
+:root[data-theme="dark"] .cal .cd.fer{background:#22405f;color:#d6e8fa}
+.cal .cd.hoy{box-shadow:inset 0 0 0 2px var(--pri)}
+.calm{font-weight:700;margin-top:8px;text-transform:capitalize}
+.nextfer{background:var(--pri2);border-radius:14px;padding:10px 12px;margin-top:8px;font-size:14px}
+.warn-t{color:var(--warn)!important;font-weight:600}
+.day.fer{background:var(--pri2)}
+.day .ferl{font-weight:700;color:var(--pri-tx);margin-top:4px}
+.ferbox{background:linear-gradient(135deg,#e4edf6,#fff);cursor:pointer}
+:root[data-theme="dark"] .ferbox{background:var(--pri2)}
+.ferbox p{margin:6px 0 0}
+.brand{color:#fff}.brand small{color:rgba(255,255,255,.8)}
+
 </style>
 </head>
 <body>
@@ -328,10 +382,11 @@ textarea.plain{font-family:inherit;font-size:var(--fs-md);min-height:72px}
 <script>
 'use strict';
 /* ============ Constantes ============ */
-const VERSION = '1.19.0';
-const SCHEMA = 5; // versión de la estructura de datos guardados (ver MIGRATIONS)
+const VERSION = '1.20.0';
+const SCHEMA = 6; // versión de la estructura de datos guardados (ver MIGRATIONS)
 /* Novedades: la primera es la versión actual. "hechas" = ítems del plan de 100 tildados hasta esa versión. */
 const NEWS = [
+  {v:'1.20.0', d:'2026-11-22', hechas:39, items:['Casa reordenada: «Tareas diarias» (lavavajillas, ropa con lavarropas y sacar la basura), «Orden de la casa» (cocina y habitaciones por separado) y «Otras tareas que se repiten». Al crear una tarea elegís la sección.','Sale «Fertilizar el limonero».','Turnos médicos: ya no está en «Quién se encarga de qué»; ahora es un desplegable en la pestaña Joaco que al abrirse muestra todos los controles. Se sumó Fonoaudiología.','Calendario de feriados en la pestaña Joaco, con el próximo feriado y aviso en Hoy el día anterior. Los feriados que caen en tus días de guardia figuran como trabajados, y si caen lunes, como guardia de 24 h. Esos días Joaco no tiene clases.','Estética renovada: encabezado con degradé, tarjetas más limpias y botones redondeados.']},
   {v:'1.19.0', d:'2026-11-22', hechas:39, items:['Marca o variedad preferida: al editar un producto hay un campo «Marca o variedad preferida» (por ejemplo, «La Serenísima entera» o «Yerba Playadito») y, si querés, una foto para reconocerlo en la góndola (sacada con la cámara o elegida de la galería). La marca aparece en la lista, en el buscador y en el mensaje que se manda al negocio; la foto, en la lista de compras.','Tus datos quedan como estaban: marca y foto son opcionales y arrancan vacías. Las fotos se achican solas para no ocupar lugar.']},
   {v:'1.18.0', d:'2026-11-21', hechas:38, items:['Compartir de más formas: al tocar «📲 Mandar lista» (o «Mandar indicaciones» a Daniela) se abre una hoja con tres opciones: «WhatsApp» (como antes, directo a quien corresponde), «Compartir…» (el menú de Android, para mandarlo por cualquier app) y «Copiar texto» (para pegarlo donde quieras). El mensaje es el mismo en las tres.']},
   {v:'1.17.0', d:'2026-11-20', hechas:37, items:['Snacks de Joaco: en la pestaña Joaco hay una tarjeta «🍎 Snacks de la semana» con el snack de cada día, de lunes a viernes. «Armar rotación» los reparte para que no se repita el mismo dos días seguidos y la semana siguiente sigue desde donde quedó. Tocá un día para cambiarlo a mano y en «Opciones» editás la lista de snacks que le gustan.','Tus datos quedan como estaban: la lista arranca con ideas comunes que podés cambiar.']},
@@ -579,11 +634,11 @@ function seed(){
   it('pastillas','Pastillas para el lavavajillas','super',21); it('jabonropa','Jabón para la ropa','super',21);
   it('yerba','Yerba','ml',21); it('pescado','Pescado','berardi',14);
 
-  add('tasks', {id:'t_lava', kind:'cycle', name:'Lavavajillas', icon:'🍽️', owner:'gonzalo', steps:['Cargar','Encender','Guardar'], cur:{}, lastDone:null, ord:1});
-  add('tasks', {id:'t_ropa', kind:'cycle', name:'Ropa', icon:'👕', owner:'ambos', steps:['Lavar','Colgar','Doblar','Guardar'], cur:{}, lastDone:null, ord:2});
-  add('tasks', {id:'t_orden', kind:'rec', name:'Orden general (cocina y living)', icon:'🧺', owner:'ambos', every:1, last:null, ord:3});
-  add('tasks', {id:'t_riego', kind:'rec', name:'Regar el limonero', icon:'🍋', owner:'gonzalo', every:3, last:null, ord:4});
-  add('tasks', {id:'t_fert', kind:'rec', name:'Fertilizar el limonero', icon:'🍋', owner:'gonzalo', every:45, last:null, ord:5});
+  add('tasks', {id:'t_lava', kind:'cycle', name:'Lavavajillas', icon:'🍽️', owner:'gonzalo', steps:['Cargar','Encender','Guardar'], cur:{}, lastDone:null, ord:1, grp:'diaria'});
+  add('tasks', {id:'t_ropa', kind:'cycle', name:'Ropa (lavarropas)', icon:'👕', owner:'ambos', steps:['Lavar','Colgar','Doblar','Guardar'], cur:{}, lastDone:null, ord:2, grp:'diaria'});
+  add('tasks', {id:'t_orden', kind:'rec', name:'Orden de la cocina', icon:'🍳', owner:'ambos', every:1, last:null, ord:3, grp:'orden'});
+  add('tasks', {id:'t_riego', kind:'rec', name:'Regar el limonero', icon:'🍋', owner:'gonzalo', every:3, last:null, ord:4, grp:'otra'});
+  M6_ADD.tasks.forEach(t => add('tasks', JSON.parse(JSON.stringify(t))));
 
   add('checks', {id:'mochila', date:'', done:{}, list:['Carpetas y cuadernos del día','Cartuchera','Snack','Botella de agua','Tarea hecha','Comunicados firmados','Ropa de mañana preparada']});
   add('checks', {id:'daniela', next:'', hours:'', coord:'dani', note:'Viene 1 vez por semana (a veces 2, una más corta).'});
@@ -591,6 +646,7 @@ function seed(){
   const sa = (id, name, every, note='') => add('salud', {id:'s_'+id, name, every, last:'', next:'', owner:'gonzalo', note});
   sa('pedia','Control pediátrico',365); sa('odonto','Odontología',180); sa('oftalmo','Oftalmología',365);
   sa('vacunas','Vacunas',0,'Próximas: calendario de los 11 años');
+  sa('fono','Fonoaudiología',0,'Según indicación');
 
   const ar = (id, name, owner) => add('areas', {id:'a_'+id, name, owner});
   ar('online','Compras online (súper, MercadoLibre, Berardi)','gonzalo');
@@ -598,7 +654,9 @@ function seed(){
   ar('stock','Revisar qué falta en la despensa','gonzalo');
   ar('lava','Lavavajillas de punta a punta','gonzalo');
   ar('ropa','Ropa de la casa','ambos');
-  ar('orden','Orden general','ambos');
+  ar('orden','Orden de la cocina','ambos');
+  ar('hab','Orden de las habitaciones','ambos');
+  ar('basura','Sacar la basura','ambos');
   ar('limon','Limonero','gonzalo');
   ar('mochila','Mochila, ropa y snacks de Joaco','ambos');
   ar('escuela','Llevar y buscar a Joaco','ambos');
@@ -613,6 +671,7 @@ function seed(){
     5:{lleva:'dani', busca:'dani'}
   }});
   S.tpls = defaultTpls(S);
+  S.checks.m6 = {id:'m6'};
   return S;
 }
 
@@ -654,8 +713,35 @@ const MIGRATIONS = {
   },
   5(D){ // v1.15.0 → esquema 5 (v1.16.0): ideas y antojos. Solo agrega la colección (vacía); no toca nada más.
     if(!D.ideas || typeof D.ideas !== 'object') D.ideas = {};
+  },
+  6(D){ // v1.19.x → esquema 6 (v1.20.0), pedido de Gonzalo 22/11: casa ordenada en tareas diarias, orden de la cocina y de las habitaciones;
+        // sale «Fertilizar el limonero»; suma «Sacar la basura» y Fonoaudiología. Corre una sola vez por hogar (marca checks.m6, que también viaja a la nube).
+        // No pierde nada: hay copia en cm_backup_v5, y lo renombrado solo cambia si conserva el nombre original.
+    if(!D.tasks || !D.areas || !D.salud || !D.checks) return;
+    Object.values(D.tasks).forEach(t => { if(!t.grp) t.grp = t.kind === 'cycle' ? 'diaria' : (t.id === 't_orden' ? 'orden' : 'otra'); });
+    if(D.checks.m6) return;
+    const up = [], dl = [];
+    if(D.tasks.t_fert){ delete D.tasks.t_fert; dl.push(['tasks','t_fert']); }
+    const t = D.tasks;
+    if(t.t_orden && t.t_orden.name === 'Orden general (cocina y living)'){ t.t_orden.name = 'Orden de la cocina'; t.t_orden.icon = '🍳'; t.t_orden.grp = 'orden'; up.push(['tasks', t.t_orden]); }
+    if(t.t_ropa && t.t_ropa.name === 'Ropa'){ t.t_ropa.name = 'Ropa (lavarropas)'; up.push(['tasks', t.t_ropa]); }
+    M6_ADD.tasks.forEach(n => { if(!t[n.id]){ t[n.id] = JSON.parse(JSON.stringify(n)); up.push(['tasks', t[n.id]]); } });
+    const a = D.areas;
+    if(a.a_orden && a.a_orden.name === 'Orden general'){ a.a_orden.name = 'Orden de la cocina'; up.push(['areas', a.a_orden]); }
+    [['a_hab','Orden de las habitaciones'],['a_basura','Sacar la basura']].forEach(([id, name]) => { if(!a[id]){ a[id] = {id, name, owner:'ambos'}; up.push(['areas', a[id]]); } });
+    if(!Object.values(D.salud).some(x => /fono/i.test(x.name || ''))){ D.salud.s_fono = {id:'s_fono', name:'Fonoaudiología', every:0, last:'', next:'', owner:'gonzalo', note:'Según indicación'}; up.push(['salud', D.salud.s_fono]); }
+    D.checks.m6 = {id:'m6'}; up.push(['checks', D.checks.m6]);
+    let F = null; try { F = fs; } catch(e) {} // antes de conectar, fs todavía no existe
+    if(F){ try {
+      up.forEach(([c, o]) => remotePath(c).doc(o.id).set(clean(o)).catch(() => {}));
+      dl.forEach(([c, id]) => remotePath(c).doc(id).delete().catch(() => {}));
+    } catch(e) {} }
   }
 };
+const M6_ADD = {tasks:[
+  {id:'t_hab', kind:'rec', name:'Orden de las habitaciones', icon:'🛏️', owner:'ambos', every:1, last:null, ord:6, grp:'orden'},
+  {id:'t_basura', kind:'rec', name:'Sacar la basura', icon:'🗑️', owner:'ambos', every:1, last:null, ord:7, grp:'diaria'}
+]};
 function migrate(D){
   const from = +D._v || 0; if(from >= SCHEMA) return false;
   try { localStorage.setItem('cm_backup_v' + from, JSON.stringify(D)); } catch(e) {}
@@ -909,8 +995,48 @@ function avail(p, dow, w){
   if(p === 'dani') return {am:true, pm: !(dow === 1 || dow === 3)};
   return {am:true, pm:true};
 }
+/* Feriados nacionales (pedido de Gonzalo 22/11). Fuente: calendario oficial 2026 (Jefatura de Gabinete, Ley 27.399 y Res. 164/2025),
+   tomado de iProfesional 21/01/2026. 2027: solo los inamovibles (los trasladables y no laborables se publican a fin de año: actualizar).
+   tipo f = feriado, n = día no laborable. Regla de Gonzalo: si cae en un día que trabaja, lo trabaja; si cae lunes, guardia de 24 h. */
+const FERIADOS = {
+  '2026-01-01':['Año Nuevo','f'],'2026-02-16':['Carnaval','f'],'2026-02-17':['Carnaval','f'],'2026-03-23':['Día no laborable con fines turísticos','n'],
+  '2026-03-24':['Día de la Memoria por la Verdad y la Justicia','f'],'2026-04-02':['Malvinas · Jueves Santo','f'],'2026-04-03':['Viernes Santo','f'],
+  '2026-05-01':['Día del Trabajador','f'],'2026-05-25':['Revolución de Mayo','f'],'2026-06-15':['Paso a la Inmortalidad de Güemes','f'],
+  '2026-06-20':['Paso a la Inmortalidad de Belgrano','f'],'2026-07-09':['Día de la Independencia','f'],'2026-07-10':['Día no laborable con fines turísticos','n'],
+  '2026-08-17':['Paso a la Inmortalidad de San Martín','f'],'2026-10-12':['Día del Respeto a la Diversidad Cultural','f'],'2026-11-23':['Día de la Soberanía Nacional','f'],
+  '2026-12-07':['Día no laborable con fines turísticos','n'],'2026-12-08':['Inmaculada Concepción de María','f'],'2026-12-25':['Navidad','f'],
+  '2027-01-01':['Año Nuevo','f'],'2027-02-08':['Carnaval','f'],'2027-02-09':['Carnaval','f'],'2027-03-24':['Día de la Memoria por la Verdad y la Justicia','f'],
+  '2027-03-25':['Jueves Santo','n'],'2027-03-26':['Viernes Santo','f'],'2027-04-02':['Día del Veterano y de los Caídos en Malvinas','f'],'2027-05-01':['Día del Trabajador','f'],
+  '2027-05-25':['Revolución de Mayo','f'],'2027-06-20':['Paso a la Inmortalidad de Belgrano','f'],'2027-07-09':['Día de la Independencia','f'],
+  '2027-12-08':['Inmaculada Concepción de María','f'],'2027-12-25':['Navidad','f']
+};
+const feriado = d => FERIADOS[typeof d === 'string' ? d : dk(d)] || null;
+/* Gonzalo los trabaja si caen lunes, jueves o viernes (sus días de guardia); el martes solo si esa semana tiene guardia de noche. */
+function gFeriado(d){ const f = feriado(d); if(!f) return ''; const dw = d.getDay();
+  if(dw === 1) return 'Gonzalo trabaja: guardia de 24 h';
+  if(dw === 4 || dw === 5) return 'Gonzalo trabaja (es su día de guardia)';
+  if(dw === 2) return 'Gonzalo sale de la guardia del lunes';
+  return dw === 0 || dw === 6 ? '' : 'Gonzalo libre';
+}
+function feriadosHtml(){
+  const off = calOff || 0, base = new Date(), m0 = new Date(base.getFullYear(), base.getMonth() + off, 1), y = m0.getFullYear(), mo = m0.getMonth();
+  const first = (m0.getDay() + 6) % 7, nd = new Date(y, mo + 1, 0).getDate(), hoy = dk();
+  let g = ['L','M','M','J','V','S','D'].map(x => `<b class="cw">${x}</b>`).join('') + '<i></i>'.repeat(first);
+  for(let d = 1; d <= nd; d++){ const ds = `${y}-${String(mo + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`, f = FERIADOS[ds], dw = new Date(y, mo, d).getDay();
+    g += `<span class="cd${f ? ' fer' + (f[1] === 'n' ? ' nl' : '') : ''}${ds === hoy ? ' hoy' : ''}${dw === 0 || dw === 6 ? ' fin' : ''}"${f ? ` title="${esc(f[0])}"` : ''}>${d}</span>`; }
+  const lista = Object.keys(FERIADOS).filter(k => k.startsWith(`${y}-${String(mo + 1).padStart(2,'0')}`)).map(k => { const d = new Date(k + 'T12:00'), f = FERIADOS[k], gt = gFeriado(d);
+    return `<div class="item"><div class="t"><div><b>${DOW[d.getDay()]} ${d.getDate()}</b> · ${esc(f[0])}${f[1] === 'n' ? ' <span class="tag">no laborable</span>' : ''}</div>${gt ? `<div class="meta${/trabaja/.test(gt) ? ' warn-t' : ''}">${esc(gt)}</div>` : ''}</div></div>`; }).join('');
+  const prox = Object.keys(FERIADOS).filter(k => k >= hoy).sort()[0], pd = prox ? new Date(prox + 'T12:00') : null, faltan = prox ? Math.round((pd - new Date(hoy + 'T12:00')) / 864e5) : 0;
+  return `<div class="card" id="feriados"><div class="row"><h3>${hic('calendario')} Feriados</h3><div class="legend"><button class="b sm" onclick="A.cal(-1)" aria-label="Mes anterior">◀</button><button class="b sm" onclick="A.cal(1)" aria-label="Mes siguiente">▶</button></div></div>
+    ${prox ? `<div class="nextfer">Próximo: <b>${DOW[pd.getDay()]} ${pd.getDate()}/${pd.getMonth() + 1}</b> · ${esc(FERIADOS[prox][0])} ${faltan === 0 ? '<span class="tag w">hoy</span>' : faltan === 1 ? '<span class="tag w">mañana</span>' : `<span class="tag">en ${faltan} días</span>`}${gFeriado(pd) ? `<div class="meta${/trabaja/.test(gFeriado(pd)) ? ' warn-t' : ''}">${esc(gFeriado(pd))}</div>` : ''}</div>` : ''}
+    <div class="calm">${MESES[mo][0].toUpperCase() + MESES[mo].slice(1)} ${y}</div><div class="cal">${g}</div>
+    ${lista || '<p class="muted">Este mes no hay feriados.</p>'}
+    <div class="sub">Los feriados que caen en tus días de guardia los trabajás; si caen lunes, la guardia es de 24 h. Sin clases: ojo con quién se queda con Joaco. ${y >= 2027 ? 'En 2027 están solo los feriados fijos: los trasladables se suman cuando salgan.' : ''}</div></div>`;
+}
+let calOff = 0;
 function joacoDay(date){
   const dow = date.getDay(); if(dow === 0 || dow === 6) return null;
+  const fer = feriado(date); if(fer) return {lleva:null, busca:null, fer, warn:[]};
   const w = weekCfg(monday(date)); const b = (S.weeks.base?.days || {})[dow] || {lleva:'dani', busca:'dani'};
   let lleva = b.lleva, busca = b.busca;
   if(w.tueNight && dow === 3 && lleva === 'gonzalo') lleva = 'dani';
@@ -922,8 +1048,11 @@ function joacoDay(date){
 }
 function status(p, date){
   const dow = date.getDay(), w = weekCfg(monday(date)), out = [];
+  const fer = feriado(date);
+  if(fer && (dow >= 1 && dow <= 5)) out.push('Feriado: ' + fer[0]);
   if(p === 'gonzalo'){
-    if(dow === 1) out.push('Guardia desde las 16 h');
+    if(dow === 1 && fer) out.push('Guardia de 24 h');
+    else if(dow === 1) out.push('Guardia desde las 16 h');
     if(dow === 2) out.push('Sale de guardia 9 h · llega 10:30', 'Pádel a la tarde');
     if(dow === 2 && w.tueNight) out.push('Guardia de noche');
     if(dow === 3) out.push(w.tueNight ? 'Llega de guardia 9:30' : 'En casa');
@@ -950,6 +1079,7 @@ const A = {
     $('#sheet').querySelectorAll('label.f').forEach(l => { const n = l.nextElementSibling; if(n && n.id && /^(INPUT|SELECT|TEXTAREA)$/.test(n.tagName)) l.htmlFor = n.id; });
     const h = $('#sheet h3'); b.setAttribute('aria-label', h ? h.textContent.trim() : 'Ventana');
     try { b.focus({preventScroll:true}); } catch(e) {} },
+  cal(n){ calOff += n; render(); const el = document.getElementById('feriados'); if(el) el.scrollIntoView({block:'nearest'}); },
   undo(){ const f = toast._u; toast._u = null; $('#toast').classList.remove('on', 'u'); if(f) f(); },
   setBig(k){ try { if(k === '1') localStorage.setItem(LS.big, '1'); else localStorage.removeItem(LS.big); } catch(e) {} applyBig(); A.settings(); },
   fab(){
@@ -1226,13 +1356,14 @@ const A = {
     A.open(`<h3>Nueva tarea</h3>
       <label class="f">Nombre</label><input type="text" id="f_name">
       <label class="f">Tipo</label><select id="f_kind"><option value="rec">Se repite cada X días</option><option value="cycle">Tiene etapas (como el lavavajillas)</option></select>
+      <label class="f">Sección</label><select id="f_grp"><option value="diaria">Tareas diarias</option><option value="orden">Orden de la casa</option><option value="otra" selected>Otras tareas que se repiten</option></select>
       <label class="f">Cada cuántos días (si se repite)</label><input type="number" id="f_every" value="7" min="1">
       <label class="f">Etapas separadas por coma (si tiene etapas)</label><input type="text" id="f_steps" placeholder="Ej: Juntar, Sacar, Reponer bolsa">
       <div class="btns"><button class="pri" onclick="A.saveTask()">Crear</button><button onclick="A.close()">Cancelar</button></div>`);
   },
   saveTask(){
     const name = $('#f_name').value.trim(); if(!name) return toast('Poné un nombre');
-    const kind = $('#f_kind').value; const t = {id:'t_'+uid(), kind, name, icon:'✅', owner:'ambos', ord:99};
+    const kind = $('#f_kind').value; const t = {id:'t_'+uid(), kind, name, icon:'✅', owner:'ambos', ord:99, grp:($('#f_grp') || {}).value || 'otra'};
     if(kind === 'rec'){ t.every = Math.max(1, +$('#f_every').value || 7); t.last = null; }
     else { t.steps = $('#f_steps').value.split(',').map(s => s.trim()).filter(Boolean); if(t.steps.length < 2) return toast('Poné al menos 2 etapas separadas por coma'); t.cur = {}; t.lastDone = null; }
     A.close(); put('tasks', t, `creó la tarea ${name}`);
@@ -1433,10 +1564,12 @@ function vHoy(){
   h += `<div class="card"><h3>${hic('pin')} Hoy en casa</h3>
     <div class="item"><span>${P('gonzalo')}</span><div class="t meta">${status('gonzalo', now)}</div></div>
     <div class="item"><span>${P('dani')}</span><div class="t meta">${status('dani', now)}</div></div>
-    ${j ? `<div class="item"><span>${P('joaco')}</span><div class="t meta">Lo lleva ${P(j.lleva)} · lo busca ${P(j.busca)}</div></div>${j.warn.length ? `<div class="warnbox">⚠ ${j.warn.join(' · ')}. Cambialo en la pestaña Joaco.</div>` : ''}` : ''}
+    ${j && j.fer ? `<div class="item"><span>${P('joaco')}</span><div class="t meta">Feriado (${esc(j.fer[0])}): no hay clases</div></div>` : j ? `<div class="item"><span>${P('joaco')}</span><div class="t meta">Lo lleva ${P(j.lleva)} · lo busca ${P(j.busca)}</div></div>${j.warn.length ? `<div class="warnbox">⚠ ${j.warn.join(' · ')}. Cambialo en la pestaña Joaco.</div>` : ''}` : ''}
     ${S.checks.daniela?.next === dk() ? `<div class="item"><span>${P('daniela')}</span><div class="t meta">Viene hoy ${esc(S.checks.daniela.hours)}</div></div>` : ''}
   </div>`;
 
+  const man = new Date(now); man.setDate(man.getDate() + 1); const fm = feriado(man);
+  if(fm && man.getDay() >= 1 && man.getDay() <= 5) h += `<div class="card ferbox" onclick="A.go('joaco')" ${KB}><h3>${hic('calendario')} Mañana es feriado</h3><p>${esc(fm[0])}. Joaco no tiene clases.${gFeriado(man) ? ` <b>${esc(gFeriado(man))}.</b>` : ''}</p></div>`;
   h += ringsCard();
   const todo = todoList(now, j);
   const mineL = todo.filter(x => mine(x.own)), rest = todo.filter(x => !mine(x.own));
@@ -1480,7 +1613,7 @@ function todoList(now = new Date(), j = joacoDay(now)){
     if(s.next && daysTo(s.next) >= 0 && daysTo(s.next) <= 7) todo.push({own:s.owner, html:`🩺 Turno ${esc(s.name)}: <b>${fdate(s.next)}</b>`});
     else if(!s.next && s.every && (!s.last || daysTo(s.last) <= -s.every)) todo.push({own:s.owner, html:`🩺 Sacar turno: ${esc(s.name)}`, go:`A.go('joaco')`});
   });
-  if(j){ const c = S.checks.mochila, done = c.date === dk() ? Object.keys(c.done).length : 0; if(done < c.list.length) todo.push({own:j.lleva, html:`🎒 Mochila de Joaco ${done}/${c.list.length}`, go:`A.go('joaco')`}); }
+  if(j && !j.fer){ const c = S.checks.mochila, done = c.date === dk() ? Object.keys(c.done).length : 0; if(done < c.list.length) todo.push({own:j.lleva, html:`🎒 Mochila de Joaco ${done}/${c.list.length}`, go:`A.go('joaco')`}); }
   const pend = Object.values(S.indic).filter(n => !n.done).length;
   if(S.checks.daniela?.next && daysTo(S.checks.daniela.next) >= 0 && daysTo(S.checks.daniela.next) <= 2) todo.push({own:S.checks.daniela.coord, html:`🧹 Daniela viene ${fdate(S.checks.daniela.next)} · ${pend} indicaciones`, go:`A.go('casa')`});
   return todo;
@@ -1494,7 +1627,7 @@ function badges(){
   b.casa = Object.values(S.tasks).filter(t => (t.kind === 'rec' && recDue(t)) || (t.kind === 'cycle' && Object.keys(t.cur || {}).length)).length;
   const now = new Date(), j = joacoDay(now), c = S.checks.mochila;
   b.joaco = Object.values(S.salud).filter(s => (s.next && daysTo(s.next) < 0) || (!s.next && s.every && (!s.last || s.every + daysTo(s.last) <= 30))).length
-    + (j && c && (c.date === dk() ? Object.keys(c.done).length : 0) < c.list.length ? 1 : 0);
+    + (j && !j.fer && c && (c.date === dk() ? Object.keys(c.done).length : 0) < c.list.length ? 1 : 0);
   let read = 0; try { read = +localStorage.getItem(LS.read) || 0; } catch(e) {}
   b.chat = Object.values(S.msgs).filter(m => m.by !== me && (m.at || 0) > read).length;
   b.daniela = Object.values(S.indic).filter(n => !n.done).length;
@@ -1527,18 +1660,22 @@ function vCompras(){
 }
 
 function vCasa(){
-  let h = `<h2>${hic('reparto')} Quién se encarga de qué</h2><div class="card"><p class="muted">"Encargarse" es pensarlo, organizarlo y hacerlo. Tocá el nombre para cambiar.</p>${sorted('areas','name').map(a => `<div class="item"><div class="t">${esc(a.name)}</div>${PB(a.owner, `A.cycleArea('${a.id}')`)}</div>`).join('')}</div>`;
+  let h = `<h2>${hic('reparto')} Quién se encarga de qué</h2><div class="card"><p class="muted">"Encargarse" es pensarlo, organizarlo y hacerlo. Tocá el nombre para cambiar.</p>${sorted('areas','name').filter(a => a.id !== 'a_salud').map(a => `<div class="item"><div class="t">${esc(a.name)}</div>${PB(a.owner, `A.cycleArea('${a.id}')`)}</div>`).join('')}</div>`;
 
-  h += `<h2>${hic('ciclo')} Tareas con etapas</h2>`;
-  sorted('tasks').filter(t => t.kind === 'cycle').forEach(t => {
-    const cur = t.cur || {}, nx = t.steps.findIndex((_, i) => !cur[i]);
-    h += `<div class="card${pc('cy:' + t.id)}"><div class="row"><h3>${t.icon} ${esc(t.name)}</h3>${PB(t.owner, `A.cycleTask('${t.id}')`)}</div>
+  const gp = t => t.grp || (t.kind === 'cycle' ? 'diaria' : 'otra');
+  const cyc = t => { const cur = t.cur || {}, nx = t.steps.findIndex((_, i) => !cur[i]);
+    return `<div class="card task${pc('cy:' + t.id)}"><div class="row"><h3><span class="tic">${t.icon}</span>${esc(t.name)}</h3>${PB(t.owner, `A.cycleTask('${t.id}')`)}</div>
       <div class="steps">${t.steps.map((s, i) => `<button class="${cur[i] ? 'done' : i === nx ? 'next' : ''}${pc(`st:${t.id}:${i}`)}" aria-pressed="${!!cur[i]}" onclick="A.step('${t.id}',${i})">${cur[i] ? '✔ ' : ''}${esc(s)}<small>${cur[i] ? esc(M[cur[i].by]?.n) + ' · ' + ago(cur[i].at) : '&nbsp;'}</small></button>`).join('')}</div>
-      <div class="sub" style="margin-top:6px">Último ciclo completo: ${t.lastDone ? ago(t.lastDone.at) + ' · ' + [...new Set(t.lastDone.who || [t.lastDone.by])].map(p => M[p]?.n).join(' y ') : 'todavía no'}${t.id.startsWith('t_') && !['t_lava','t_ropa'].includes(t.id) ? ` · <button class="b sm" onclick="A.delTask('${t.id}')" aria-label="Borrar la tarea ${esc(t.name)}">Borrar</button>` : ''}</div></div>`;
-  });
-
-  const recs = sorted('tasks').filter(t => t.kind === 'rec');
-  h += `<h2>${hic('calendario')} Tareas que se repiten</h2><div class="card">${recs.length ? '' : empty('calendario', 'Sin tareas que se repitan', 'Sumá las cosas de todas las semanas, como regar o sacar la basura, y la app te avisa cuándo toca.', '', true)}${recs.map(t => `<div class="item${pc('r:' + t.id)}"><div class="t"><div>${t.icon} ${esc(t.name)}</div><div class="meta">cada ${t.every} día${t.every > 1 ? 's' : ''} · ${t.last ? ago(t.last) + ' (' + esc(M[t.lastBy]?.n || '') + ')' : 'sin registro'} ${recDue(t) ? '<span class="tag w">toca</span>' : '<span class="tag">al día</span>'}</div></div>${PB(t.owner, `A.cycleTask('${t.id}')`)}<button class="b sm" onclick="A.recDone('${t.id}')">Hecho</button></div>`).join('')}
+      <div class="sub" style="margin-top:6px">Último ciclo completo: ${t.lastDone ? ago(t.lastDone.at) + ' · ' + [...new Set(t.lastDone.who || [t.lastDone.by])].map(p => M[p]?.n).join(' y ') : 'todavía no'}${t.id.startsWith('t_') && !['t_lava','t_ropa'].includes(t.id) ? ` · <button class="b sm" onclick="A.delTask('${t.id}')" aria-label="Borrar la tarea ${esc(t.name)}">Borrar</button>` : ''}</div></div>`; };
+  const rec = t => `<div class="item${pc('r:' + t.id)}"><div class="t"><div><span class="tic">${t.icon}</span>${esc(t.name)}</div><div class="meta">cada ${t.every} día${t.every > 1 ? 's' : ''} · ${t.last ? ago(t.last) + ' (' + esc(M[t.lastBy]?.n || '') + ')' : 'sin registro'} ${recDue(t) ? '<span class="tag w">toca</span>' : '<span class="tag">al día</span>'}</div></div>${PB(t.owner, `A.cycleTask('${t.id}')`)}<button class="b sm" onclick="A.recDone('${t.id}')">Hecho</button></div>`;
+  const all = sorted('tasks'), recOf = g => all.filter(t => t.kind === 'rec' && gp(t) === g);
+  h += `<h2>${hic('ciclo')} Tareas diarias</h2>`;
+  all.filter(t => t.kind === 'cycle').forEach(t => h += cyc(t));
+  const dRec = recOf('diaria'); if(dRec.length) h += `<div class="card">${dRec.map(rec).join('')}</div>`;
+  const oRec = recOf('orden');
+  h += `<h2>${hic('casa')} Orden de la casa</h2><div class="card">${oRec.length ? oRec.map(rec).join('') : '<p class="muted">Sin tareas de orden.</p>'}</div>`;
+  const rest = recOf('otra');
+  h += `<h2>${hic('calendario')} Otras tareas que se repiten</h2><div class="card">${rest.length ? '' : empty('calendario', 'Sin otras tareas', 'Sumá las cosas que se repiten cada tantos días, como regar, y la app te avisa cuándo toca.', '', true)}${rest.map(rec).join('')}
     <div class="btns"><button onclick="A.taskForm()">+ Nueva tarea</button></div></div>`;
 
   h += vDaniela(true);
@@ -1569,6 +1706,7 @@ function vJoaco(){
   for(let i = 0; i < 5; i++){
     const d = new Date(mon); d.setDate(d.getDate() + i); const j = joacoDay(d), ds = dk(d);
     j.warn.forEach(x => warns.push(`${DOW[d.getDay()]}: ${x}`));
+    if(j.fer){ const gt = gFeriado(d); h += `<div class="day fer ${ds === dk() ? 'today' : ''}"><b>${DOW[d.getDay()]} ${d.getDate()}</b><div class="ferl">Feriado</div><div class="lbl">${esc(j.fer[0])}</div>${gt ? `<div class="lbl${/trabaja/.test(gt) ? ' warn-t' : ''}">${esc(/24 h/.test(gt) ? 'Gonzalo: guardia de 24 h' : /trabaja/.test(gt) ? 'Gonzalo de guardia' : gt)}</div>` : ''}</div>`; continue; }
     h += `<div class="day ${ds === dk() ? 'today' : ''}"><b>${DOW[d.getDay()]} ${d.getDate()}</b>
       <div class="lbl">Lleva</div>${PV(j.lleva, `A.cycleJ('${ds}','lleva')`, 'Lleva')}
       <div class="lbl">Busca</div>${PV(j.busca, `A.cycleJ('${ds}','busca')`, 'Busca')}
@@ -1586,14 +1724,17 @@ function vJoaco(){
     <div class="sub">Se reinicia cada día.</div></div>`;
 
   h += snacksHtml();
-  h += `<div class="card"><div class="row"><h3>${hic('salud')} Salud</h3><button class="b sm" onclick="A.saludForm()">+ Control</button></div>
+  const sl = Object.values(S.salud), sAv = sl.filter(s => s.next ? daysTo(s.next) < 0 : (s.every && (!s.last || s.every + daysTo(s.last) <= 30))).length, sEnc = (S.areas.a_salud || {}).owner;
+  h += feriadosHtml();
+  h += `<details class="card fold" id="turnos"><summary><span class="fic">${ic('salud')}</span><span class="ft"><b>Turnos médicos</b><small>${sl.length} especialidad${sl.length === 1 ? '' : 'es'}${sAv ? ` · <span class="tag w">${sAv} para revisar</span>` : ' · todo al día'}</small></span><span class="chev" aria-hidden="true">›</span></summary>
+    <div class="row" style="margin:6px 0 4px">${sEnc ? `<span class="meta">Se encarga</span>${PB(sEnc, `A.cycleArea('a_salud')`)}` : '<span></span>'}<button class="b sm" onclick="A.saludForm()" aria-label="Agregar un control de salud">+ Control</button></div>
     ${Object.keys(S.salud).length ? '' : empty('salud', 'Sin controles cargados', 'Agregá pediatra, dentista u oculista para que la app avise cuándo sacar turno.', '', true)}
     ${Object.values(S.salud).sort((a,b) => a.name.localeCompare(b.name)).map(s => {
       let tag = '';
       if(s.next){ const k = daysTo(s.next); tag = k < 0 ? `<span class="tag b">ya pasó el turno: cargá el nuevo</span>` : `<span class="tag">turno ${fdate(s.next)}</span>`; }
       else if(s.every){ if(!s.last) tag = '<span class="tag w">cargá el último control</span>'; else { const k = s.every + daysTo(s.last); tag = k <= 30 ? `<span class="tag w">${k < 0 ? 'ya toca sacar turno' : 'sacar turno'}</span>` : `<span class="tag">al día</span>`; } }
       return `<div class="item"><div class="t" onclick="A.saludForm('${s.id}')" ${KB} aria-label="Editar ${esc(s.name)}"><div>${esc(s.name)}</div><div class="meta">${s.last ? 'último ' + fdate(s.last) + ' · ' : ''}${tag} ${esc(s.note || '')}</div></div>${P(s.owner)}</div>`;
-    }).join('')}</div>`;
+    }).join('')}</details>`;
   return h;
 }
 
