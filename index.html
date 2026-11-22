@@ -295,6 +295,10 @@ main{padding-bottom:150px}
 .search input{flex:1;min-width:0}
 .search .b{display:grid;place-items:center;padding:0;width:44px;flex:none;color:var(--pri-tx)}
 .qty{font-weight:650;color:var(--pri-tx);white-space:nowrap}
+.brand{font-weight:500;color:var(--mut);font-size:var(--fs-sm)}
+.pthumb{width:44px;height:44px;border-radius:var(--rs,10px);object-fit:cover;flex:none;border:1px solid var(--line)}
+.pform{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pform .pthumb{width:64px;height:64px}
 .cat{font-size:var(--fs-xs);font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;padding:10px 0 2px;border-top:1px solid var(--line)}
 .cat + .item{border-top:0}
 .two{display:grid;grid-template-columns:1fr 1.4fr;gap:var(--s2)}
@@ -324,10 +328,11 @@ textarea.plain{font-family:inherit;font-size:var(--fs-md);min-height:72px}
 <script>
 'use strict';
 /* ============ Constantes ============ */
-const VERSION = '1.18.0';
+const VERSION = '1.19.0';
 const SCHEMA = 5; // versión de la estructura de datos guardados (ver MIGRATIONS)
 /* Novedades: la primera es la versión actual. "hechas" = ítems del plan de 100 tildados hasta esa versión. */
 const NEWS = [
+  {v:'1.19.0', d:'2026-11-22', hechas:39, items:['Marca o variedad preferida: al editar un producto hay un campo «Marca o variedad preferida» (por ejemplo, «La Serenísima entera» o «Yerba Playadito») y, si querés, una foto para reconocerlo en la góndola (sacada con la cámara o elegida de la galería). La marca aparece en la lista, en el buscador y en el mensaje que se manda al negocio; la foto, en la lista de compras.','Tus datos quedan como estaban: marca y foto son opcionales y arrancan vacías. Las fotos se achican solas para no ocupar lugar.']},
   {v:'1.18.0', d:'2026-11-21', hechas:38, items:['Compartir de más formas: al tocar «📲 Mandar lista» (o «Mandar indicaciones» a Daniela) se abre una hoja con tres opciones: «WhatsApp» (como antes, directo a quien corresponde), «Compartir…» (el menú de Android, para mandarlo por cualquier app) y «Copiar texto» (para pegarlo donde quieras). El mensaje es el mismo en las tres.']},
   {v:'1.17.0', d:'2026-11-20', hechas:37, items:['Snacks de Joaco: en la pestaña Joaco hay una tarjeta «🍎 Snacks de la semana» con el snack de cada día, de lunes a viernes. «Armar rotación» los reparte para que no se repita el mismo dos días seguidos y la semana siguiente sigue desde donde quedó. Tocá un día para cambiarlo a mano y en «Opciones» editás la lista de snacks que le gustan.','Tus datos quedan como estaban: la lista arranca con ideas comunes que podés cambiar.']},
   {v:'1.16.0', d:'2026-11-20', hechas:36, items:['Ideas y antojos: al final de Compras hay una lista aparte para lo que no es urgente (un queso nuevo, una idea para el cumpleaños de Joaco). Anotá con el campito y «Sumar»; cuando se anime alguien, «A la lista» lo pasa al negocio que elijas. No cuenta como pendiente ni molesta en Hoy.','Tus datos quedan como estaban: solo se suma la lista de ideas, vacía al principio.']},
@@ -841,7 +846,7 @@ function shopSet(sid, ids){ const o = shopGet(); if(ids.length) o[sid] = ids; el
 function shopNeed(sid){ return Object.values(S.items).filter(i => i.store === sid && needs(i)).sort((a, b) => a.name.localeCompare(b.name)); }
 function shopStruck(sid){ const ok = new Set(shopNeed(sid).map(i => i.id)); return (shopGet()[sid] || []).filter(id => ok.has(id)); }
 const defStore = () => storeFilter !== 'todos' && S.stores[storeFilter] ? storeFilter : (S.stores.super ? 'super' : (sorted('stores')[0] || {}).id);
-const iname = i => esc(i.name) + (qtyTxt(i) ? ` <span class="qty">· ${esc(qtyTxt(i))}</span>` : '');
+const iname = i => esc(i.name) + (i.brand ? ` <span class="brand">${esc(i.brand)}</span>` : '') + (qtyTxt(i) ? ` <span class="qty">· ${esc(qtyTxt(i))}</span>` : '');
 /* Busca un producto ya cargado a partir de un texto normalizado (igual, con/sin «s», que empiece igual o que lo contenga como palabra). */
 function findItem(q){
   if(!q) return null;
@@ -880,7 +885,7 @@ function parseSpoken(text){
 /* Resultados del buscador de Compras (se pintan sin redibujar toda la pantalla, para no perder el teclado). */
 function searchHtml(){
   const q = norm(searchQ); if(!q) return '';
-  const all = Object.values(S.items).map(i => ({i, n:norm(i.name)})).filter(x => x.n.includes(q) || norm(x.i.note).includes(q))
+  const all = Object.values(S.items).map(i => ({i, n:norm(i.name)})).filter(x => x.n.includes(q) || norm(x.i.note).includes(q) || norm(x.i.brand).includes(q))
     .sort((a,b) => (a.n.startsWith(q) ? 0 : 1) - (b.n.startsWith(q) ? 0 : 1) || a.i.name.localeCompare(b.i.name));
   const show = all.slice(0, 12), exact = all.some(x => x.n === q), nuevo = cap(searchQ.trim().replace(/\s+/g, ' '));
   let h = `<section class="card" aria-label="Resultados de la búsqueda"><h3>${hic('lupa')} ${all.length ? (all.length === 1 ? 'Encontré 1 producto' : `Encontré ${all.length} productos`) : 'Todavía no está cargado'}</h3>`;
@@ -1042,7 +1047,7 @@ const A = {
   share(sid){
     const s = S.stores[sid]; const list = Object.values(S.items).filter(i => i.store === sid && needs(i));
     if(!list.length) return toast('No hay nada pendiente');
-    const txt = `${s.icon} *${s.name}* — lista\n` + list.map(i => `• ${i.name}${qtyTxt(i) ? ': ' + qtyTxt(i) : ''}${i.note ? ' ('+i.note+')' : ''}`).join('\n') + `\n\n— Carga Mental`;
+    const txt = `${s.icon} *${s.name}* — lista\n` + list.map(i => `• ${i.name}${i.brand ? ' — ' + i.brand : ''}${qtyTxt(i) ? ': ' + qtyTxt(i) : ''}${i.note ? ' ('+i.note+')' : ''}`).join('\n') + `\n\n— Carga Mental`;
     const to = s.owner === 'ambos' ? ({gonzalo:'dani', dani:'gonzalo'})[me] : (s.owner !== me ? s.owner : null);
     A.shareSheet(txt, to, `${s.icon} ${s.name}`);
   },
@@ -1074,10 +1079,13 @@ const A = {
       <label class="f">Cada cuántos días se repone (aprox.)</label><input type="number" id="f_every" min="1" value="${i.every}" oninput="$('#f_auto').checked = false">
       <label class="item"><input type="checkbox" id="f_auto" ${isAuto(i) ? 'checked' : ''}><div class="t"><div>Que se ajuste solo con las compras reales</div><div class="meta" id="f_learn">${lr ? `Según las últimas ${lr.n + 1} compras, lo reponen cada ${dias(lr.days)}.` : `Desde la tercera compra la app calcula el promedio${nh ? ` (${nh === 1 ? 'va 1' : 'van ' + nh})` : ''}.`}</div></div></label>
       ${lr && lr.days !== i.every ? `<div class="btns"><button id="f_uselearn" onclick="$('#f_every').value = ${lr.days}; this.hidden = true">Usar ${dias(lr.days)}</button></div>` : ''}
-      <label class="f">Detalle (marca, variedad…)</label><input type="text" id="f_note" value="${esc(i.note || '')}">
+      <label class="f">Marca o variedad preferida</label><input type="text" id="f_brand" value="${esc(i.brand || '')}" placeholder="Ej: La Serenísima entera">
+      <label class="f">Foto para reconocerlo (opcional)</label>
+      <div class="pform" id="f_photoBox">${A._photoHtml(i.photo)}</div>
+      <label class="f">Detalle (presentación, comentario…)</label><input type="text" id="f_note" value="${esc(i.note || '')}">
       ${id ? `<details class="histd"><summary>Historial de compras (${h.length})</summary>${h.length ? h.slice(0, 15).map(x => `<div class="log">${AV(x.by)}<div><b>${x.by ? esc(pm(x.by).n) : 'Sin dato de quién'}</b> · ${fdate(dk(new Date(x.at)))}${qtyTxt(x) ? ' · ' + esc(qtyTxt(x)) : ''}${+x.price > 0 ? ' · ' + fmoney(+x.price) : ''} <span class="meta">· ${ago(x.at)}</span></div></div>`).join('') : '<p class="muted">Todavía no hay compras registradas. Cuando alguien lo tilde como comprado, queda anotado acá quién fue y cuándo.</p>'}</details>` : ''}
       <div class="btns"><button class="pri" onclick="A.saveItem('${i.id}')">Guardar</button>${id ? `<button onclick="A.delItem('${i.id}')">Borrar</button>` : ''}<button onclick="A.close()">Cancelar</button></div>`);
-    A._draft = i;
+    A._draft = i; A._photo = i.photo || null;
   },
   storeLink(sid){ const s = S.stores[sid]; if(!s) return;
     A.open(`<h3>🌐 Web de ${esc(s.name)}</h3><p class="muted">Pegá la dirección de la página donde hacen el pedido. Queda guardada para todos.</p>
@@ -1137,9 +1145,20 @@ const A = {
     const i = ex || newItem(cap(x.text), sid), u = snapshot([['items', i.id], ['ideas', id]]);
     i.state = 'list'; i.at = Date.now(); i.by = me; S.items[i.id] = i; if(fs) remotePath('items').doc(i.id).set(clean(i)).catch(() => {});
     A.close(); del('ideas', id, `pasó la idea «${x.text}» a la lista de ${S.stores[sid].name}`); toast(`Anotado en ${S.stores[sid].name}`, u); },
+  _photoHtml(ph){ return `${ph ? `<img class="pthumb" src="${ph}" alt="Foto del producto">` : ''}<button class="b sm" type="button" onclick="$('#f_photo').click()">${ph ? 'Cambiar foto' : '📷 Agregar foto'}</button>${ph ? '<button class="b sm" type="button" onclick="A.photoDel()">Quitar foto</button>' : ''}<input type="file" id="f_photo" accept="image/*" hidden onchange="A.photoPick(this)">`; },
+  photoDel(){ A._photo = null; $('#f_photoBox').innerHTML = A._photoHtml(null); },
+  photoPick(inp){
+    const f = inp.files && inp.files[0]; if(!f) return; const r = new FileReader();
+    r.onload = () => { const im = new Image(); im.onload = () => {
+      try { const k = 160 / Math.max(im.width, im.height, 1), w = Math.max(1, Math.round(im.width * Math.min(1, k))), h = Math.max(1, Math.round(im.height * Math.min(1, k)));
+        const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(im, 0, 0, w, h);
+        A._photo = c.toDataURL('image/jpeg', 0.7); const bx = $('#f_photoBox'); if(bx) bx.innerHTML = A._photoHtml(A._photo);
+      } catch(e) { toast('No se pudo usar esa foto'); } };
+      im.onerror = () => toast('No se pudo usar esa foto'); im.src = r.result; };
+    r.onerror = () => toast('No se pudo leer la foto'); r.readAsDataURL(f); },
   saveItem(id){
     const i = S.items[id] || A._draft; i.name = $('#f_name').value.trim(); if(!i.name) return toast('Poné un nombre');
-    i.store = $('#f_store').value; i.every = Math.max(1, Math.round(+$('#f_every').value) || 7); i.auto = $('#f_auto').checked; i.note = $('#f_note').value.trim();
+    i.store = $('#f_store').value; i.every = Math.max(1, Math.round(+$('#f_every').value) || 7); i.auto = $('#f_auto').checked; i.note = $('#f_note').value.trim(); i.brand = $('#f_brand').value.trim(); if(A._photo) i.photo = A._photo; else delete i.photo;
     const q = parseFloat($('#f_qty').value.replace(',', '.')); i.qty = q > 0 ? Math.round(q * 100) / 100 : null; i.unit = i.qty ? $('#f_unit').value : '';
     i.cat = $('#f_cat').value || guessCat(i.name); i.price = parsePrice($('#f_price').value);
     A.close(); put('items', i, `editó ${i.name}`);
@@ -1498,7 +1517,7 @@ function vCompras(){
       ${orderDay(s) !== null ? `<div class="sub ordday">📅 ${esc(orderTxt(s))}${orderIn(s) <= 1 ? ` · <span class="tag w">${orderIn(s) === 0 ? 'hoy toca pedir' : 'mañana toca pedir'}</span>` : ''}</div>` : ''}
       ${soonHtml(its)}
       ${totalTxt(estTotal(need)) ? `<div class="total" role="status">${esc(totalTxt(estTotal(need)))}</div>` : ''}
-      ${need.length ? byCat(need, i => `<div class="item">${chk(`<input type="checkbox" onchange="A.bought('${i.id}')" aria-label="Comprado: ${esc(i.name)}">`)}<div class="t" onclick="A.itemForm('${i.id}')" ${KB} aria-label="Editar ${esc(i.name)}"><div>${iname(i)}</div><div class="meta">${i.state === 'list' ? `anotado por ${esc(M[i.by]?.n || '—')}` : `<span class="tag w">toca reponer</span> última ${ago(i.last)}`}${i.note ? ' · ' + esc(i.note) : ''}${priceOf(i) ? ' · ' + fmoney(priceOf(i)) : ''}${bringer(i) ? ` · <span class="tag">🙋 Lo trae ${esc(M[bringer(i)].n)}</span>` : ''}${missOf(i) ? ` · <span class="tag w">🚫 ${esc(missTxt(i))}</span>` : ''}</div></div><button class="b sm" onclick="A.bring('${i.id}')" aria-label="${bringer(i) === me ? 'Ya no traigo' : bringer(i) ? 'Cambiar quién trae' : 'Lo traigo yo:'} ${esc(i.name)}">${bringer(i) && bringer(i) === me ? 'Ya no' : bringer(i) ? 'Cambiar' : '🙋 Lo traigo'}</button><button class="b sm" onclick="A.noHabia('${i.id}')" aria-label="No había: ${esc(i.name)}">🚫 No había</button><button class="b sm" onclick="A.unlist('${i.id}')" aria-label="Sacar ${esc(i.name)} de la lista">✕</button></div>`, cats) : empty('compras', 'Nada para comprar', 'La despensa está al día. Si algo se acaba, tocá «Se acaba».', '', true)}
+      ${need.length ? byCat(need, i => `<div class="item">${chk(`<input type="checkbox" onchange="A.bought('${i.id}')" aria-label="Comprado: ${esc(i.name)}">`)}${i.photo ? `<img class="pthumb" src="${i.photo}" alt="Foto de ${esc(i.name)}">` : ''}<div class="t" onclick="A.itemForm('${i.id}')" ${KB} aria-label="Editar ${esc(i.name)}"><div>${iname(i)}</div><div class="meta">${i.state === 'list' ? `anotado por ${esc(M[i.by]?.n || '—')}` : `<span class="tag w">toca reponer</span> última ${ago(i.last)}`}${i.note ? ' · ' + esc(i.note) : ''}${priceOf(i) ? ' · ' + fmoney(priceOf(i)) : ''}${bringer(i) ? ` · <span class="tag">🙋 Lo trae ${esc(M[bringer(i)].n)}</span>` : ''}${missOf(i) ? ` · <span class="tag w">🚫 ${esc(missTxt(i))}</span>` : ''}</div></div><button class="b sm" onclick="A.bring('${i.id}')" aria-label="${bringer(i) === me ? 'Ya no traigo' : bringer(i) ? 'Cambiar quién trae' : 'Lo traigo yo:'} ${esc(i.name)}">${bringer(i) && bringer(i) === me ? 'Ya no' : bringer(i) ? 'Cambiar' : '🙋 Lo traigo'}</button><button class="b sm" onclick="A.noHabia('${i.id}')" aria-label="No había: ${esc(i.name)}">🚫 No había</button><button class="b sm" onclick="A.unlist('${i.id}')" aria-label="Sacar ${esc(i.name)} de la lista">✕</button></div>`, cats) : empty('compras', 'Nada para comprar', 'La despensa está al día. Si algo se acaba, tocá «Se acaba».', '', true)}
       <details ${need.length ? "" : "open"}><summary>Habituales (${rest.length})</summary>${byCat(rest, i => `<div class="item"><div class="t" onclick="A.itemForm('${i.id}')" ${KB} aria-label="Editar ${esc(i.name)}"><div>${iname(i)}</div><div class="meta">${soonLeft(i) ? `<span class="tag w">${soonTxt(soonLeft(i))}</span> ` : ''}cada ${dias(i.every)}${isAuto(i) && (learned(i) || {}).days === i.every ? ' <span class="tag">aprendido</span>' : ''} · última ${ago(i.last)}${i.lastBy ? ' (' + esc(M[i.lastBy]?.n) + ')' : ''}</div></div><button class="b sm" onclick="A.need('${i.id}')" aria-label="Se acaba ${esc(i.name)}">Se acaba</button></div>`, cats)}</details>
       <div class="btns">${need.length ? `<button class="pri" onclick="A.shopMode('${s.id}')">🛒 Estoy en el negocio</button>` : ''}<button onclick="A.share('${s.id}')">📲 Mandar lista</button>${need.length > 1 ? `<button onclick="A.boughtAll('${s.id}')">✔ Compré todo</button>` : ''}<button onclick="A.allList('${s.id}')">Pedido habitual</button><button onclick="A.tpls('${s.id}')">📋 Plantillas</button><button onclick="A.orderDay('${s.id}')">📅 Día de pedido</button>${storeUrl(s) ? `<a class="btn" href="${esc(storeUrl(s))}" target="_blank" rel="noopener noreferrer">🌐 Abrir web</a><button onclick="A.storeLink('${s.id}')" aria-label="Cambiar el enlace de ${esc(s.name)}">✎ Enlace</button>` : `<button onclick="A.storeLink('${s.id}')">🔗 Poner web</button>`}<button onclick="A.itemForm(null,'${s.id}')">+ Producto</button></div></section>`;
   });

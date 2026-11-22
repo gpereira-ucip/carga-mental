@@ -1,5 +1,10 @@
 # Novedades de Carga Mental
 
+## v1.19.0 — 2026-11-22
+- Marca o variedad preferida y foto (ítem 39): al editar un producto hay un campo «Marca o variedad preferida» y una foto opcional («📷 Agregar foto», con cámara o galería; se achica sola a 160 px y JPEG, unos pocos KB). La marca se ve junto al nombre en las listas, la encuentra el buscador y viaja en el mensaje al negocio («Leche — La Serenísima entera: 2 L»); la foto aparece como miniatura en la lista de compras. «Quitar foto» la borra. El campo «Detalle» sigue existiendo para presentación o comentarios.
+- Estructura de datos: sin cambios (SCHEMA sigue en 5, sin migración): `brand` y `photo` son campos opcionales del producto; si faltan, el producto se ve igual que antes.
+- Pruebas: datos intactos al abrir, guardar marca y foto (JPEG liviano), vista previa, miniatura ≥ 44 px y marca en la lista, búsqueda por marca, marca en el mensaje, quitar foto y marca, botones ≥ 44 px y 390 px en claro y oscuro. Pruebas viejas adaptadas a 39/100.
+
 ## v1.18.0 — 2026-11-21
 - Compartir de más formas (ítem 38): «📲 Mandar lista» de cada negocio y «Mandar indicaciones» a Daniela abren una hoja con el mensaje y tres botones: «WhatsApp» (igual que antes, directo a quien corresponde), «Compartir…» (menú nativo de Android vía Web Share; solo aparece si el navegador lo permite) y «Copiar texto» (portapapeles, con respaldo para navegadores viejos). Cancelar el menú nativo no da error.
 - Estructura de datos: sin cambios (SCHEMA sigue en 5, sin migración).

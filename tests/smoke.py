@@ -24,6 +24,7 @@ Levanta un servidor local, abre la app en un celular simulado (390x844) y recorr
   18. v1.16.0: ideas y antojos (migración al esquema 5).
   19. v1.17.0: snacks de Joaco (documento opcional checks.snacks, sin migración).
   20. v1.18.0: compartir lista (WhatsApp, menú nativo, copiar), sin migración.
+  21. v1.19.0: marca o variedad preferida y foto opcional por producto (sin migración).
   13. v1.12.0: migración al esquema 4 (datos de v1.11.0) y plantillas de pedido (armar, editar, crear, borrar, deshacer).
 Falla si hay errores de JavaScript o de consola, o si la página se ensancha más de 390 px.
 Guarda capturas en /tmp/cm-*.png para revisarlas.
@@ -556,7 +557,7 @@ with sync_playwright() as p:
         check(it['i_agua']['cat'] == 'bebidas' and it['i_mio']['cat'] == 'frescos' and it['i_huerfano']['cat'] == 'almacen', f"v1.5: categorías mal asignadas {[x['cat'] for x in it.values()]}")
         check(all(x['qty'] is None and x['unit'] == '' for x in it.values()), 'v1.5: cantidad/unidad iniciales')
         check(it['i_mio']['hist'] == [{'at': 1762000000000, 'by': None}] and it['i_agua']['hist'] == [], f"v1.5: historial inicial {it['i_mio']['hist']}")
-        check(pg.locator('#sheet >> text=38/100').count() > 0, 'v1.5: Novedades no muestra 38/100')
+        check(pg.locator('#sheet >> text=39/100').count() > 0, 'v1.5: Novedades no muestra 39/100')
         pg.screenshot(path=f'/tmp/cm-v15-novedades-{scheme}.png')
         pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
         pg.reload(); pg.wait_for_timeout(1800)
@@ -695,7 +696,7 @@ with sync_playwright() as p:
         for x in d0['items'].values(): x.pop('auto', None)
         check(d0 == pre, 'v1.6: la migración cambió o perdió datos de v1.5.0')
         check(json.loads(pg.evaluate('localStorage.getItem("cm_backup_v2")') or 'null') == pre, 'v1.6: no quedó la copia cm_backup_v2 idéntica')
-        check(pg.locator('#sheet >> text=38/100').count() > 0, 'v1.6: Novedades no se abrió con 38/100')
+        check(pg.locator('#sheet >> text=39/100').count() > 0, 'v1.6: Novedades no se abrió con 39/100')
         pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
         # Cálculo del promedio
         calc = pg.evaluate("""() => { const D = 86400000, t = 1e12, h = a => ({hist: a.map(n => ({at: t + n * D}))});
@@ -766,7 +767,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---------- 10. v1.7.0: aviso anticipado («se acaba en 2 días») ----------
-    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.18.0');"
+    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.19.0');"
               " if(!localStorage.getItem('cm_data')){ const d = %s; d._v = 5; d.tpls = {}; d.ideas = {}; Object.values(d.items).forEach(i => i.auto = true);"
               " localStorage.setItem('cm_pre', JSON.stringify(d)); localStorage.setItem('cm_data', JSON.stringify(d)); }") % json.dumps(V15)
     for scheme in ['light', 'dark']:
@@ -902,7 +903,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---- v1.12.0: plantillas de pedido (migración al esquema 4) ----
-    init18 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.18.0');"
+    init18 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.19.0');"
               " if(!localStorage.getItem('cm_data')){ const d = %s; d._v = 3; Object.values(d.items).forEach(i => i.auto = true);"
               " localStorage.setItem('cm_pre', JSON.stringify(d)); localStorage.setItem('cm_data', JSON.stringify(d)); }") % json.dumps(V15)
     for scheme in ['light', 'dark']:
@@ -1202,6 +1203,45 @@ with sync_playwright() as p:
         pg.evaluate("A.close()"); pg.evaluate("A.shareDaniela()"); pg.wait_for_timeout(300)
         check(pg.locator('#sheet').inner_text().count('Daniela') >= 0, 'v1.18.0: indicaciones')
         width_ok(pg, 'v1.18.0 final'); ctx.close()
+
+    # ---- v1.19.0: marca preferida y foto por producto, sin migración ----
+    import struct, zlib
+    def png(w, h):
+        raw = b''.join(b'\x00' + b'\xc8\x64\x32' * w for _ in range(h))
+        ch = lambda t, d: struct.pack('>I', len(d)) + t + d + struct.pack('>I', zlib.crc32(t + d) & 0xffffffff)
+        return b'\x89PNG\r\n\x1a\n' + ch(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0)) + ch(b'IDAT', zlib.compress(raw)) + ch(b'IEND', b'')
+    with open('/tmp/cm-foto.png', 'wb') as fh: fh.write(png(600, 400))
+    for scheme in ['light', 'dark']:
+        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme)
+        ctx.add_init_script(init17)
+        pg = ctx.new_page()
+        pg.on('pageerror', lambda e: errs.append(f'[v1.19.0] JS: {e}'))
+        pg.on('console', lambda m: errs.append(f'[v1.19.0] consola: {m.text}') if m.type == 'error' else None)
+        pg.goto(URL); pg.wait_for_timeout(1500)
+        pre = json.loads(pg.evaluate('localStorage.getItem("cm_pre")')); check(S(pg) == pre, 'v1.19.0: los datos cambiaron al abrir')
+        iid = pg.evaluate("(() => { const i = Object.values(S.items)[0]; i.state = 'list'; save(); A.go('compras'); render(); return i.id; })()"); pg.wait_for_timeout(300)
+        pg.evaluate(f"A.itemForm('{iid}')"); pg.wait_for_timeout(300)
+        check(pg.locator('#f_brand').count() == 1, 'v1.19.0: falta el campo de marca')
+        pg.locator('#f_brand').fill('Marca Linda entera')
+        pg.set_input_files('#f_photo', '/tmp/cm-foto.png'); pg.wait_for_timeout(600)
+        check(pg.locator('#f_photoBox img.pthumb').count() == 1, 'v1.19.0: no mostró la vista previa')
+        pg.screenshot(path=f'/tmp/cm-v1190-form-{scheme}.png', full_page=True); width_ok(pg, 'v1.19.0 form')
+        pg.locator('#sheet button:has-text("Guardar")').click(); pg.wait_for_timeout(400)
+        it = S(pg)['items'][iid]
+        check(it.get('brand') == 'Marca Linda entera', 'v1.19.0: no guardó la marca')
+        check(str(it.get('photo', '')).startswith('data:image/jpeg') and len(it['photo']) < 20000, 'v1.19.0: foto ausente o muy pesada')
+        pg.evaluate("A.go('compras'); render()"); pg.wait_for_timeout(300)
+        check(pg.locator('.pthumb').count() >= 1 and 'Marca Linda' in pg.locator('body').inner_text(), 'v1.19.0: no se ve marca/foto en la lista')
+        check(pg.evaluate("document.querySelector('.pthumb').getBoundingClientRect().height") >= 44, 'v1.19.0: foto chica')
+        pg.screenshot(path=f'/tmp/cm-v1190-lista-{scheme}.png', full_page=True); width_ok(pg, 'v1.19.0 lista')
+        check(pg.evaluate("norm(Object.values(S.items).find(i => i.brand).brand).includes('marca linda')") and 'Marca Linda' in pg.evaluate("(searchQ = 'marca linda', searchHtml())"), 'v1.19.0: el buscador no halló por marca')
+        sid = it['store']; pg.evaluate(f"A.share('{sid}')"); pg.wait_for_timeout(300)
+        check('Marca Linda entera' in pg.locator('#sharePre').inner_text(), 'v1.19.0: el mensaje no lleva la marca'); pg.evaluate("A.close()")
+        pg.evaluate(f"A.itemForm('{iid}')"); pg.wait_for_timeout(300)
+        pg.locator('#sheet button:has-text("Quitar foto")').click(); pg.locator('#f_brand').fill('')
+        pg.locator('#sheet button:has-text("Guardar")').click(); pg.wait_for_timeout(400)
+        it = S(pg)['items'][iid]; check('photo' not in it and not it.get('brand'), 'v1.19.0: no quitó foto/marca')
+        width_ok(pg, 'v1.19.0 final'); ctx.close()
 
     b.close()
 srv.shutdown()
