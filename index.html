@@ -382,10 +382,11 @@ details.fold[open] .chev{transform:rotate(90deg)}
 <script>
 'use strict';
 /* ============ Constantes ============ */
-const VERSION = '1.20.0';
+const VERSION = '1.20.1';
 const SCHEMA = 6; // versión de la estructura de datos guardados (ver MIGRATIONS)
 /* Novedades: la primera es la versión actual. "hechas" = ítems del plan de 100 tildados hasta esa versión. */
 const NEWS = [
+  {v:'1.20.1', d:'2026-11-22', hechas:39, items:['Los turnos médicos de Joaco ya no aparecen en «Te toca» ni suman al numerito de la pestaña Joaco: quedan solo en el desplegable «Turnos médicos».']},
   {v:'1.20.0', d:'2026-11-22', hechas:39, items:['Casa reordenada: «Tareas diarias» (lavavajillas, ropa con lavarropas y sacar la basura), «Orden de la casa» (cocina y habitaciones por separado) y «Otras tareas que se repiten». Al crear una tarea elegís la sección.','Sale «Fertilizar el limonero».','Turnos médicos: ya no está en «Quién se encarga de qué»; ahora es un desplegable en la pestaña Joaco que al abrirse muestra todos los controles. Se sumó Fonoaudiología.','Calendario de feriados en la pestaña Joaco, con el próximo feriado y aviso en Hoy el día anterior. Los feriados que caen en tus días de guardia figuran como trabajados, y si caen lunes, como guardia de 24 h. Esos días Joaco no tiene clases.','Estética renovada: encabezado con degradé, tarjetas más limpias y botones redondeados.']},
   {v:'1.19.0', d:'2026-11-22', hechas:39, items:['Marca o variedad preferida: al editar un producto hay un campo «Marca o variedad preferida» (por ejemplo, «La Serenísima entera» o «Yerba Playadito») y, si querés, una foto para reconocerlo en la góndola (sacada con la cámara o elegida de la galería). La marca aparece en la lista, en el buscador y en el mensaje que se manda al negocio; la foto, en la lista de compras.','Tus datos quedan como estaban: marca y foto son opcionales y arrancan vacías. Las fotos se achican solas para no ocupar lugar.']},
   {v:'1.18.0', d:'2026-11-21', hechas:38, items:['Compartir de más formas: al tocar «📲 Mandar lista» (o «Mandar indicaciones» a Daniela) se abre una hoja con tres opciones: «WhatsApp» (como antes, directo a quien corresponde), «Compartir…» (el menú de Android, para mandarlo por cualquier app) y «Copiar texto» (para pegarlo donde quieras). El mensaje es el mismo en las tres.']},
@@ -1609,10 +1610,7 @@ function todoList(now = new Date(), j = joacoDay(now)){
     if(t.kind === 'rec' && recDue(t)) todo.push({own:t.owner, html:`${t.icon} ${esc(t.name)} <span class="meta">· ${ago(t.last)}</span>`, btn:`<button class="b sm" onclick="A.recDone('${t.id}')">Hecho</button>`});
     if(t.kind === 'cycle'){ const k = t.steps.findIndex((_, i) => !(t.cur || {})[i]); if(Object.keys(t.cur || {}).length) todo.push({own:t.owner, html:`${t.icon} ${esc(t.name)}: falta <b>${esc(t.steps[k].toLowerCase())}</b>`, btn:`<button class="b sm" onclick="A.step('${t.id}',${k})">${esc(t.steps[k])}</button>`}); }
   });
-  Object.values(S.salud).forEach(s => {
-    if(s.next && daysTo(s.next) >= 0 && daysTo(s.next) <= 7) todo.push({own:s.owner, html:`🩺 Turno ${esc(s.name)}: <b>${fdate(s.next)}</b>`});
-    else if(!s.next && s.every && (!s.last || daysTo(s.last) <= -s.every)) todo.push({own:s.owner, html:`🩺 Sacar turno: ${esc(s.name)}`, go:`A.go('joaco')`});
-  });
+  /* v1.20.1 (pedido de Gonzalo): los turnos médicos ya no aparecen en «Te toca»; se ven en el desplegable de la pestaña Joaco. */
   if(j && !j.fer){ const c = S.checks.mochila, done = c.date === dk() ? Object.keys(c.done).length : 0; if(done < c.list.length) todo.push({own:j.lleva, html:`🎒 Mochila de Joaco ${done}/${c.list.length}`, go:`A.go('joaco')`}); }
   const pend = Object.values(S.indic).filter(n => !n.done).length;
   if(S.checks.daniela?.next && daysTo(S.checks.daniela.next) >= 0 && daysTo(S.checks.daniela.next) <= 2) todo.push({own:S.checks.daniela.coord, html:`🧹 Daniela viene ${fdate(S.checks.daniela.next)} · ${pend} indicaciones`, go:`A.go('casa')`});
@@ -1626,8 +1624,7 @@ function badges(){
   b.compras = Object.values(S.items).filter(needs).length;
   b.casa = Object.values(S.tasks).filter(t => (t.kind === 'rec' && recDue(t)) || (t.kind === 'cycle' && Object.keys(t.cur || {}).length)).length;
   const now = new Date(), j = joacoDay(now), c = S.checks.mochila;
-  b.joaco = Object.values(S.salud).filter(s => (s.next && daysTo(s.next) < 0) || (!s.next && s.every && (!s.last || s.every + daysTo(s.last) <= 30))).length
-    + (j && !j.fer && c && (c.date === dk() ? Object.keys(c.done).length : 0) < c.list.length ? 1 : 0);
+  b.joaco = (j && !j.fer && c && (c.date === dk() ? Object.keys(c.done).length : 0) < c.list.length ? 1 : 0);
   let read = 0; try { read = +localStorage.getItem(LS.read) || 0; } catch(e) {}
   b.chat = Object.values(S.msgs).filter(m => m.by !== me && (m.at || 0) > read).length;
   b.daniela = Object.values(S.indic).filter(n => !n.done).length;

@@ -1,5 +1,9 @@
 # Novedades de Carga Mental
 
+## v1.20.1 — 2026-11-22
+- Pedido de Gonzalo: los turnos médicos («Sacar turno…», «Turno … el día…») salen de «Te toca» en Hoy y del numerito de la pestaña Joaco; siguen en el desplegable «Turnos médicos», que muestra cuántos hay para revisar.
+- Estructura de datos: sin cambios.
+
 ## v1.20.0 — 2026-11-22
 - Pedido de Gonzalo (22/11), fuera del plan de 100 mejoras:
   - Casa reordenada en «Tareas diarias» (lavavajillas, ropa con lavarropas, sacar la basura), «Orden de la casa» (orden de la cocina y orden de las habitaciones, separados) y «Otras tareas que se repiten». Las tareas nuevas eligen sección.
