@@ -576,7 +576,7 @@ with sync_playwright() as p:
         check(it['i_agua']['cat'] == 'bebidas' and it['i_mio']['cat'] == 'frescos' and it['i_huerfano']['cat'] == 'almacen', f"v1.5: categorías mal asignadas {[x['cat'] for x in it.values()]}")
         check(all(x['qty'] is None and x['unit'] == '' for x in it.values()), 'v1.5: cantidad/unidad iniciales')
         check(it['i_mio']['hist'] == [{'at': 1762000000000, 'by': None}] and it['i_agua']['hist'] == [], f"v1.5: historial inicial {it['i_mio']['hist']}")
-        check(pg.locator('#sheet >> text=39/100').count() > 0, 'v1.5: Novedades no muestra 39/100')
+        check(pg.locator('#sheet >> text=40/100').count() > 0, 'v1.5: Novedades no muestra 40/100')
         pg.screenshot(path=f'/tmp/cm-v15-novedades-{scheme}.png')
         pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
         pg.reload(); pg.wait_for_timeout(1800)
@@ -715,7 +715,7 @@ with sync_playwright() as p:
         for x in d0['items'].values(): x.pop('auto', None)
         check(d0 == con_m6(pre), 'v1.6: la migración cambió o perdió datos de v1.5.0')
         check(json.loads(pg.evaluate('localStorage.getItem("cm_backup_v2")') or 'null') == pre, 'v1.6: no quedó la copia cm_backup_v2 idéntica')
-        check(pg.locator('#sheet >> text=39/100').count() > 0, 'v1.6: Novedades no se abrió con 39/100')
+        check(pg.locator('#sheet >> text=40/100').count() > 0, 'v1.6: Novedades no se abrió con 40/100')
         pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
         # Cálculo del promedio
         calc = pg.evaluate("""() => { const D = 86400000, t = 1e12, h = a => ({hist: a.map(n => ({at: t + n * D}))});
@@ -786,7 +786,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---------- 10. v1.7.0: aviso anticipado («se acaba en 2 días») ----------
-    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.20.1');"
+    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.21.0');"
               " if(!localStorage.getItem('cm_data')){ const d = %s; d._v = 6; d.tpls = {}; d.ideas = {}; d.checks.m6 = {id:'m6'}; Object.values(d.tasks || {}).forEach(t => { if(!t.grp) t.grp = t.kind === 'cycle' ? 'diaria' : (t.id === 't_orden' ? 'orden' : 'otra'); }); Object.values(d.items).forEach(i => i.auto = true);"
               " localStorage.setItem('cm_pre', JSON.stringify(d)); localStorage.setItem('cm_data', JSON.stringify(d)); }") % json.dumps(V15)
     for scheme in ['light', 'dark']:
@@ -922,7 +922,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---- v1.12.0: plantillas de pedido (migración al esquema 4) ----
-    init18 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.20.1');"
+    init18 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.21.0');"
               " if(!localStorage.getItem('cm_data')){ const d = %s; d._v = 3; Object.values(d.items).forEach(i => i.auto = true);"
               " localStorage.setItem('cm_pre', JSON.stringify(d)); localStorage.setItem('cm_data', JSON.stringify(d)); }") % json.dumps(V15)
     for scheme in ['light', 'dark']:
@@ -1268,7 +1268,7 @@ with sync_playwright() as p:
     V5['tasks']['t_orden'] = {'id':'t_orden','kind':'rec','name':'Orden general (cocina y living)','icon':'🧺','owner':'ambos','every':1,'last':1762000000000,'ord':3}
     V5['areas']['a_salud'] = {'id':'a_salud','name':'Turnos médicos y odontología de Joaco','owner':'gonzalo'}
     V5['areas']['a_orden'] = {'id':'a_orden','name':'Orden general','owner':'ambos'}
-    init20 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.20.1');"
+    init20 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.21.0');"
               " if(!sessionStorage.getItem('s20')){ sessionStorage.setItem('s20','1'); localStorage.setItem('cm_data', %s); }") % json.dumps(json.dumps(V5))
     for scheme in ['light', 'dark']:
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init20)
@@ -1314,6 +1314,39 @@ with sync_playwright() as p:
         pg.evaluate("S.salud.s_odonto.last = ''; S.salud.s_odonto.every = 180; save(); A.go('hoy'); render()"); pg.wait_for_timeout(300)
         check('turno' not in pg.locator('main').inner_text().lower(), 'v1.20.1: los turnos médicos siguen en Hoy')
         ctx.close()
+
+    # ---- v1.21.0: nota de calidad y dónde comprarlo (ítem 40), sin migración ----
+    for scheme in ['light', 'dark']:
+        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme)
+        ctx.add_init_script(init17)
+        pg = ctx.new_page()
+        pg.on('pageerror', lambda e: errs.append(f'[v1.21.0] JS: {e}'))
+        pg.on('console', lambda m: errs.append(f'[v1.21.0] consola: {m.text}') if m.type == 'error' else None)
+        pg.goto(URL); pg.wait_for_timeout(1500)
+        pre = json.loads(pg.evaluate('localStorage.getItem("cm_pre")')); check(S(pg) == pre, 'v1.21.0: los datos cambiaron al abrir')
+        check(pg.evaluate("SCHEMA") == 6, 'v1.21.0: no debería haber migración nueva')
+        hid = pg.evaluate("(() => { let i = Object.values(S.items).find(i => /huevo/i.test(i.name)); if(!i){ i = newItem('Huevos de campo', 'naturista'); S.items[i.id] = i; } i.state = 'list'; save(); A.go('compras'); render(); return i.id; })()"); pg.wait_for_timeout(300)
+        pg.evaluate(f"A.itemForm('{hid}')"); pg.wait_for_timeout(300)
+        check(pg.locator('#f_qual').count() == 1 and pg.locator('#f_where').count() == 1, 'v1.21.0: faltan los campos de calidad y dónde')
+        check('maíz' in pg.locator('#f_qual').get_attribute('placeholder'), 'v1.21.0: el ejemplo de huevos no habla de maíz')
+        pg.locator('#f_qual').fill('Gallinas alimentadas a maíz'); pg.locator('#f_where').fill('Naturista de la esquina')
+        pg.screenshot(path=f'/tmp/cm-v1210-form-{scheme}.png', full_page=True); width_ok(pg, 'v1.21.0 form')
+        pg.locator('#sheet button:has-text("Guardar")').click(); pg.wait_for_timeout(400)
+        it = S(pg)['items'][hid]
+        check(it.get('qual') == 'Gallinas alimentadas a maíz' and it.get('where') == 'Naturista de la esquina', 'v1.21.0: no guardó calidad/dónde')
+        pg.evaluate("A.go('compras'); render()"); pg.wait_for_timeout(300)
+        txt = pg.locator('body').inner_text()
+        check('Gallinas alimentadas a maíz' in txt and 'Naturista de la esquina' in txt, 'v1.21.0: no se ve en la lista')
+        pg.screenshot(path=f'/tmp/cm-v1210-lista-{scheme}.png', full_page=True); width_ok(pg, 'v1.21.0 lista')
+        check('Naturista de la esquina' in pg.evaluate("(searchQ = 'esquina', searchHtml())"), 'v1.21.0: el buscador no halló por lugar')
+        pg.evaluate(f"A.share('{it['store']}')"); pg.wait_for_timeout(300)
+        check('[Gallinas alimentadas a maíz]' in pg.locator('#sharePre').inner_text(), 'v1.21.0: el mensaje no lleva la calidad'); pg.evaluate("A.close()")
+        pg.evaluate(f"A.itemForm('{hid}')"); pg.wait_for_timeout(300)
+        pg.locator('#f_qual').fill(''); pg.locator('#f_where').fill('')
+        pg.locator('#sheet button:has-text("Guardar")').click(); pg.wait_for_timeout(400)
+        it = S(pg)['items'][hid]; check('qual' not in it and 'where' not in it, 'v1.21.0: no quitó calidad/dónde')
+        fresh = pg.evaluate("seed().items.i_huevos.qual"); check('maíz' in fresh, 'v1.21.0: el huevo de arranque no trae su nota')
+        width_ok(pg, 'v1.21.0 final'); ctx.close()
 
     b.close()
 srv.shutdown()

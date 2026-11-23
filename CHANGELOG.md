@@ -1,5 +1,10 @@
 # Novedades de Carga Mental
 
+## v1.21.0 — 2026-11-23
+- Ítem 40 del plan: nota de calidad y dónde comprarlo. Al editar un producto hay dos campos opcionales: «Nota de calidad» (por ejemplo «gallinas alimentadas a maíz, yema bien naranja») y «Dónde comprarlo» (por ejemplo «el naturista de la esquina»). Se ven en la lista de compras con ⭐ y 📍, el buscador los encuentra (y los muestra en los resultados) y la nota de calidad viaja entre corchetes en el mensaje al negocio. Los huevos de un hogar nuevo arrancan con «Gallinas alimentadas a maíz»; a los hogares existentes no se les cambia nada: cada uno la carga cuando quiera.
+- Estructura de datos: sin cambios (SCHEMA sigue en 6, sin migración): `qual` y `where` son campos opcionales del producto; si faltan o se vacían, el producto se ve igual que antes.
+- Pruebas: datos intactos al abrir, sin migración nueva, guardar y quitar calidad/lugar, que se vean en la lista y en el buscador, que viajen en el mensaje, el huevo de arranque y 390 px en claro y oscuro. Pruebas viejas adaptadas a 40/100.
+
 ## v1.20.1 — 2026-11-22
 - Pedido de Gonzalo: los turnos médicos («Sacar turno…», «Turno … el día…») salen de «Te toca» en Hoy y del numerito de la pestaña Joaco; siguen en el desplegable «Turnos médicos», que muestra cuántos hay para revisar.
 - Estructura de datos: sin cambios.
