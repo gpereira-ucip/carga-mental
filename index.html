@@ -382,10 +382,11 @@ details.fold[open] .chev{transform:rotate(90deg)}
 <script>
 'use strict';
 /* ============ Constantes ============ */
-const VERSION = '1.21.0';
+const VERSION = '1.22.0';
 const SCHEMA = 6; // versión de la estructura de datos guardados (ver MIGRATIONS)
 /* Novedades: la primera es la versión actual. "hechas" = ítems del plan de 100 tildados hasta esa versión. */
 const NEWS = [
+  {v:'1.22.0', d:'2026-11-24', hechas:41, items:['El estado del lavavajillas se ve en Hoy: «Vacío y guardado», «Cargando: falta encenderlo» o «Limpio, falta guardar», con el botón para pasar a la etapa que sigue.']},
   {v:'1.21.0', d:'2026-11-23', hechas:40, items:['Cada producto tiene ahora «Nota de calidad» (ej.: gallinas alimentadas a maíz) y «Dónde comprarlo» (ej.: el naturista de la esquina). Se ven en la lista de compras con ⭐ y 📍, el buscador los encuentra y la nota de calidad viaja en el mensaje al negocio. Los huevos nuevos arrancan con su nota de maíz.']},
   {v:'1.20.1', d:'2026-11-22', hechas:39, items:['Los turnos médicos de Joaco ya no aparecen en «Te toca» ni suman al numerito de la pestaña Joaco: quedan solo en el desplegable «Turnos médicos».']},
   {v:'1.20.0', d:'2026-11-22', hechas:39, items:['Casa reordenada: «Tareas diarias» (lavavajillas, ropa con lavarropas y sacar la basura), «Orden de la casa» (cocina y habitaciones por separado) y «Otras tareas que se repiten». Al crear una tarea elegís la sección.','Sale «Fertilizar el limonero».','Turnos médicos: ya no está en «Quién se encarga de qué»; ahora es un desplegable en la pestaña Joaco que al abrirse muestra todos los controles. Se sumó Fonoaudiología.','Calendario de feriados en la pestaña Joaco, con el próximo feriado y aviso en Hoy el día anterior. Los feriados que caen en tus días de guardia figuran como trabajados, y si caen lunes, como guardia de 24 h. Esos días Joaco no tiene clases.','Estética renovada: encabezado con degradé, tarjetas más limpias y botones redondeados.']},
@@ -1575,6 +1576,7 @@ function vHoy(){
   const man = new Date(now); man.setDate(man.getDate() + 1); const fm = feriado(man);
   if(fm && man.getDay() >= 1 && man.getDay() <= 5) h += `<div class="card ferbox" onclick="A.go('joaco')" ${KB}><h3>${hic('calendario')} Mañana es feriado</h3><p>${esc(fm[0])}. Joaco no tiene clases.${gFeriado(man) ? ` <b>${esc(gFeriado(man))}.</b>` : ''}</p></div>`;
   h += ringsCard();
+  h += lavaCard();
   const todo = todoList(now, j);
   const mineL = todo.filter(x => mine(x.own)), rest = todo.filter(x => !mine(x.own));
   const row = x => `<div class="item"><div class="t" ${x.go ? `onclick="${x.go}" ${KB}` : ''}>${x.html}</div><span title="${esc(pm(x.own).n)}" aria-label="${esc(pm(x.own).n)}">${AV(x.own)}</span>${x.btn || ''}</div>`;
@@ -1594,6 +1596,20 @@ let ringAnim = true, lastTab = '';
 function ring(v, tot, label){
   const r = 26, c = 2 * Math.PI * r, p = tot > 0 ? Math.min(1, v / tot) : 1;
   return `<div class="ringw"><svg class="ring${ringAnim ? ' a' : ''}${p >= 1 ? ' full' : ''}" viewBox="0 0 64 64" role="img" aria-label="${esc(label)}: ${v} de ${tot}" style="--c:${c.toFixed(1)};--o:${(c * (1 - p)).toFixed(1)}"><circle class="bg" cx="32" cy="32" r="${r}"/><circle class="v" cx="32" cy="32" r="${r}"/><text x="32" y="37" text-anchor="middle">${tot ? v + '/' + tot : '✓'}</text></svg><span>${esc(label)}</span></div>`;
+}
+/* v1.22.0 (ítem 41): estado del lavavajillas a partir de las etapas de la tarea t_lava (Cargar, Encender, Guardar). */
+function lavaState(t){
+  const cur = t.cur || {}, n = t.steps.length, done = t.steps.map((_, i) => !!cur[i]), k = done.findIndex(x => !x), cnt = done.filter(Boolean).length;
+  if(!cnt) return {txt:'Vacío y guardado', ico:'✨', k:0};
+  if(k < 0) return {txt:'Listo', ico:'✨', k:0};
+  if(n === 3 && done[1] && !done[2]) return {txt:'Limpio, falta guardar', ico:'🍽️', k:2};
+  if(n === 3 && done[0] && !done[1]) return {txt:'Cargando: falta encenderlo', ico:'🫧', k:1};
+  return {txt:'En marcha: falta ' + t.steps[k].toLowerCase(), ico:'🫧', k};
+}
+function lavaCard(){
+  const t = S.tasks.t_lava; if(!t || t.kind !== 'cycle' || !Array.isArray(t.steps) || !t.steps.length) return '';
+  const st = lavaState(t), busy = Object.keys(t.cur || {}).length > 0;
+  return `<div class="card" id="lavaCard"><h3>${esc(t.icon || '🍽️')} Lavavajillas</h3><div class="item"><div class="t"><b>${st.ico} ${esc(st.txt)}</b>${!busy && t.lastDone ? `<div class="meta">Último ciclo: ${ago(t.lastDone.at)}</div>` : ''}</div><button class="b sm" onclick="A.step('t_lava',${st.k})">${esc(t.steps[st.k])}</button></div></div>`;
 }
 function ringsCard(){
   const t0 = new Date().setHours(0, 0, 0, 0);

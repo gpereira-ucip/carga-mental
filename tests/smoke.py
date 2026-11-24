@@ -576,7 +576,7 @@ with sync_playwright() as p:
         check(it['i_agua']['cat'] == 'bebidas' and it['i_mio']['cat'] == 'frescos' and it['i_huerfano']['cat'] == 'almacen', f"v1.5: categorías mal asignadas {[x['cat'] for x in it.values()]}")
         check(all(x['qty'] is None and x['unit'] == '' for x in it.values()), 'v1.5: cantidad/unidad iniciales')
         check(it['i_mio']['hist'] == [{'at': 1762000000000, 'by': None}] and it['i_agua']['hist'] == [], f"v1.5: historial inicial {it['i_mio']['hist']}")
-        check(pg.locator('#sheet >> text=40/100').count() > 0, 'v1.5: Novedades no muestra 40/100')
+        check(pg.locator('#sheet >> text=41/100').count() > 0, 'v1.5: Novedades no muestra 41/100')
         pg.screenshot(path=f'/tmp/cm-v15-novedades-{scheme}.png')
         pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
         pg.reload(); pg.wait_for_timeout(1800)
@@ -715,7 +715,7 @@ with sync_playwright() as p:
         for x in d0['items'].values(): x.pop('auto', None)
         check(d0 == con_m6(pre), 'v1.6: la migración cambió o perdió datos de v1.5.0')
         check(json.loads(pg.evaluate('localStorage.getItem("cm_backup_v2")') or 'null') == pre, 'v1.6: no quedó la copia cm_backup_v2 idéntica')
-        check(pg.locator('#sheet >> text=40/100').count() > 0, 'v1.6: Novedades no se abrió con 40/100')
+        check(pg.locator('#sheet >> text=41/100').count() > 0, 'v1.6: Novedades no se abrió con 41/100')
         pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
         # Cálculo del promedio
         calc = pg.evaluate("""() => { const D = 86400000, t = 1e12, h = a => ({hist: a.map(n => ({at: t + n * D}))});
@@ -786,7 +786,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---------- 10. v1.7.0: aviso anticipado («se acaba en 2 días») ----------
-    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.21.0');"
+    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.22.0');"
               " if(!localStorage.getItem('cm_data')){ const d = %s; d._v = 6; d.tpls = {}; d.ideas = {}; d.checks.m6 = {id:'m6'}; Object.values(d.tasks || {}).forEach(t => { if(!t.grp) t.grp = t.kind === 'cycle' ? 'diaria' : (t.id === 't_orden' ? 'orden' : 'otra'); }); Object.values(d.items).forEach(i => i.auto = true);"
               " localStorage.setItem('cm_pre', JSON.stringify(d)); localStorage.setItem('cm_data', JSON.stringify(d)); }") % json.dumps(V15)
     for scheme in ['light', 'dark']:
@@ -922,7 +922,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---- v1.12.0: plantillas de pedido (migración al esquema 4) ----
-    init18 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.21.0');"
+    init18 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.22.0');"
               " if(!localStorage.getItem('cm_data')){ const d = %s; d._v = 3; Object.values(d.items).forEach(i => i.auto = true);"
               " localStorage.setItem('cm_pre', JSON.stringify(d)); localStorage.setItem('cm_data', JSON.stringify(d)); }") % json.dumps(V15)
     for scheme in ['light', 'dark']:
@@ -1268,7 +1268,7 @@ with sync_playwright() as p:
     V5['tasks']['t_orden'] = {'id':'t_orden','kind':'rec','name':'Orden general (cocina y living)','icon':'🧺','owner':'ambos','every':1,'last':1762000000000,'ord':3}
     V5['areas']['a_salud'] = {'id':'a_salud','name':'Turnos médicos y odontología de Joaco','owner':'gonzalo'}
     V5['areas']['a_orden'] = {'id':'a_orden','name':'Orden general','owner':'ambos'}
-    init20 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.21.0');"
+    init20 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.22.0');"
               " if(!sessionStorage.getItem('s20')){ sessionStorage.setItem('s20','1'); localStorage.setItem('cm_data', %s); }") % json.dumps(json.dumps(V5))
     for scheme in ['light', 'dark']:
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init20)
@@ -1347,6 +1347,31 @@ with sync_playwright() as p:
         it = S(pg)['items'][hid]; check('qual' not in it and 'where' not in it, 'v1.21.0: no quitó calidad/dónde')
         fresh = pg.evaluate("seed().items.i_huevos.qual"); check('maíz' in fresh, 'v1.21.0: el huevo de arranque no trae su nota')
         width_ok(pg, 'v1.21.0 final'); ctx.close()
+
+    # ---- v1.22.0: estado del lavavajillas en Hoy (ítem 41), sin migración ----
+    for scheme in ['light', 'dark']:
+        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme)
+        ctx.add_init_script(init17)
+        pg = ctx.new_page()
+        pg.on('pageerror', lambda e: errs.append(f'[v1.22.0] JS: {e}'))
+        pg.on('console', lambda m: errs.append(f'[v1.22.0] consola: {m.text}') if m.type == 'error' else None)
+        pg.goto(URL); pg.wait_for_timeout(1500)
+        pre = json.loads(pg.evaluate('localStorage.getItem("cm_pre")')); check(S(pg) == pre, 'v1.22.0: los datos cambiaron al abrir')
+        check(pg.evaluate("SCHEMA") == 6, 'v1.22.0: no debería haber migración nueva')
+        pg.evaluate("A.go('hoy'); render()"); pg.wait_for_timeout(300)
+        pg.evaluate("S.tasks.t_lava.cur = {}; render()"); pg.wait_for_timeout(300)
+        card = pg.locator('#lavaCard'); check(card.count() == 1, 'v1.22.0: falta la tarjeta del lavavajillas')
+        check('Vacío y guardado' in card.inner_text(), 'v1.22.0: estado vacío mal: ' + card.inner_text() + json.dumps(S(pg)['tasks'].get('t_lava')))
+        btn = card.locator('button'); check(btn.bounding_box()['height'] >= 44 - 1, 'v1.22.0: botón chico')
+        btn.click(); pg.wait_for_timeout(400)
+        check('Cargando: falta encenderlo' in pg.locator('#lavaCard').inner_text(), 'v1.22.0: no dice cargando')
+        pg.locator('#lavaCard button').click(); pg.wait_for_timeout(400)
+        check('Limpio, falta guardar' in pg.locator('#lavaCard').inner_text(), 'v1.22.0: no dice limpio, falta guardar')
+        pg.screenshot(path=f'/tmp/cm-v1220-hoy-{scheme}.png', full_page=True); width_ok(pg, 'v1.22.0 hoy')
+        pg.locator('#lavaCard button').click(); pg.wait_for_timeout(500)
+        check('Vacío y guardado' in pg.locator('#lavaCard').inner_text(), 'v1.22.0: no cerró el ciclo')
+        check(S(pg)['tasks']['t_lava'].get('lastDone'), 'v1.22.0: no registró el ciclo')
+        width_ok(pg, 'v1.22.0 final'); ctx.close()
 
     b.close()
 srv.shutdown()

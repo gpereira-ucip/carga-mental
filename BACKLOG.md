@@ -51,7 +51,7 @@ Las marcadas 🔑 necesitan algo de Gonzalo (una cuenta, una clave, un dato). En
 - [x] 40. Huevos de gallinas alimentadas a maíz y productos del naturista con nota de calidad y dónde comprarlos. — ✔ 2026-11-23 (v1.21.0)
 
 ## Tareas del hogar
-- [ ] 41. Estado del lavavajillas visible en Hoy ("limpio, falta guardar" / "cargando").
+- [x] 41. Estado del lavavajillas visible en Hoy ("limpio, falta guardar" / "cargando"). — ✔ 2026-11-24 (v1.22.0)
 - [ ] 42. Ropa: varias cargas a la vez.
 - [ ] 43. Ropa de Joaco aparte (uniforme y ropa de educación física lista para el día).
 - [ ] 44. Tareas recurrentes en días específicos (lun-mié-vie).
