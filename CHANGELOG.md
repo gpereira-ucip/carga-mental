@@ -1,5 +1,10 @@
 # Novedades de Carga Mental
 
+## v1.23.0 — 2026-11-26
+- Ítem 42 del plan: la ropa admite varias cargas a la vez. En Casa, la tarea «Ropa (lavarropas)» tiene «+ Otra carga»: cada carga extra tiene sus propias etapas (Lavar, Colgar, Doblar, Guardar), se completa por separado (con festejo y «Deshacer») y se puede quitar. En Hoy aparece qué falta de cada carga y el numerito de Casa las cuenta. La carga 1 sigue siendo la de siempre.
+- Estructura de datos: sin cambios (SCHEMA sigue en 6, sin migración): `more` ([{id, cur}]) es un campo opcional de la tarea; si falta, hay una sola carga como antes.
+- Pruebas: datos intactos al abrir, sumar cargas, etapas independientes, Hoy, completar una carga sin tocar la otra, quitar y deshacer, y 390 px en claro y oscuro.
+
 ## v1.22.0 — 2026-11-24
 - Ítem 41 del plan: en Hoy hay una tarjeta «Lavavajillas» con el estado según las etapas ya marcadas: «Vacío y guardado», «Cargando: falta encenderlo» o «Limpio, falta guardar», más un botón para marcar la etapa que sigue (si no hay ciclo en curso muestra cuándo fue el último). La tarjeta se oculta si la tarea del lavavajillas no existe.
 - Estructura de datos: sin cambios (SCHEMA sigue en 6, sin migración): se calcula con los datos que ya tiene la tarea.

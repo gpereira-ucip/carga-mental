@@ -52,7 +52,7 @@ Las marcadas 🔑 necesitan algo de Gonzalo (una cuenta, una clave, un dato). En
 
 ## Tareas del hogar
 - [x] 41. Estado del lavavajillas visible en Hoy ("limpio, falta guardar" / "cargando"). — ✔ 2026-11-24 (v1.22.0)
-- [ ] 42. Ropa: varias cargas a la vez.
+- [x] 42. Ropa: varias cargas a la vez. — ✔ 2026-11-26 (v1.23.0)
 - [ ] 43. Ropa de Joaco aparte (uniforme y ropa de educación física lista para el día).
 - [ ] 44. Tareas recurrentes en días específicos (lun-mié-vie).
 - [ ] 45. Tareas de una sola vez con fecha límite.

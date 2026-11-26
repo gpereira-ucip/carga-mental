@@ -382,10 +382,11 @@ details.fold[open] .chev{transform:rotate(90deg)}
 <script>
 'use strict';
 /* ============ Constantes ============ */
-const VERSION = '1.22.0';
+const VERSION = '1.23.0';
 const SCHEMA = 6; // versión de la estructura de datos guardados (ver MIGRATIONS)
 /* Novedades: la primera es la versión actual. "hechas" = ítems del plan de 100 tildados hasta esa versión. */
 const NEWS = [
+  {v:'1.23.0', d:'2026-11-26', hechas:42, items:['Ropa: ahora podés tener varias cargas a la vez. En Casa, «+ Otra carga» suma una carga más con sus propias etapas (lavar, colgar, doblar, guardar); cada una se completa por separado y en Hoy aparece lo que falta de cada una.']},
   {v:'1.22.0', d:'2026-11-24', hechas:41, items:['El estado del lavavajillas se ve en Hoy: «Vacío y guardado», «Cargando: falta encenderlo» o «Limpio, falta guardar», con el botón para pasar a la etapa que sigue.']},
   {v:'1.21.0', d:'2026-11-23', hechas:40, items:['Cada producto tiene ahora «Nota de calidad» (ej.: gallinas alimentadas a maíz) y «Dónde comprarlo» (ej.: el naturista de la esquina). Se ven en la lista de compras con ⭐ y 📍, el buscador los encuentra y la nota de calidad viaja en el mensaje al negocio. Los huevos nuevos arrancan con su nota de maíz.']},
   {v:'1.20.1', d:'2026-11-22', hechas:39, items:['Los turnos médicos de Joaco ya no aparecen en «Te toca» ni suman al numerito de la pestaña Joaco: quedan solo en el desplegable «Turnos médicos».']},
@@ -1355,6 +1356,21 @@ const A = {
     if(all){ t.lastDone = {at:Date.now(), by:me, who:Object.values(t.cur).map(x => x.by)}; t.cur = {}; pop('cy:' + tid); put('tasks', t, `completó ${t.name} ✔`); confetti(); toast(`${t.name}: ciclo completo 🎉`, u); }
     else put('tasks', t, t.cur[k] ? `${t.name}: ${t.steps[k].toLowerCase()} ✔` : null);
   },
+  loadAdd(tid){
+    const t = S.tasks[tid]; if(!t || t.kind !== 'cycle') return; const u = snapshot([['tasks', tid]]);
+    t.more = Array.isArray(t.more) ? t.more : []; t.more.push({id:'l' + Date.now().toString(36), cur:{}});
+    buzz(); put('tasks', t, `sumó otra carga de ${t.name}`); toast(`Carga ${t.more.length + 1} anotada`, u);
+  },
+  loadDel(tid, li){
+    const t = S.tasks[tid]; if(!t || !Array.isArray(t.more) || !t.more[li]) return; const u = snapshot([['tasks', tid]]);
+    t.more.splice(li, 1); if(!t.more.length) delete t.more; put('tasks', t, `quitó una carga de ${t.name}`); toast('Carga quitada', u);
+  },
+  stepL(tid, li, k){
+    const t = S.tasks[tid], L = t && Array.isArray(t.more) ? t.more[li] : null; if(!L) return; const u = snapshot([['tasks', tid]]); L.cur = L.cur || {};
+    if(L.cur[k]) delete L.cur[k]; else { L.cur[k] = {by:me, at:Date.now()}; buzz(); pop(`st:${tid}:${li}:${k}`); }
+    if(t.steps.every((_, i) => L.cur[i])){ t.lastDone = {at:Date.now(), by:me, who:Object.values(L.cur).map(x => x.by)}; t.more.splice(li, 1); if(!t.more.length) delete t.more; put('tasks', t, `completó la carga ${li + 2} de ${t.name} ✔`); confetti(); toast(`Carga ${li + 2} lista 🎉`, u); }
+    else put('tasks', t, L.cur[k] ? `${t.name}, carga ${li + 2}: ${t.steps[k].toLowerCase()} ✔` : null);
+  },
   recDone(tid){ const t = S.tasks[tid]; const u = snapshot([['tasks', tid]]); t.last = Date.now(); t.lastBy = me; buzz(); pop('r:' + tid); put('tasks', t, `hizo: ${t.name}`); toast('Hecho ✔', u); },
   cycleTask(tid){ const t = S.tasks[tid]; const o = ['gonzalo','dani','ambos']; t.owner = o[(o.indexOf(t.owner)+1) % o.length]; put('tasks', t, `${t.name} → ${M[t.owner].n}`); },
   taskForm(){
@@ -1627,7 +1643,7 @@ function todoList(now = new Date(), j = joacoDay(now)){
   ['gonzalo', 'dani'].forEach(w => { const l = Object.values(S.items).filter(i => bringer(i) === w).sort((a, b) => a.name.localeCompare(b.name)); if(l.length) todo.push({own:w, html:`🙋 Lo traés vos: <b>${l.map(i => esc(i.name)).join(', ')}</b>`, go:"A.go('compras')"}); });
   sorted('tasks').forEach(t => {
     if(t.kind === 'rec' && recDue(t)) todo.push({own:t.owner, html:`${t.icon} ${esc(t.name)} <span class="meta">· ${ago(t.last)}</span>`, btn:`<button class="b sm" onclick="A.recDone('${t.id}')">Hecho</button>`});
-    if(t.kind === 'cycle'){ const k = t.steps.findIndex((_, i) => !(t.cur || {})[i]); if(Object.keys(t.cur || {}).length) todo.push({own:t.owner, html:`${t.icon} ${esc(t.name)}: falta <b>${esc(t.steps[k].toLowerCase())}</b>`, btn:`<button class="b sm" onclick="A.step('${t.id}',${k})">${esc(t.steps[k])}</button>`}); }
+    if(t.kind === 'cycle'){ const k = t.steps.findIndex((_, i) => !(t.cur || {})[i]); if(Object.keys(t.cur || {}).length) todo.push({own:t.owner, html:`${t.icon} ${esc(t.name)}: falta <b>${esc(t.steps[k].toLowerCase())}</b>`, btn:`<button class="b sm" onclick="A.step('${t.id}',${k})">${esc(t.steps[k])}</button>`}); (t.more || []).forEach((L, li) => { const kk = t.steps.findIndex((_, i) => !(L.cur || {})[i]); if(kk >= 0) todo.push({own:t.owner, html:`${t.icon} ${esc(t.name)}, carga ${li + 2}: falta <b>${esc(t.steps[kk].toLowerCase())}</b>`, btn:`<button class="b sm" onclick="A.stepL('${t.id}',${li},${kk})">${esc(t.steps[kk])}</button>`}); }); }
   });
   /* v1.20.1 (pedido de Gonzalo): los turnos médicos ya no aparecen en «Te toca»; se ven en el desplegable de la pestaña Joaco. */
   if(j && !j.fer){ const c = S.checks.mochila, done = c.date === dk() ? Object.keys(c.done).length : 0; if(done < c.list.length) todo.push({own:j.lleva, html:`🎒 Mochila de Joaco ${done}/${c.list.length}`, go:`A.go('joaco')`}); }
@@ -1641,7 +1657,7 @@ function badges(){
   const b = {};
   b.hoy = me ? todoList().filter(x => mine(x.own)).length : 0;
   b.compras = Object.values(S.items).filter(needs).length;
-  b.casa = Object.values(S.tasks).filter(t => (t.kind === 'rec' && recDue(t)) || (t.kind === 'cycle' && Object.keys(t.cur || {}).length)).length;
+  b.casa = Object.values(S.tasks).filter(t => (t.kind === 'rec' && recDue(t)) || (t.kind === 'cycle' && (Object.keys(t.cur || {}).length || (t.more || []).length))).length;
   const now = new Date(), j = joacoDay(now), c = S.checks.mochila;
   b.joaco = (j && !j.fer && c && (c.date === dk() ? Object.keys(c.done).length : 0) < c.list.length ? 1 : 0);
   let read = 0; try { read = +localStorage.getItem(LS.read) || 0; } catch(e) {}
@@ -1681,7 +1697,9 @@ function vCasa(){
   const gp = t => t.grp || (t.kind === 'cycle' ? 'diaria' : 'otra');
   const cyc = t => { const cur = t.cur || {}, nx = t.steps.findIndex((_, i) => !cur[i]);
     return `<div class="card task${pc('cy:' + t.id)}"><div class="row"><h3><span class="tic">${t.icon}</span>${esc(t.name)}</h3>${PB(t.owner, `A.cycleTask('${t.id}')`)}</div>
-      <div class="steps">${t.steps.map((s, i) => `<button class="${cur[i] ? 'done' : i === nx ? 'next' : ''}${pc(`st:${t.id}:${i}`)}" aria-pressed="${!!cur[i]}" onclick="A.step('${t.id}',${i})">${cur[i] ? '✔ ' : ''}${esc(s)}<small>${cur[i] ? esc(M[cur[i].by]?.n) + ' · ' + ago(cur[i].at) : '&nbsp;'}</small></button>`).join('')}</div>
+      ${(t.more || []).length ? `<div class="sub" style="margin-top:8px"><b>Carga 1</b></div>` : ''}<div class="steps">${t.steps.map((s, i) => `<button class="${cur[i] ? 'done' : i === nx ? 'next' : ''}${pc(`st:${t.id}:${i}`)}" aria-pressed="${!!cur[i]}" onclick="A.step('${t.id}',${i})">${cur[i] ? '✔ ' : ''}${esc(s)}<small>${cur[i] ? esc(M[cur[i].by]?.n) + ' · ' + ago(cur[i].at) : '&nbsp;'}</small></button>`).join('')}</div>
+      ${(t.more || []).map((L, li) => { const lc = L.cur || {}, ln = t.steps.findIndex((_, i) => !lc[i]); return `<div class="row" style="margin-top:10px"><div class="sub"><b>Carga ${li + 2}</b></div><button class="b sm" onclick="A.loadDel('${t.id}',${li})" aria-label="Quitar la carga ${li + 2}">Quitar</button></div><div class="steps">${t.steps.map((s, i) => `<button class="${lc[i] ? 'done' : i === ln ? 'next' : ''}${pc(`st:${t.id}:${li}:${i}`)}" aria-pressed="${!!lc[i]}" onclick="A.stepL('${t.id}',${li},${i})">${lc[i] ? '✔ ' : ''}${esc(s)}<small>${lc[i] ? esc(M[lc[i].by]?.n) + ' · ' + ago(lc[i].at) : '&nbsp;'}</small></button>`).join('')}</div>`; }).join('')}
+      ${t.id === 't_ropa' ? `<div class="btns"><button onclick="A.loadAdd('${t.id}')">+ Otra carga</button></div>` : ''}
       <div class="sub" style="margin-top:6px">Último ciclo completo: ${t.lastDone ? ago(t.lastDone.at) + ' · ' + [...new Set(t.lastDone.who || [t.lastDone.by])].map(p => M[p]?.n).join(' y ') : 'todavía no'}${t.id.startsWith('t_') && !['t_lava','t_ropa'].includes(t.id) ? ` · <button class="b sm" onclick="A.delTask('${t.id}')" aria-label="Borrar la tarea ${esc(t.name)}">Borrar</button>` : ''}</div></div>`; };
   const rec = t => `<div class="item${pc('r:' + t.id)}"><div class="t"><div><span class="tic">${t.icon}</span>${esc(t.name)}</div><div class="meta">cada ${t.every} día${t.every > 1 ? 's' : ''} · ${t.last ? ago(t.last) + ' (' + esc(M[t.lastBy]?.n || '') + ')' : 'sin registro'} ${recDue(t) ? '<span class="tag w">toca</span>' : '<span class="tag">al día</span>'}</div></div>${PB(t.owner, `A.cycleTask('${t.id}')`)}<button class="b sm" onclick="A.recDone('${t.id}')">Hecho</button></div>`;
   const all = sorted('tasks'), recOf = g => all.filter(t => t.kind === 'rec' && gp(t) === g);
