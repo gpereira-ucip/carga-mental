@@ -1,4 +1,4 @@
-const CACHE = 'carga-mental-v1.26.0';
+const CACHE = 'carga-mental-v1.27.0';
 const SHELL = ['./', 'index.html', 'manifest.json', 'icon-192.png', 'icon-512.png', 'cover.jpg', 'fonts/poppins-regular.woff', 'fonts/poppins-medium.woff', 'fonts/poppins-bold.woff'];
 
 self.addEventListener('install', e => {

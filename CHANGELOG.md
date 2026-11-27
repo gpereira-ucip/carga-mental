@@ -1,5 +1,10 @@
 # Novedades de Carga Mental
 
+## v1.27.0 — 2026-11-27
+- Ítem 45 del plan: tareas de una sola vez con fecha límite. Al crear una tarea hay un tipo nuevo, «Una sola vez (con fecha límite)», con fecha opcional. En Casa aparecen en «Para hacer una vez», ordenadas por fecha (las sin fecha al final) con «vence en 2 días», «vence hoy» o «venció hace 1 día»; las hechas quedan en un desplegable «Hechas» (las últimas 10). Tocar el nombre abre una hoja para cambiar texto y fecha; «Hecho» las cierra (con «Deshacer») y «✕» las borra (con «Deshacer», sin cartel de confirmación). En Hoy y en el numerito de Casa aparecen solo cuando faltan 3 días o menos, o ya venció; las sin fecha no molestan en Hoy.
+- Estructura de datos: sin migración (SCHEMA sigue en 7). Es un tipo nuevo de tarea (`kind: 'once'`, con `due` opcional y `done` / `doneBy`); las tareas existentes no se tocan.
+- Pruebas: datos intactos al abrir, alta con y sin fecha, textos de vencimiento, orden, qué aparece en Hoy, hecho y deshacer, edición, borrado, botones ≥ 44 px, datos ajenos intactos, persistencia al recargar y 390 px en claro y oscuro. Pruebas viejas adaptadas a 45/100.
+
 ## v1.26.0 — 2026-11-27
 - Ítem 44 del plan: tareas que se repiten en días fijos de la semana (por ejemplo lunes, miércoles y viernes). Al crear una tarea hay un tipo nuevo «Se repite en días fijos de la semana» con siete botones de día; en Casa se ve «lunes, miércoles y viernes» en vez de «cada X días». Esos días la tarea figura como «toca» (en Casa, en Hoy y en el numerito de Casa) y, si queda sin hacer, sigue pendiente hasta que alguien toque «Hecho». Tocando el nombre de cualquier tarea que se repite se abre una hoja para pasarla a días fijos o volver a «cada X días» (con «Deshacer»).
 - Estructura de datos: sin migración (SCHEMA sigue en 7). `days` ([0-6], 0 = domingo) es un campo opcional de la tarea; si falta, la tarea funciona exactamente como antes.
