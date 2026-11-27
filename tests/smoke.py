@@ -796,7 +796,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---------- 10. v1.7.0: aviso anticipado («se acaba en 2 días») ----------
-    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.27.0');"
+    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.28.0');"
               " if(!localStorage.getItem('cm_data')){ const d = %s; d._v = 7; d.tpls = {}; d.ideas = {}; d.checks.m6 = {id:'m6'}; d.checks.m7 = {id:'m7'}; d.tasks.t_ropajoaco = {id:'t_ropajoaco', kind:'cycle', name:'Ropa de Joaco', icon:'🎽', owner:'ambos', steps:['Uniforme','Educación física','En la mochila'], cur:{}, lastDone:null, ord:8, grp:'diaria'}; Object.values(d.tasks || {}).forEach(t => { if(!t.grp) t.grp = t.kind === 'cycle' ? 'diaria' : (t.id === 't_orden' ? 'orden' : 'otra'); }); Object.values(d.items).forEach(i => i.auto = true);"
               " localStorage.setItem('cm_pre', JSON.stringify(d)); localStorage.setItem('cm_data', JSON.stringify(d)); }") % json.dumps(V15)
     for scheme in ['light', 'dark']:
@@ -932,7 +932,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---- v1.12.0: plantillas de pedido (migración al esquema 4) ----
-    init18 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.27.0');"
+    init18 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.28.0');"
               " if(!localStorage.getItem('cm_data')){ const d = %s; d._v = 3; Object.values(d.items).forEach(i => i.auto = true);"
               " localStorage.setItem('cm_pre', JSON.stringify(d)); localStorage.setItem('cm_data', JSON.stringify(d)); }") % json.dumps(V15)
     for scheme in ['light', 'dark']:
@@ -1278,7 +1278,7 @@ with sync_playwright() as p:
     V5['tasks']['t_orden'] = {'id':'t_orden','kind':'rec','name':'Orden general (cocina y living)','icon':'🧺','owner':'ambos','every':1,'last':1762000000000,'ord':3}
     V5['areas']['a_salud'] = {'id':'a_salud','name':'Turnos médicos y odontología de Joaco','owner':'gonzalo'}
     V5['areas']['a_orden'] = {'id':'a_orden','name':'Orden general','owner':'ambos'}
-    init20 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.27.0');"
+    init20 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.28.0');"
               " if(!sessionStorage.getItem('s20')){ sessionStorage.setItem('s20','1'); localStorage.setItem('cm_data', %s); }") % json.dumps(json.dumps(V5))
     for scheme in ['light', 'dark']:
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init20)
@@ -1415,7 +1415,7 @@ with sync_playwright() as p:
 
     # ---- v1.24.0: ropa de Joaco aparte (ítem 43), migración al esquema 7 ----
     V6 = json.loads(json.dumps(con_m6(V15))); V6['tasks'].pop('t_ropajoaco', None); V6['checks'].pop('m7', None); V6['_v'] = 6; V6['tpls'] = {}; V6['ideas'] = {}
-    init24 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.27.0');"
+    init24 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.28.0');"
               " if(!sessionStorage.getItem('s24')){ sessionStorage.setItem('s24','1'); localStorage.setItem('cm_data', %s); }") % json.dumps(json.dumps(V6))
     for scheme in ['light', 'dark']:
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init24)
@@ -1447,7 +1447,7 @@ with sync_playwright() as p:
 
     # ---- v1.25.0: ropa de la semana de Joaco (sin migración) ----
     V7 = json.loads(json.dumps(con_m6(V15))); V7['_v'] = 7; V7['tpls'] = {}; V7['ideas'] = {}
-    init25 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.27.0');"
+    init25 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.28.0');"
               " if(!sessionStorage.getItem('s25')){ sessionStorage.setItem('s25','1'); localStorage.setItem('cm_data', %s); }") % json.dumps(json.dumps(V7))
     for scheme in ['light', 'dark']:
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init25)
@@ -1471,7 +1471,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---- v1.26.0: tareas en días fijos (ítem 44, sin migración) ----
-    init26 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.27.0');"
+    init26 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.28.0');"
               " if(!sessionStorage.getItem('s26')){ sessionStorage.setItem('s26','1'); localStorage.setItem('cm_data', %s); }") % json.dumps(json.dumps(V7))
     for scheme in ['light', 'dark']:
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init26)
@@ -1529,7 +1529,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---- v1.27.0: tareas de una sola vez con fecha límite (ítem 45, sin migración) ----
-    init27 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.27.0');"
+    init27 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.28.0');"
               " if(!sessionStorage.getItem('s27')){ sessionStorage.setItem('s27','1'); localStorage.setItem('cm_data', %s); }") % json.dumps(json.dumps(V7))
     for scheme in ['light', 'dark']:
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init27)
@@ -1583,6 +1583,19 @@ with sync_playwright() as p:
         pg.reload(); pg.wait_for_timeout(1200)
         check(len([t for t in S(pg)['tasks'].values() if t.get('kind') == 'once']) == 3, 'v1.27.0: se perdieron tareas al recargar')
         ctx.close()
+
+    # ---- v1.28.0: botones renovados (solo estilos) ----
+    ctx = b.new_context(viewport={'width': 390, 'height': 844}); ctx.add_init_script(init27.replace('1.27.0', '1.28.0').replace('s27', 's28')); pg = ctx.new_page()
+    pg.on('pageerror', lambda e: errs.append(f'[v1.28.0] JS: {e}'))
+    pg.on('console', lambda m: errs.append(f'[v1.28.0] consola: {m.text}') if m.type == 'error' else None)
+    pg.goto(URL); pg.wait_for_timeout(1500); pg.evaluate("A.go('casa'); render()"); pg.wait_for_timeout(300)
+    ok = pg.locator('button.b.ok').first; check(ok.count() == 1 and ok.bounding_box()['height'] >= 43.5, 'v1.28.0: falta el botón «Hecho» principal o es chico')
+    check(pg.evaluate("getComputedStyle(document.querySelector('button.b.ok'), '::before').content").strip('"') == '✓', 'v1.28.0: «Hecho» sin tilde')
+    ad = pg.locator('button.add').first; check(ad.bounding_box()['width'] > 250, 'v1.28.0: el botón de agregar no ocupa el ancho')
+    pg.evaluate("A.taskForm()"); pg.wait_for_timeout(300)
+    bt = pg.locator('#sheetbox .btns button.pri'); check(bt.bounding_box()['height'] >= 47 and bt.bounding_box()['y'] + bt.bounding_box()['height'] <= 845, 'v1.28.0: «Crear» no queda visible y grande abajo')
+    check(pg.evaluate("getComputedStyle(document.querySelector('#sheetbox .btns')).position") == 'sticky', 'v1.28.0: botones de la hoja no fijos')
+    width_ok(pg, 'v1.28.0 hoja'); ctx.close()
 
     b.close()
 srv.shutdown()

@@ -379,6 +379,25 @@ details.fold[open] .chev{transform:rotate(90deg)}
 .ferbox p{margin:6px 0 0}
 .brand{color:#fff}.brand small{color:rgba(255,255,255,.8)}
 
+
+/* ---------- v1.28.0: botones renovados (jerarquía clara: principal, secundario, agregar, descartar) ---------- */
+button{-webkit-tap-highlight-color:transparent;transition:transform .08s ease,background-color .15s ease,box-shadow .15s ease,border-color .15s ease}
+button:active:not(:disabled){transform:scale(.96)}
+button.b,.btns button{border-radius:var(--rp);padding:8px 16px;background:var(--pri2);border-color:var(--pri2-line);color:var(--pri-tx);font-weight:600}
+button.b.sm{padding:5px 14px}
+button.pri,.btns button.pri,button.b.pri{background:var(--pri);border-color:var(--pri);color:var(--pri-on);box-shadow:0 2px 6px rgba(36,71,107,.28)}
+button.b.on,button.dani-on{box-shadow:none}
+button.b.ok{background:var(--pri);border-color:var(--pri);color:var(--pri-on);font-weight:650;box-shadow:0 2px 6px rgba(36,71,107,.25);padding-left:12px}
+button.b.ok::before{content:"✓";margin-right:6px;font-weight:800}
+button.b.x{width:44px;padding:0;border-radius:50%;background:transparent;border-color:var(--line2);color:var(--mut);font-size:15px}
+button.b.x:hover{background:var(--badbg);color:var(--bad);border-color:var(--bad)}
+.btns button.add,button.b.add{width:100%;background:transparent;border:1.5px dashed var(--pri2-line);color:var(--pri-tx);border-radius:var(--r2);font-weight:650;min-height:48px}
+.btns button.add::before,button.b.add::before{content:"＋";margin-right:6px;font-weight:800}
+#sheetbox .btns button:not(.pri):not(.add):last-child:not(:only-child){background:transparent;border-color:var(--line2);color:var(--mut);font-weight:500}
+#sheetbox .btns{position:sticky;bottom:-1px;margin:var(--s4) calc(var(--s4) * -1) 0;padding:var(--s3) var(--s4);background:var(--sheet);border-top:1px solid var(--line);z-index:2}
+#sheetbox .btns button.pri{flex:1 1 auto;min-height:48px;font-size:var(--fs-md)}
+.item .b.ok{align-self:center}
+@media (prefers-reduced-motion:reduce){button{transition:none}button:active:not(:disabled){transform:none}}
 </style>
 </head>
 <body>
@@ -397,10 +416,11 @@ details.fold[open] .chev{transform:rotate(90deg)}
 <script>
 'use strict';
 /* ============ Constantes ============ */
-const VERSION = '1.27.0';
+const VERSION = '1.28.0';
 const SCHEMA = 7; // versión de la estructura de datos guardados (ver MIGRATIONS)
 /* Novedades: la primera es la versión actual. "hechas" = ítems del plan de 100 tildados hasta esa versión. */
 const NEWS = [
+  {v:'1.28.0', d:'2026-11-27', hechas:45, items:['Botones renovados y más fáciles de entender: «Hecho» ahora es un botón azul con tilde ✓ para que se vea cuál es la acción principal, los botones de agregar («+ Nueva tarea», «+ Tarea de una vez») ocupan todo el ancho con borde punteado, «✕» es un botón redondo discreto y todos responden al toque con un pequeño hundimiento. Los botones de las hojas (Guardar, Crear) son más grandes y quedan fijos abajo.']},
   {v:'1.27.0', d:'2026-11-27', hechas:45, items:['Tareas de una sola vez con fecha límite: al crear una tarea elegí «Una sola vez (con fecha límite)» y, si querés, la fecha (por ejemplo, llevar el auto al service el viernes). En Casa aparecen en «Para hacer una vez», ordenadas por fecha y con «vence en 2 días» o «vencida»; en Hoy aparecen cuando faltan 3 días o menos, o ya pasó la fecha. Tocá el nombre para cambiar el texto o la fecha, «Hecho» para cerrarla (con «Deshacer») y «✕» para borrarla. Tus tareas de siempre no cambian.']},
   {v:'1.26.0', d:'2026-11-27', hechas:44, items:['Tareas en días fijos: al crear una tarea podés elegir «Días fijos de la semana» (por ejemplo lunes, miércoles y viernes). Esos días aparece como «toca» y, si queda sin hacer, sigue pendiente hasta que alguien la marque. Tocando el nombre de cualquier tarea que se repite podés pasarla a días fijos, o volver a «cada X días». Tus tareas de siempre no cambian.']},
   {v:'1.25.0', d:'2026-11-27', hechas:43, items:['Ropa de la semana de Joaco: en la pestaña Joaco hay un dibujo de lunes a viernes con la ropa de cada día (gimnasia o uniforme de calle). Tocá un día para cambiarlo y con «Editar» cambiás las prendas, los colores y las fechas de clases para el año que viene. En Hoy aparece qué ropa va mañana.']},
@@ -1767,8 +1787,8 @@ function todoList(now = new Date(), j = joacoDay(now)){
   sorted('stores').forEach(s => { const n = Object.values(S.items).filter(i => i.store === s.id && needs(i)); if(n.length) todo.push({own:s.owner, html:`${s.icon} <b>${esc(s.name)}</b>: ${n.length} para comprar`, go:`A.filter('${s.id}');A.go('compras')`}); });
   ['gonzalo', 'dani'].forEach(w => { const l = Object.values(S.items).filter(i => bringer(i) === w).sort((a, b) => a.name.localeCompare(b.name)); if(l.length) todo.push({own:w, html:`🙋 Lo traés vos: <b>${l.map(i => esc(i.name)).join(', ')}</b>`, go:"A.go('compras')"}); });
   sorted('tasks').forEach(t => {
-    if(onceSoon(t)) todo.push({own:t.owner, html:`📌 ${esc(t.name)} <span class="meta">· ${onceTxt(t)}</span>`, btn:`<button class="b sm" onclick="A.onceDone('${t.id}')">Hecho</button>`});
-    if(t.kind === 'rec' && recDue(t)) todo.push({own:t.owner, html:`${t.icon} ${esc(t.name)} <span class="meta">· ${ago(t.last)}</span>`, btn:`<button class="b sm" onclick="A.recDone('${t.id}')">Hecho</button>`});
+    if(onceSoon(t)) todo.push({own:t.owner, html:`📌 ${esc(t.name)} <span class="meta">· ${onceTxt(t)}</span>`, btn:`<button class="b sm ok" onclick="A.onceDone('${t.id}')">Hecho</button>`});
+    if(t.kind === 'rec' && recDue(t)) todo.push({own:t.owner, html:`${t.icon} ${esc(t.name)} <span class="meta">· ${ago(t.last)}</span>`, btn:`<button class="b sm ok" onclick="A.recDone('${t.id}')">Hecho</button>`});
     if(t.kind === 'cycle'){ const k = t.steps.findIndex((_, i) => !(t.cur || {})[i]); if(Object.keys(t.cur || {}).length) todo.push({own:t.owner, html:`${t.icon} ${esc(t.name)}: falta <b>${esc(t.steps[k].toLowerCase())}</b>`, btn:`<button class="b sm" onclick="A.step('${t.id}',${k})">${esc(t.steps[k])}</button>`}); (t.more || []).forEach((L, li) => { const kk = t.steps.findIndex((_, i) => !(L.cur || {})[i]); if(kk >= 0) todo.push({own:t.owner, html:`${t.icon} ${esc(t.name)}, carga ${li + 2}: falta <b>${esc(t.steps[kk].toLowerCase())}</b>`, btn:`<button class="b sm" onclick="A.stepL('${t.id}',${li},${kk})">${esc(t.steps[kk])}</button>`}); }); }
   });
   /* v1.20.1 (pedido de Gonzalo): los turnos médicos ya no aparecen en «Te toca»; se ven en el desplegable de la pestaña Joaco. */
@@ -1827,20 +1847,20 @@ function vCasa(){
       ${(t.more || []).map((L, li) => { const lc = L.cur || {}, ln = t.steps.findIndex((_, i) => !lc[i]); return `<div class="row" style="margin-top:10px"><div class="sub"><b>Carga ${li + 2}</b></div><button class="b sm" onclick="A.loadDel('${t.id}',${li})" aria-label="Quitar la carga ${li + 2}">Quitar</button></div><div class="steps">${t.steps.map((s, i) => `<button class="${lc[i] ? 'done' : i === ln ? 'next' : ''}${pc(`st:${t.id}:${li}:${i}`)}" aria-pressed="${!!lc[i]}" onclick="A.stepL('${t.id}',${li},${i})">${lc[i] ? '✔ ' : ''}${esc(s)}<small>${lc[i] ? esc(M[lc[i].by]?.n) + ' · ' + ago(lc[i].at) : '&nbsp;'}</small></button>`).join('')}</div>`; }).join('')}
       ${t.id === 't_ropa' ? `<div class="btns"><button onclick="A.loadAdd('${t.id}')">+ Otra carga</button></div>` : ''}
       <div class="sub" style="margin-top:6px">Último ciclo completo: ${t.lastDone ? ago(t.lastDone.at) + ' · ' + [...new Set(t.lastDone.who || [t.lastDone.by])].map(p => M[p]?.n).join(' y ') : 'todavía no'}${t.id.startsWith('t_') && !['t_lava','t_ropa'].includes(t.id) ? ` · <button class="b sm" onclick="A.delTask('${t.id}')" aria-label="Borrar la tarea ${esc(t.name)}">Borrar</button>` : ''}</div></div>`; };
-  const rec = t => `<div class="item${pc('r:' + t.id)}"><div class="t" onclick="A.recForm('${t.id}')" ${KB} aria-label="Editar cuándo se repite ${esc(t.name)}"><div><span class="tic">${t.icon}</span>${esc(t.name)}</div><div class="meta">${recDays(t) ? esc(daysTxt(recDays(t))) : `cada ${t.every} día${t.every > 1 ? 's' : ''}`} · ${t.last ? ago(t.last) + ' (' + esc(M[t.lastBy]?.n || '') + ')' : 'sin registro'} ${recDue(t) ? '<span class="tag w">toca</span>' : '<span class="tag">al día</span>'}</div></div>${PB(t.owner, `A.cycleTask('${t.id}')`)}<button class="b sm" onclick="A.recDone('${t.id}')">Hecho</button></div>`;
+  const rec = t => `<div class="item${pc('r:' + t.id)}"><div class="t" onclick="A.recForm('${t.id}')" ${KB} aria-label="Editar cuándo se repite ${esc(t.name)}"><div><span class="tic">${t.icon}</span>${esc(t.name)}</div><div class="meta">${recDays(t) ? esc(daysTxt(recDays(t))) : `cada ${t.every} día${t.every > 1 ? 's' : ''}`} · ${t.last ? ago(t.last) + ' (' + esc(M[t.lastBy]?.n || '') + ')' : 'sin registro'} ${recDue(t) ? '<span class="tag w">toca</span>' : '<span class="tag">al día</span>'}</div></div>${PB(t.owner, `A.cycleTask('${t.id}')`)}<button class="b sm ok" onclick="A.recDone('${t.id}')">Hecho</button></div>`;
   const all = sorted('tasks'), recOf = g => all.filter(t => t.kind === 'rec' && gp(t) === g);
   h += `<h2>${hic('ciclo')} Tareas diarias</h2>`;
   all.filter(t => t.kind === 'cycle').forEach(t => h += cyc(t));
   const dRec = recOf('diaria'); if(dRec.length) h += `<div class="card">${dRec.map(rec).join('')}</div>`;
-  const once = t => `<div class="item${pc('o:' + t.id)}"><div class="t" onclick="A.onceForm('${t.id}')" ${KB} aria-label="Editar ${esc(t.name)}"><div><span class="tic">${t.icon || '📌'}</span>${esc(t.name)}</div><div class="meta">${t.due ? esc(fdate(t.due)) + ' · ' : ''}${t.done ? 'hecha ' + ago(t.done) + (t.doneBy && M[t.doneBy] ? ' (' + esc(M[t.doneBy].n) + ')' : '') : `<span class="tag${t.due && daysTo(t.due) <= 1 ? ' w' : ''}">${onceTxt(t)}</span>`}</div></div>${t.done ? '' : PB(t.owner, `A.cycleTask('${t.id}')`) + `<button class="b sm" onclick="A.onceDone('${t.id}')">Hecho</button>`}<button class="b sm" onclick="A.onceDel('${t.id}')" aria-label="Borrar ${esc(t.name)}">✕</button></div>`;
+  const once = t => `<div class="item${pc('o:' + t.id)}"><div class="t" onclick="A.onceForm('${t.id}')" ${KB} aria-label="Editar ${esc(t.name)}"><div><span class="tic">${t.icon || '📌'}</span>${esc(t.name)}</div><div class="meta">${t.due ? esc(fdate(t.due)) + ' · ' : ''}${t.done ? 'hecha ' + ago(t.done) + (t.doneBy && M[t.doneBy] ? ' (' + esc(M[t.doneBy].n) + ')' : '') : `<span class="tag${t.due && daysTo(t.due) <= 1 ? ' w' : ''}">${onceTxt(t)}</span>`}</div></div>${t.done ? '' : PB(t.owner, `A.cycleTask('${t.id}')`) + `<button class="b sm ok" onclick="A.onceDone('${t.id}')">Hecho</button>`}<button class="b sm x" onclick="A.onceDel('${t.id}')" aria-label="Borrar ${esc(t.name)}">✕</button></div>`;
   const onceAll = all.filter(t => t.kind === 'once'), oOpen = onceAll.filter(t => !t.done).sort((a, b) => (a.due || '9999').localeCompare(b.due || '9999')), oDone = onceAll.filter(t => t.done).sort((a, b) => b.done - a.done).slice(0, 10);
   const oRec = recOf('orden');
   h += `<h2>${hic('casa')} Orden de la casa</h2><div class="card">${oRec.length ? oRec.map(rec).join('') : '<p class="muted">Sin tareas de orden.</p>'}</div>`;
   h += `<h2>${hic('calendario')} Para hacer una vez</h2><div class="card">${oOpen.map(once).join('') || '<p class="muted">Nada pendiente con fecha. Sumá una con «+ Nueva tarea» → «Una sola vez».</p>'}${oDone.length ? `<details><summary>Hechas (${oDone.length})</summary>${oDone.map(once).join('')}</details>` : ''}
-    <div class="btns"><button onclick="A.taskForm('once')">+ Tarea de una vez</button></div></div>`;
+    <div class="btns"><button class="add" onclick="A.taskForm('once')">Tarea de una vez</button></div></div>`;
   const rest = recOf('otra');
   h += `<h2>${hic('calendario')} Otras tareas que se repiten</h2><div class="card">${rest.length ? '' : empty('calendario', 'Sin otras tareas', 'Sumá las cosas que se repiten cada tantos días, como regar, y la app te avisa cuándo toca.', '', true)}${rest.map(rec).join('')}
-    <div class="btns"><button onclick="A.taskForm()">+ Nueva tarea</button></div></div>`;
+    <div class="btns"><button class="add" onclick="A.taskForm()">Nueva tarea</button></div></div>`;
 
   h += vDaniela(true);
   return h;

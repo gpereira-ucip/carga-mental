@@ -1,5 +1,10 @@
 # Novedades de Carga Mental
 
+## v1.28.0 — 2026-11-27
+- Pedido de Gonzalo (27/11): mejorar la estética y que la app sea más intuitiva, con mejores botones. Jerarquía clara: «Hecho» es un botón azul lleno con tilde ✓ (acción principal); los botones comunes son pastillas tonales; «+ Nueva tarea» y «+ Tarea de una vez» ocupan todo el ancho con borde punteado; «✕» es un botón redondo discreto que se pone rojo al pasar; «Cancelar» es un botón liso. Todos se hunden un poco al tocarlos (se desactiva si el sistema pide menos movimiento). En las hojas, «Guardar»/«Crear» son más grandes y quedan fijos abajo aunque haya que desplazarse.
+- Estructura de datos: sin cambios (solo estilos y clases).
+- Pruebas: «Hecho» con clase `ok` y tilde, botón de agregar a todo el ancho, botones de la hoja fijos y ≥ 44 px, 390 px sin desborde. Todas las pruebas anteriores siguen en OK.
+
 ## v1.27.0 — 2026-11-27
 - Ítem 45 del plan: tareas de una sola vez con fecha límite. Al crear una tarea hay un tipo nuevo, «Una sola vez (con fecha límite)», con fecha opcional. En Casa aparecen en «Para hacer una vez», ordenadas por fecha (las sin fecha al final) con «vence en 2 días», «vence hoy» o «venció hace 1 día»; las hechas quedan en un desplegable «Hechas» (las últimas 10). Tocar el nombre abre una hoja para cambiar texto y fecha; «Hecho» las cierra (con «Deshacer») y «✕» las borra (con «Deshacer», sin cartel de confirmación). En Hoy y en el numerito de Casa aparecen solo cuando faltan 3 días o menos, o ya venció; las sin fecha no molestan en Hoy.
 - Estructura de datos: sin migración (SCHEMA sigue en 7). Es un tipo nuevo de tarea (`kind: 'once'`, con `due` opcional y `done` / `doneBy`); las tareas existentes no se tocan.
