@@ -1,5 +1,10 @@
 # Novedades de Carga Mental
 
+## v1.30.0 — 2026-11-27
+- Ítem 47 del plan: posponer una tarea. Debajo de cada tarea (que se repite o de una sola vez) hay un botón «⏰ Posponer» que abre una hoja con «Mañana», «En 3 días», «En una semana» o una fecha a elección (no acepta hoy ni el pasado). Pospuesta, la tarea no figura como «toca», no aparece en Hoy ni suma al numerito de Casa; se ve «pospuesta hasta mañana / vie 4/12» y vuelve sola cuando llega la fecha. Se puede quitar la postergación y todo tiene «Deshacer»; marcar «Hecho» también la limpia.
+- Estructura de datos: sin migración (SCHEMA sigue en 7). `snooze` ('AAAA-MM-DD') es un campo opcional de la tarea; si falta, nada cambia.
+- Pruebas: datos intactos al abrir, rechazo de fechas de hoy o pasadas, la tarea sale de Hoy y vuelve al llegar la fecha (con fecha simulada), Deshacer, quitar, tareas de una vez, «Hecho» que limpia, botón ≥ 44 px, datos ajenos intactos y 390 px en claro y oscuro. Pruebas viejas adaptadas a 47/100.
+
 ## v1.29.0 — 2026-11-27
 - Ítem 46 del plan: subtareas. Las tareas que se repiten y las de una sola vez tienen debajo un botón «＋ Subtareas» que abre una hoja para armar los pasos (con Enter o «Agregar paso»; «✕» quita uno). Los pasos se ven en la lista como círculos que se tildan con un toque, y el botón pasa a «Editar subtareas · 2/3». Al tildar el último paso aparece un aviso con confeti para tocar «Hecho» (no se cierra sola). En las tareas que se repiten, «Hecho» destilda los pasos para la próxima vuelta.
 - Estructura de datos: sin migración (SCHEMA sigue en 7). `subs` ([{id, text, done}]) es un campo opcional de la tarea; si falta, la tarea es como antes.

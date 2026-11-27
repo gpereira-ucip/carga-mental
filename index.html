@@ -393,7 +393,7 @@ button.b.x{width:44px;padding:0;border-radius:50%;background:transparent;border-
 button.b.x:hover{background:var(--badbg);color:var(--bad);border-color:var(--bad)}
 .btns button.add,button.b.add{width:100%;background:transparent;border:1.5px dashed var(--pri2-line);color:var(--pri-tx);border-radius:var(--r2);font-weight:650;min-height:48px}
 .btns button.add::before,button.b.add::before{content:"＋";margin-right:6px;font-weight:800}
-#sheetbox .btns button:not(.pri):not(.add):last-child:not(:only-child){background:transparent;border-color:var(--line2);color:var(--mut);font-weight:500}
+#sheetbox .btns:not(.col) button:not(.pri):not(.add):last-child:not(:only-child){background:transparent;border-color:var(--line2);color:var(--mut);font-weight:500}
 #sheetbox .btns{position:sticky;bottom:-1px;margin:var(--s4) calc(var(--s4) * -1) 0;padding:var(--s3) var(--s4);background:var(--sheet);border-top:1px solid var(--line);z-index:2}
 #sheetbox .btns button.pri{flex:1 1 auto;min-height:48px;font-size:var(--fs-md)}
 .item .b.ok{align-self:center}
@@ -404,7 +404,11 @@ button.b.x:hover{background:var(--badbg);color:var(--bad);border-color:var(--bad
 .subs .sr.on span{text-decoration:line-through;color:var(--mut)}
 .subs .sublink{align-self:flex-start;background:transparent;border-color:transparent;color:var(--pri-tx);font-size:var(--fs-xs);padding-left:4px}
 .subs .sublink::before{content:"☰";margin-right:6px}
-.subs .sublink:first-child::before{content:"＋"}
+.subs .sublink:nth-child(1)::before{content:"＋"}
+.subs .sublink.snz::before{content:"⏰"}
+.subs .sublink.snz{margin-left:8px}
+.subs{flex-flow:row wrap}
+.subs .sr{flex:1 1 100%}
 @media (prefers-reduced-motion:reduce){button{transition:none}button:active:not(:disabled){transform:none}}
 </style>
 </head>
@@ -424,10 +428,11 @@ button.b.x:hover{background:var(--badbg);color:var(--bad);border-color:var(--bad
 <script>
 'use strict';
 /* ============ Constantes ============ */
-const VERSION = '1.29.0';
+const VERSION = '1.30.0';
 const SCHEMA = 7; // versión de la estructura de datos guardados (ver MIGRATIONS)
 /* Novedades: la primera es la versión actual. "hechas" = ítems del plan de 100 tildados hasta esa versión. */
 const NEWS = [
+  {v:'1.30.0', d:'2026-11-27', hechas:47, items:['Posponer una tarea: debajo de cada tarea hay un botón «⏰ Posponer» con «Mañana», «En 3 días», «En una semana» o una fecha a elección. Mientras está pospuesta no figura como «toca» ni aparece en Hoy, se ve «pospuesta hasta…» y, cuando llega la fecha, vuelve sola. Se puede quitar la postergación y tiene «Deshacer». Marcar «Hecho» también la limpia.']},
   {v:'1.29.0', d:'2026-11-27', hechas:46, items:['Subtareas: cualquier tarea que se repite o de una sola vez puede tener una lista de pasos (por ejemplo «Llevar el auto al service»: pedir turno, juntar los papeles, llevarlo). Tocá «＋ Subtareas» debajo de la tarea para armarla; cada paso se tilda con un toque y se ve el avance (2/3). En las tareas que se repiten, al tocar «Hecho» los pasos vuelven a empezar. Tus tareas de siempre no cambian.']},
   {v:'1.28.0', d:'2026-11-27', hechas:45, items:['Botones renovados y más fáciles de entender: «Hecho» ahora es un botón azul con tilde ✓ para que se vea cuál es la acción principal, los botones de agregar («+ Nueva tarea», «+ Tarea de una vez») ocupan todo el ancho con borde punteado, «✕» es un botón redondo discreto y todos responden al toque con un pequeño hundimiento. Los botones de las hojas (Guardar, Crear) son más grandes y quedan fijos abajo.']},
   {v:'1.27.0', d:'2026-11-27', hechas:45, items:['Tareas de una sola vez con fecha límite: al crear una tarea elegí «Una sola vez (con fecha límite)» y, si querés, la fecha (por ejemplo, llevar el auto al service el viernes). En Casa aparecen en «Para hacer una vez», ordenadas por fecha y con «vence en 2 días» o «vencida»; en Hoy aparecen cuando faltan 3 días o menos, o ya pasó la fecha. Tocá el nombre para cambiar el texto o la fecha, «Hecho» para cerrarla (con «Deshacer») y «✕» para borrarla. Tus tareas de siempre no cambian.']},
@@ -960,7 +965,11 @@ const soonTxt = n => n === 1 ? 'se acaba mañana' : `se acaba en ${n} días`;
 const recDays = t => Array.isArray(t.days) && t.days.length ? t.days : null;
 const DSEL = [1, 2, 3, 4, 5, 6, 0];
 const daysTxt = ds => { const n = DSEL.filter(d => ds.includes(d)).map(d => DOWL[d]); return n.length > 1 ? n.slice(0, -1).join(', ') + ' y ' + n[n.length - 1] : n[0] || ''; };
+/* Posponer (v1.30.0): t.snooze = 'AAAA-MM-DD' (opcional). Hasta ese día la tarea no «toca» ni aparece en Hoy. */
+const snzTxt = d => { const n = daysTo(d); return n === 1 ? 'mañana' : fdate(d); };
+const snoozed = t => !!t.snooze && dk() < t.snooze;
 function recDue(t){
+  if(snoozed(t)) return false;
   const ds = recDays(t); if(!ds) return !t.last || (Date.now() - t.last) >= t.every * DAY;
   const h = new Date(); h.setHours(0, 0, 0, 0);
   for(let k = 0; k < 7; k++){ const d = new Date(h); d.setDate(h.getDate() - k); if(ds.includes(d.getDay())) return k === 0 ? (!t.last || t.last < d.getTime()) : (!!t.last && t.last < d.getTime()); }
@@ -968,11 +977,11 @@ function recDue(t){
 }
 /* Tareas de una sola vez (v1.27.0): kind 'once', due 'AAAA-MM-DD' (opcional), done = marca de tiempo. Sin fecha: no molesta en Hoy. */
 const onceOpen = () => Object.values(S.tasks).filter(t => t.kind === 'once' && !t.done);
-const onceSoon = t => t.kind === 'once' && !t.done && !!t.due && daysTo(t.due) <= 3;
+const onceSoon = t => t.kind === 'once' && !t.done && !snoozed(t) && !!t.due && daysTo(t.due) <= 3;
 const onceTxt = t => !t.due ? 'sin fecha' : (n => n < 0 ? `venció hace ${-n} día${n < -1 ? 's' : ''}` : n === 0 ? 'vence hoy' : n === 1 ? 'vence mañana' : `vence en ${n} días`)(daysTo(t.due));
 /* Subtareas (v1.29.0): t.subs = [{id, text, done}] es opcional en tareas 'rec' y 'once'. Al marcar «Hecho» una tarea que se repite, los pasos se destildan. */
 const subsOf = t => Array.isArray(t.subs) ? t.subs : [];
-const subsHtml = t => { const l = subsOf(t), n = l.filter(x => x.done).length; return `<div class="subs">${l.map(x => `<button type="button" class="sr${x.done ? ' on' : ''}" aria-pressed="${!!x.done}" onclick="A.subTog('${t.id}','${x.id}')"><i class="bx">${x.done ? '✓' : ''}</i><span>${esc(x.text)}</span></button>`).join('')}<button type="button" class="b sm sublink" onclick="A.subForm('${t.id}')">${l.length ? `Editar subtareas · ${n}/${l.length}` : 'Subtareas'}</button></div>`; };
+const subsHtml = t => { const l = subsOf(t), n = l.filter(x => x.done).length; return `<div class="subs">${l.map(x => `<button type="button" class="sr${x.done ? ' on' : ''}" aria-pressed="${!!x.done}" onclick="A.subTog('${t.id}','${x.id}')"><i class="bx">${x.done ? '✓' : ''}</i><span>${esc(x.text)}</span></button>`).join('')}<button type="button" class="b sm sublink" onclick="A.subForm('${t.id}')">${l.length ? `Editar subtareas · ${n}/${l.length}` : 'Subtareas'}</button><button type="button" class="b sm sublink snz" onclick="A.snoozeForm('${t.id}')">${snoozed(t) ? 'Pospuesta · cambiar' : 'Posponer'}</button></div>`; };
 const dsel = (sel = []) => `<div class="dsel" id="f_days">${DSEL.map(d => `<button type="button" class="${sel.includes(d) ? 'on' : ''}" data-d="${d}" aria-pressed="${sel.includes(d)}" aria-label="${DOWL[d]}" onclick="this.classList.toggle('on'); this.setAttribute('aria-pressed', this.classList.contains('on'))">${DOW[d]}</button>`).join('')}</div>`;
 const pickDays = () => [...document.querySelectorAll('#f_days button.on')].map(b => +b.dataset.d).sort((a, b) => a - b);
 /* Registrar una compra: vuelve a «al día» y suma un renglón al historial del producto (últimas 30). */
@@ -1450,7 +1459,7 @@ const A = {
     if(t.steps.every((_, i) => L.cur[i])){ t.lastDone = {at:Date.now(), by:me, who:Object.values(L.cur).map(x => x.by)}; t.more.splice(li, 1); if(!t.more.length) delete t.more; put('tasks', t, `completó la carga ${li + 2} de ${t.name} ✔`); confetti(); toast(`Carga ${li + 2} lista 🎉`, u); }
     else put('tasks', t, L.cur[k] ? `${t.name}, carga ${li + 2}: ${t.steps[k].toLowerCase()} ✔` : null);
   },
-  recDone(tid){ const t = S.tasks[tid]; const u = snapshot([['tasks', tid]]); t.last = Date.now(); t.lastBy = me; subsOf(t).forEach(x => x.done = false); buzz(); pop('r:' + tid); put('tasks', t, `hizo: ${t.name}`); toast('Hecho ✔', u); },
+  recDone(tid){ const t = S.tasks[tid]; const u = snapshot([['tasks', tid]]); t.last = Date.now(); t.lastBy = me; delete t.snooze; subsOf(t).forEach(x => x.done = false); buzz(); pop('r:' + tid); put('tasks', t, `hizo: ${t.name}`); toast('Hecho ✔', u); },
   cycleTask(tid){ const t = S.tasks[tid]; const o = ['gonzalo','dani','ambos']; t.owner = o[(o.indexOf(t.owner)+1) % o.length]; put('tasks', t, `${t.name} → ${M[t.owner].n}`); },
   taskForm(pre){
     A.open(`<h3>Nueva tarea</h3>
@@ -1486,6 +1495,20 @@ const A = {
     const t = S.tasks[tid]; if(!t) return;
     t.subs = subsOf(t).filter(x => x.id !== sid); if(!t.subs.length) delete t.subs; put('tasks', t, null); A.subForm(tid); toast('Paso quitado');
   },
+  snoozeForm(tid){
+    const t = S.tasks[tid]; if(!t) return; const ymd = n => { const d = new Date(); d.setDate(d.getDate() + n); return dk(d); };
+    A.open(`<h3>⏰ Posponer</h3>
+      <p class="muted">${esc(t.name)}${snoozed(t) ? ' · hoy está pospuesta hasta ' + esc(snzTxt(t.snooze)) : ''}. Mientras tanto no aparece en Hoy y vuelve sola.</p>
+      <div class="btns col"><button class="b" onclick="A.snooze('${tid}','${ymd(1)}')">Mañana</button><button class="b" onclick="A.snooze('${tid}','${ymd(3)}')">En 3 días</button><button class="b" onclick="A.snooze('${tid}','${ymd(7)}')">En una semana</button></div>
+      <label class="f">O elegí una fecha</label><input type="date" id="f_snz" min="${ymd(1)}" value="${snoozed(t) ? esc(t.snooze) : ''}">
+      <div class="btns"><button class="pri" onclick="A.snooze('${tid}', $('#f_snz').value)">Posponer hasta esa fecha</button>${snoozed(t) ? `<button onclick="A.snooze('${tid}','')">Quitar postergación</button>` : ''}<button onclick="A.close()">Cancelar</button></div>`);
+  },
+  snooze(tid, d){
+    const t = S.tasks[tid]; if(!t) return;
+    if(d && d <= dk()) return toast('Elegí una fecha a partir de mañana');
+    const u = snapshot([['tasks', tid]]); if(d) t.snooze = d; else delete t.snooze;
+    A.close(); put('tasks', t, d ? `pospuso ${t.name} hasta ${d}` : `quitó la postergación de ${t.name}`); toast(d ? `Pospuesta hasta ${snzTxt(d)} ⏰` : 'Postergación quitada', u);
+  },
   onceForm(tid){
     const t = S.tasks[tid]; if(!t) return;
     A.open(`<h3>${t.icon || '📌'} Tarea de una vez</h3>
@@ -1498,7 +1521,7 @@ const A = {
     const u = snapshot([['tasks', tid]]); t.name = name; const d = $('#f_due').value; if(d) t.due = d; else delete t.due;
     A.close(); put('tasks', t, `cambió la tarea ${name}`); toast('Guardado ✔', u);
   },
-  onceDone(tid){ const t = S.tasks[tid]; if(!t) return; const u = snapshot([['tasks', tid]]); t.done = Date.now(); t.doneBy = me; buzz(); pop('o:' + tid); put('tasks', t, `hizo: ${t.name}`); toast('Hecho ✔', u); },
+  onceDone(tid){ const t = S.tasks[tid]; if(!t) return; const u = snapshot([['tasks', tid]]); t.done = Date.now(); t.doneBy = me; delete t.snooze; buzz(); pop('o:' + tid); put('tasks', t, `hizo: ${t.name}`); toast('Hecho ✔', u); },
   onceDel(tid){ const t = S.tasks[tid]; if(!t) return; const n = t.name, u = snapshot([['tasks', tid]]); del('tasks', tid, `borró la tarea ${n}`); toast('Tarea borrada', u); },
   recForm(tid){
     const t = S.tasks[tid]; if(!t) return; const ds = recDays(t) || [];
@@ -1881,12 +1904,12 @@ function vCasa(){
       ${(t.more || []).map((L, li) => { const lc = L.cur || {}, ln = t.steps.findIndex((_, i) => !lc[i]); return `<div class="row" style="margin-top:10px"><div class="sub"><b>Carga ${li + 2}</b></div><button class="b sm" onclick="A.loadDel('${t.id}',${li})" aria-label="Quitar la carga ${li + 2}">Quitar</button></div><div class="steps">${t.steps.map((s, i) => `<button class="${lc[i] ? 'done' : i === ln ? 'next' : ''}${pc(`st:${t.id}:${li}:${i}`)}" aria-pressed="${!!lc[i]}" onclick="A.stepL('${t.id}',${li},${i})">${lc[i] ? '✔ ' : ''}${esc(s)}<small>${lc[i] ? esc(M[lc[i].by]?.n) + ' · ' + ago(lc[i].at) : '&nbsp;'}</small></button>`).join('')}</div>`; }).join('')}
       ${t.id === 't_ropa' ? `<div class="btns"><button onclick="A.loadAdd('${t.id}')">+ Otra carga</button></div>` : ''}
       <div class="sub" style="margin-top:6px">Último ciclo completo: ${t.lastDone ? ago(t.lastDone.at) + ' · ' + [...new Set(t.lastDone.who || [t.lastDone.by])].map(p => M[p]?.n).join(' y ') : 'todavía no'}${t.id.startsWith('t_') && !['t_lava','t_ropa'].includes(t.id) ? ` · <button class="b sm" onclick="A.delTask('${t.id}')" aria-label="Borrar la tarea ${esc(t.name)}">Borrar</button>` : ''}</div></div>`; };
-  const rec = t => `<div class="item${pc('r:' + t.id)}"><div class="t" onclick="A.recForm('${t.id}')" ${KB} aria-label="Editar cuándo se repite ${esc(t.name)}"><div><span class="tic">${t.icon}</span>${esc(t.name)}</div><div class="meta">${recDays(t) ? esc(daysTxt(recDays(t))) : `cada ${t.every} día${t.every > 1 ? 's' : ''}`} · ${t.last ? ago(t.last) + ' (' + esc(M[t.lastBy]?.n || '') + ')' : 'sin registro'} ${recDue(t) ? '<span class="tag w">toca</span>' : '<span class="tag">al día</span>'}</div></div>${PB(t.owner, `A.cycleTask('${t.id}')`)}<button class="b sm ok" onclick="A.recDone('${t.id}')">Hecho</button>${subsHtml(t)}</div>`;
+  const rec = t => `<div class="item${pc('r:' + t.id)}"><div class="t" onclick="A.recForm('${t.id}')" ${KB} aria-label="Editar cuándo se repite ${esc(t.name)}"><div><span class="tic">${t.icon}</span>${esc(t.name)}</div><div class="meta">${recDays(t) ? esc(daysTxt(recDays(t))) : `cada ${t.every} día${t.every > 1 ? 's' : ''}`} · ${t.last ? ago(t.last) + ' (' + esc(M[t.lastBy]?.n || '') + ')' : 'sin registro'} ${snoozed(t) ? `<span class="tag">pospuesta hasta ${snzTxt(t.snooze)}</span>` : recDue(t) ? '<span class="tag w">toca</span>' : '<span class="tag">al día</span>'}</div></div>${PB(t.owner, `A.cycleTask('${t.id}')`)}<button class="b sm ok" onclick="A.recDone('${t.id}')">Hecho</button>${subsHtml(t)}</div>`;
   const all = sorted('tasks'), recOf = g => all.filter(t => t.kind === 'rec' && gp(t) === g);
   h += `<h2>${hic('ciclo')} Tareas diarias</h2>`;
   all.filter(t => t.kind === 'cycle').forEach(t => h += cyc(t));
   const dRec = recOf('diaria'); if(dRec.length) h += `<div class="card">${dRec.map(rec).join('')}</div>`;
-  const once = t => `<div class="item${pc('o:' + t.id)}"><div class="t" onclick="A.onceForm('${t.id}')" ${KB} aria-label="Editar ${esc(t.name)}"><div><span class="tic">${t.icon || '📌'}</span>${esc(t.name)}</div><div class="meta">${t.due ? esc(fdate(t.due)) + ' · ' : ''}${t.done ? 'hecha ' + ago(t.done) + (t.doneBy && M[t.doneBy] ? ' (' + esc(M[t.doneBy].n) + ')' : '') : `<span class="tag${t.due && daysTo(t.due) <= 1 ? ' w' : ''}">${onceTxt(t)}</span>`}</div></div>${t.done ? '' : PB(t.owner, `A.cycleTask('${t.id}')`) + `<button class="b sm ok" onclick="A.onceDone('${t.id}')">Hecho</button>`}<button class="b sm x" onclick="A.onceDel('${t.id}')" aria-label="Borrar ${esc(t.name)}">✕</button>${t.done ? '' : subsHtml(t)}</div>`;
+  const once = t => `<div class="item${pc('o:' + t.id)}"><div class="t" onclick="A.onceForm('${t.id}')" ${KB} aria-label="Editar ${esc(t.name)}"><div><span class="tic">${t.icon || '📌'}</span>${esc(t.name)}</div><div class="meta">${t.due ? esc(fdate(t.due)) + ' · ' : ''}${t.done ? 'hecha ' + ago(t.done) + (t.doneBy && M[t.doneBy] ? ' (' + esc(M[t.doneBy].n) + ')' : '') : `<span class="tag${t.due && daysTo(t.due) <= 1 && !snoozed(t) ? ' w' : ''}">${onceTxt(t)}</span>${snoozed(t) ? ` <span class="tag">pospuesta hasta ${snzTxt(t.snooze)}</span>` : ''}`}</div></div>${t.done ? '' : PB(t.owner, `A.cycleTask('${t.id}')`) + `<button class="b sm ok" onclick="A.onceDone('${t.id}')">Hecho</button>`}<button class="b sm x" onclick="A.onceDel('${t.id}')" aria-label="Borrar ${esc(t.name)}">✕</button>${t.done ? '' : subsHtml(t)}</div>`;
   const onceAll = all.filter(t => t.kind === 'once'), oOpen = onceAll.filter(t => !t.done).sort((a, b) => (a.due || '9999').localeCompare(b.due || '9999')), oDone = onceAll.filter(t => t.done).sort((a, b) => b.done - a.done).slice(0, 10);
   const oRec = recOf('orden');
   h += `<h2>${hic('casa')} Orden de la casa</h2><div class="card">${oRec.length ? oRec.map(rec).join('') : '<p class="muted">Sin tareas de orden.</p>'}</div>`;
