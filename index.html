@@ -9,7 +9,7 @@
 <meta property="og:title" content="Carga Mental · La casa, entre todos">
 <meta property="og:description" content="App familiar para repartir las compras, las tareas del hogar y el cuidado de los chicos entre todos.">
 <meta property="og:url" content="https://gpereira-ucip.github.io/carga-mental/">
-<meta property="og:image" content="https://gpereira-ucip.github.io/carga-mental/icon-512.png">
+<meta property="og:image" content="https://gpereira-ucip.github.io/carga-mental/og.jpg">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#24476b">
 <style>@font-face{font-family:"Poppins";src:url(fonts/poppins-regular.woff) format("woff");font-weight:300 449;font-display:swap}@font-face{font-family:"Poppins";src:url(fonts/poppins-medium.woff) format("woff");font-weight:450 599;font-display:swap}@font-face{font-family:"Poppins";src:url(fonts/poppins-bold.woff) format("woff");font-weight:600 900;font-display:swap}.uni-w{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:8px 0}
@@ -83,7 +83,15 @@ header{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-c
 .brand img{width:38px;height:38px;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.25)}
 .brand small{display:block;font-weight:400;font-size:11px;opacity:.82;letter-spacing:.01em}
 #splash{position:fixed;inset:0;z-index:50;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s}
-#splash img{width:min(80vw,420px)}
+#splash{overflow:hidden}
+#splash .rd{width:min(78vw,400px)}
+#splash img.tk{display:block;width:100%;animation:drive 1s cubic-bezier(.2,.8,.25,1) both,bob 1.1s ease-in-out 1s infinite}
+#splash .ln{display:block;height:4px;margin-top:2px;border-radius:4px;background:repeating-linear-gradient(90deg,#c6d7e8 0 22px,transparent 22px 40px);animation:road .8s linear infinite}
+#splash h1,#splash p{animation:fadeup .6s .5s both}
+@keyframes drive{from{transform:translateX(-110vw)}to{transform:none}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes road{to{background-position:-40px 0}}
+@keyframes fadeup{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 #splash h1{margin:6px 0 0;font:800 30px/1.1 var(--font);color:#24476b;letter-spacing:-.3px}
 #splash p{color:#5d6b7a;font-size:var(--fs-sm);margin-top:var(--s4);letter-spacing:.3px}
 #splash.out{opacity:0;pointer-events:none}
@@ -411,10 +419,32 @@ button.b.x:hover{background:var(--badbg);color:var(--bad);border-color:var(--bad
 .subs{flex-flow:row wrap}
 .subs .sr{flex:1 1 100%}
 @media (prefers-reduced-motion:reduce){button{transition:none}button:active:not(:disabled){transform:none}}
+
+/* ---------- v1.33.0: marca (camión con cerebro) en vectores: .lg.mark / .lg.brain / .lg.truck ---------- */
+.lg{display:inline-block;vertical-align:middle;color:var(--pri-tx);--lg-bg:var(--card);flex:none}
+.lg.mark{width:60px;height:38px}.lg.brain{width:40px;height:30px}.lg.truck{width:60px;height:26px}
+.empty .ill .lg{position:relative;--lg-bg:var(--pri2)}
+.empty .ill .lg.truck{width:64px;height:28px}.empty .ill .lg.brain{width:48px;height:36px}.empty .ill .lg.mark{width:64px;height:40px}
+.hero{display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,var(--pri2),var(--card));border-color:var(--pri2-line)}
+.hero .heroart{width:104px;height:81px;--lg-bg:var(--pri2);animation:rollin .7s cubic-bezier(.2,.8,.25,1) both}
+.hero .ht{min-width:0}.hero b{display:block;font-size:var(--fs-lg);line-height:1.2}
+.hero p{margin:2px 0 4px;color:var(--mut);font-size:var(--fs-sm)}
+.hero small{color:var(--pri-tx);font-weight:650;font-size:var(--fs-xs)}
+.hero.l3 .heroart{animation:rollin .7s cubic-bezier(.2,.8,.25,1) both,strain 2.6s ease-in-out .8s infinite}
+@keyframes rollin{from{transform:translateX(-28px);opacity:0}to{transform:none;opacity:1}}
+@keyframes strain{0%,100%{transform:translateY(0)}50%{transform:translateY(1.5px)}}
+.prog .barw{flex:1;position:relative;padding-top:30px}
+.prog .barw .bar{width:100%}
+.rider{position:absolute;top:0;left:clamp(44px,var(--p),100%);margin-left:-44px;width:44px;height:29px;transform:scaleX(-1);--lg-bg:var(--card);transition:left .6s ease}
+.rider .lg{width:44px;height:29px}
+.newshero{display:flex;align-items:center;gap:12px;margin:2px 0 6px}
+.newshero img{width:92px;height:auto;flex:none}
+@media (prefers-reduced-motion:reduce){#splash *,.hero .heroart{animation:none!important}.rider{transition:none}}
 </style>
 </head>
 <body>
-<div id="splash" onclick="this.classList.add('out')"><img src="cover.jpg" alt=""><h1>Carga Mental</h1><p>Compartida, no invisible</p></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="lg-brain" viewBox="0 0 64 48"><path d="M14 31C6 30 3 20 10 15.5 9 8 18 3.5 25 7.5 28 2.5 38 2.5 41 7.5 48 4.5 57 9.5 54 17 61 20.5 59.5 30 52 31 52 38 44 41 38 37.5 35 42.5 27 42.5 24 37.5 19 41 11.5 38 14 31Z" fill="#f2a7b0" stroke="#c9626f" stroke-width="2.2" stroke-linejoin="round"/><path d="M32 6.5C29.5 14 34.5 19 31.5 27 30.5 31.5 33 36 31.5 41" fill="none" stroke="#c9626f" stroke-width="2.2" stroke-linecap="round"/><path d="M13 19C18 17.5 20.5 21.5 26 20M12 27C18 25 22 28.5 27 26.5M38 17C43 15.5 46 19.5 51 17M37 25C43 26.5 47.5 24 53.5 26M20 11C23 12 24 14.5 27.5 14M43 11.5C46 12 47.5 14 50 13" fill="none" stroke="#c9626f" stroke-width="2" stroke-linecap="round" opacity=".8"/></symbol><symbol id="lg-truck" viewBox="0 0 120 52"><path d="M42 8H114L109 32H42Z" fill="currentColor"/><path d="M50 12V28M64 11V28M78 10V28M92 9.5V28M105 9V28" stroke="var(--lg-bg,#fff)" stroke-opacity=".35" stroke-width="2" stroke-linecap="round"/><path d="M5 32V21L13 9Q15 6 19 6H40V32Z" fill="currentColor"/><path d="M17 10H36V19H11Z" fill="var(--lg-bg,#fff)" fill-opacity=".9"/><rect x="4" y="32" width="108" height="6" rx="3" fill="currentColor"/><circle cx="24" cy="40" r="9.5" fill="currentColor" stroke="var(--lg-bg,#fff)" stroke-width="2"/><circle cx="24" cy="40" r="3.4" fill="var(--lg-bg,#fff)"/><circle cx="92" cy="40" r="9.5" fill="currentColor" stroke="var(--lg-bg,#fff)" stroke-width="2"/><circle cx="92" cy="40" r="3.4" fill="var(--lg-bg,#fff)"/></symbol><symbol id="lg-mark" viewBox="0 0 120 76"><use href="#lg-brain" x="52" y="0" width="62" height="46"/><use href="#lg-truck" x="0" y="24" width="120" height="52"/></symbol></svg>
+<div id="splash" onclick="this.classList.add('out')"><div class="rd"><img class="tk" src="logo-camion.png" alt=""><i class="ln"></i></div><h1>Carga Mental</h1><p>Compartida, no invisible</p></div>
 <header>
   <div class="brand"><img src="icon-192.png" alt=""><div>Carga Mental<small>Compartida, no invisible</small></div></div>
   <button id="who" onclick="A.settings()" aria-label="Ajustes">⚙</button>
@@ -429,10 +459,11 @@ button.b.x:hover{background:var(--badbg);color:var(--bad);border-color:var(--bad
 <script>
 'use strict';
 /* ============ Constantes ============ */
-const VERSION = '1.32.0';
+const VERSION = '1.33.0';
 const SCHEMA = 7; // versión de la estructura de datos guardados (ver MIGRATIONS)
 /* Novedades: la primera es la versión actual. "hechas" = ítems del plan de 100 tildados hasta esa versión. */
 const NEWS = [
+  {v:'1.33.0', d:'2026-11-27', hechas:49, items:['El camión con el cerebro, por todos lados: la portada ahora llega manejando, en Hoy hay una tarjeta «La carga de hoy» donde el cerebro del camión crece o se achica según lo que queda por hacer (de «Camión liviano» a «Carga pesada»), en esta pantalla el camión avanza por la barra de progreso, y las pantallas vacías tienen su camión o su cerebro. Además, el ícono de la app en el celular tiene fondo azul con el camión bien centrado y los links que se comparten muestran una imagen nueva.']},
   {v:'1.32.0', d:'2026-11-27', hechas:49, items:['Guardias: en «🔁 Turnos y guardias» de una tarea de Gonzalo podés tildar «Si estoy de guardia, la hace Dani ese día». Los lunes, los viernes y los martes con guardia de noche, esa tarea aparece en Hoy a nombre de Dani con el aviso «cubre por la guardia de Gonzalo». Cuando Dani la marca como hecha se anota una «deuda» amable y en Hoy aparece «🤝 Dani cubrió 1 tarea por tus guardias» con el botón «Devolví una» para compensar otro día.']},
   {v:'1.31.0', d:'2026-11-27', hechas:48, items:['Rotación de responsables: debajo de cada tarea hay un botón «🔁 Turnos». Elegís quién la hace esta semana y «Alternar cada semana»: la app cambia sola de Gonzalo a Dani (o al revés) cada lunes, así nadie tiene que acordarse de pasársela al otro. Al tocar el nombre de la persona en una tarea con turnos se abre esa misma hoja. Se puede dejar de alternar cuando quieras.']},
   {v:'1.30.0', d:'2026-11-27', hechas:47, items:['Posponer una tarea: debajo de cada tarea hay un botón «⏰ Posponer» con «Mañana», «En 3 días», «En una semana» o una fecha a elección. Mientras está pospuesta no figura como «toca» ni aparece en Hoy, se ve «pospuesta hasta…» y, cuando llega la fecha, vuelve sola. Se puede quitar la postergación y tiene «Deshacer». Marcar «Hecho» también la limpia.']},
@@ -571,6 +602,16 @@ const ICONS = {
   mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/>',
   rotar:'<path d="M4 12a8 8 0 0 1 13.7-5.6M20 12a8 8 0 0 1-13.7 5.6"/><path d="M18 3v3.6h-3.6M6 21v-3.6h3.6"/>'
 };
+const LGV = {mark:'0 0 120 76', brain:'0 0 64 48', truck:'0 0 120 52'};
+const lg = (n, cls = '') => `<svg class="lg ${n} ${cls}" viewBox="${LGV[n]}" aria-hidden="true" focusable="false"><use href="#lg-${n}"/></svg>`;
+/* «La carga de hoy» (v1.33.0): el cerebro del camión crece con lo que queda por hacer. */
+function heroCard(total, mineN){
+  const lv = total === 0 ? 0 : total <= 3 ? 1 : total <= 7 ? 2 : 3;
+  const T = [['Camión liviano', 'No queda nada para hoy. ¡Buen trabajo, equipo!'], ['Carga liviana', 'Pocas cosas para hoy: se reparten fácil.'], ['Carga normal', 'Hay para todos. Mirá «Te toca» y «Lo de los demás».'], ['Carga pesada', 'Hoy hay mucho. Conviene repartir entre los dos.']][lv];
+  const sc = [0, .7, .95, 1.22][lv], w = 62 * sc, hh = 46 * sc;
+  const brain = lv ? `<use href="#lg-brain" x="${(80 - w / 2).toFixed(1)}" y="${(40 - hh).toFixed(1)}" width="${w.toFixed(1)}" height="${hh.toFixed(1)}"/>` : '';
+  return `<div class="card hero l${lv}" id="heroCard" data-lv="${lv}"><svg class="lg heroart" viewBox="0 -18 120 94" aria-hidden="true" focusable="false">${brain}<use href="#lg-truck" y="24" width="120" height="52"/></svg><div class="ht"><b>${T[0]}</b><p>${T[1]}</p><small>${total} pendiente${total === 1 ? '' : 's'} en la casa · ${mineN} para vos</small></div></div>`;
+}
 const ic = (n, cls='') => `<svg class="ic ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n] || ''}</svg>`;
 const hic = n => `<span class="hic">${ic(n)}</span>`;
 
@@ -637,7 +678,7 @@ function confetti(){
 /* Estados vacíos ilustrados: dibujo + título + texto amable (+ botón opcional) */
 const EMPTY_ICON = {tetoca:'tetoca', compras:'compras', chat:'chat', escoba:'escoba', reloj:'reloj', salud:'salud', calendario:'calendario', cocina:'escoba'};
 function empty(icon, title, text, btn = '', small = false){
-  return `<div class="empty${small ? ' sm' : ''}"><div class="ill">${ic(icon)}${small ? '' : ic('nuevo', 'sp')}</div><div><b>${title}</b><p>${text}</p>${btn ? `<div class="btns">${btn}</div>` : ''}</div></div>`;
+  return `<div class="empty${small ? ' sm' : ''}"><div class="ill">${icon.startsWith('lg-') ? lg(icon.slice(3)) : ic(icon)}${small ? '' : ic('nuevo', 'sp')}</div><div><b>${title}</b><p>${text}</p>${btn ? `<div class="btns">${btn}</div>` : ''}</div></div>`;
 }
 const KB = `role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}"`;
 const chk = (inner) => `<label class="chk">${inner}</label>`;
@@ -1208,8 +1249,8 @@ const A = {
     const done = NEWS[0].hechas, pct = Math.round(done);
     try { localStorage.setItem(LS.seen, VERSION); } catch(e) {}
     A.open(`<h3>${hic('nuevo')} Novedades y progreso</h3>
-      <p class="muted">Versión ${VERSION} · Cada día se suman mejoras del plan de 100.</p>
-      <div class="prog"><div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${done}" aria-label="Mejoras hechas"><i style="width:${pct}%"></i></div><b>${done}/100</b></div>
+      <div class="newshero"><img src="logo-camion.png" alt=""><p class="muted">Versión ${VERSION} · Cada día se suman mejoras del plan de 100.</p></div>
+      <div class="prog"><div class="barw" style="--p:${pct}%"><span class="rider" aria-hidden="true">${lg('truck')}</span><div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${done}" aria-label="Mejoras hechas"><i style="width:${pct}%"></i></div></div><b>${done}/100</b></div>
       ${NEWS.map((n, i) => `<div class="newsv ${i === 0 ? 'cur' : ''}"><h4>v${esc(n.v)}${i === 0 ? ' · lo nuevo' : ''} <span>${fdate(n.d)}</span></h4><ul>${n.items.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`).join('')}
       <div class="btns"><button class="pri" onclick="A.close()">¡Genial!</button></div>`);
   },
@@ -1814,7 +1855,7 @@ function uniHoyHtml(now){
   return `<div class="card uni-hoy" onclick="A.go('joaco')" ${KB}><div class="uni-mini">${uniSvg(t)}</div><div><h3>Ropa de mañana: ${esc(t.n.toLowerCase())}</h3><p class="muted">${esc([t.arriba, t.abajo, t.pies].filter(Boolean).join(' · '))}</p></div></div>`; }
 function vHoy(){
   const now = new Date(), j = joacoDay(now);
-  let h = `<h2>Hola${me ? ', ' + esc(M[me].n) : ''} 👋</h2><p class="muted">${DOWL[now.getDay()][0].toUpperCase() + DOWL[now.getDay()].slice(1)} ${now.getDate()}/${now.getMonth()+1}</p>`;
+  let h = `<h2>Hola${me ? ', ' + esc(M[me].n) : ''} 👋</h2><p class="muted">${DOWL[now.getDay()][0].toUpperCase() + DOWL[now.getDay()].slice(1)} ${now.getDate()}/${now.getMonth()+1}</p><!--HERO-->`;
 
   h += `<div class="card"><h3>${hic('pin')} Hoy en casa</h3>
     <div class="item"><span>${P('gonzalo')}</span><div class="t meta">${status('gonzalo', now)}</div></div>
@@ -1830,8 +1871,9 @@ function vHoy(){
   h += lavaCard();
   const todo = todoList(now, j);
   const mineL = todo.filter(x => mine(x.own)), rest = todo.filter(x => !mine(x.own));
+  h = h.replace('<!--HERO-->', heroCard(todo.length, mineL.length));
   const row = x => `<div class="item"><div class="t" ${x.go ? `onclick="${x.go}" ${KB}` : ''}>${x.html}</div><span title="${esc(pm(x.own).n)}" aria-label="${esc(pm(x.own).n)}">${AV(x.own)}</span>${x.btn || ''}</div>`;
-  h += `<div class="card"><h3>${hic('tetoca')} Te toca</h3>${mineL.length ? mineL.map(row).join('') : empty('tetoca', 'Nada pendiente para vos', 'Disfrutá el rato libre. Si surge algo, aparece acá solo.')}</div>`;
+  h += `<div class="card"><h3>${hic('tetoca')} Te toca</h3>${mineL.length ? mineL.map(row).join('') : empty('lg-truck', 'Nada pendiente para vos', 'Disfrutá el rato libre. Si surge algo, aparece acá solo.')}</div>`;
   if(rest.length) h += `<div class="card"><h3>${hic('otros')} Lo de los demás</h3>${rest.map(row).join('')}</div>`;
 
   if(!isStandalone() && !localStorage.getItem(LS.noInst)) h += `<div class="card install"><h3>${hic('telefono')} Instalá Carga Mental</h3><p class="muted">Tenela a un toque en el teléfono, con el ícono del camión.</p><div class="btns"><button class="pri" onclick="A.install()">Instalar</button><button onclick="A.installHelp()">Cómo se hace</button><button onclick="A.hideInstall()">Ahora no</button></div></div>`;
@@ -1950,7 +1992,7 @@ function vCasa(){
   h += `<h2>${hic('calendario')} Para hacer una vez</h2><div class="card">${oOpen.map(once).join('') || '<p class="muted">Nada pendiente con fecha. Sumá una con «+ Nueva tarea» → «Una sola vez».</p>'}${oDone.length ? `<details><summary>Hechas (${oDone.length})</summary>${oDone.map(once).join('')}</details>` : ''}
     <div class="btns"><button class="add" onclick="A.taskForm('once')">Tarea de una vez</button></div></div>`;
   const rest = recOf('otra');
-  h += `<h2>${hic('calendario')} Otras tareas que se repiten</h2><div class="card">${rest.length ? '' : empty('calendario', 'Sin otras tareas', 'Sumá las cosas que se repiten cada tantos días, como regar, y la app te avisa cuándo toca.', '', true)}${rest.map(rec).join('')}
+  h += `<h2>${hic('calendario')} Otras tareas que se repiten</h2><div class="card">${rest.length ? '' : empty('lg-brain', 'Sin otras tareas', 'Sumá las cosas que se repiten cada tantos días, como regar, y la app te avisa cuándo toca.', '', true)}${rest.map(rec).join('')}
     <div class="btns"><button class="add" onclick="A.taskForm()">Nueva tarea</button></div></div>`;
 
   h += vDaniela(true);
@@ -2095,7 +2137,7 @@ function swipeSheet(){
   if(go === 'anotar' && me && me !== 'daniela') setTimeout(() => A.itemForm(null, storeFilter !== 'todos' ? storeFilter : 'super'), 200);
   else setTimeout(maybeNews, 1600);
   setTimeout(() => { const sp = $('#splash'); sp.classList.add('out'); setTimeout(() => sp.remove(), 600); }, 1400);
-  if(!me) A.open(`<div class="welcome"><img src="cover.jpg" alt=""></div><h3>¡Bienvenido/a! 🏡</h3><p class="muted">Para que se vea quién hace qué, elegí quién usa este teléfono:</p>
+  if(!me) A.open(`<div class="welcome"><img src="logo-camion.png" alt=""></div><h3>¡Bienvenido/a! 🏡</h3><p class="muted">Para que se vea quién hace qué, elegí quién usa este teléfono:</p>
     ${['gonzalo','dani','daniela'].map(p => `<button class="b" style="display:flex;align-items:center;gap:10px;width:100%;margin:6px 0;text-align:left;min-height:52px" onclick="A.setMe('${p}')">${AV(p)}<span><b>${M[p].n}</b> — ${M[p].r}</span></button>`).join('')}`);
   connect();
   addEventListener('online', renderSync); addEventListener('offline', renderSync);

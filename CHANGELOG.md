@@ -1,5 +1,19 @@
 # Novedades de Carga Mental
 
+## v1.33.0 — 2026-11-27
+- Pedido de Gonzalo (27/11): usar el logo del camión con el cerebro en más lugares, por separado y en distintos tamaños, con un trabajo de diseño profesional.
+  - Logo con fondo transparente (`logo-camion.png`, recortado de la portada) para usarlo sobre blanco, azul o modo oscuro.
+  - Marca vectorial propia en tres piezas (marca completa, camión y cerebro), que cambian de color con el tema y se ven nítidas en cualquier tamaño.
+  - Portada animada: el camión llega manejando sobre una ruta punteada y después aparece el nombre.
+  - Hoy: nueva tarjeta «La carga de hoy». El cerebro del camión crece con los pendientes de la casa: «Camión liviano» (0), «Carga liviana» (1 a 3), «Carga normal» (4 a 7) y «Carga pesada» (8 o más), con el texto «Conviene repartir entre los dos».
+  - Novedades: el camión avanza por la barra de progreso hacia las 100 mejoras y la hoja lleva el logo.
+  - Pantallas vacías: «Nada pendiente para vos» usa el camión vacío y «Sin otras tareas» el cerebro.
+  - Ícono de la app (adaptable de Android): fondo azul con el camión centrado en la zona segura (`icon-maskable-512.png`); los íconos de siempre quedan para los navegadores que no usan el adaptable.
+  - Imagen para compartir el link (`og.jpg`, 1200×630): logo, nombre y lema. Las demás metaetiquetas del `<head>` quedan como estaban.
+  - Guía de marca (`marca.html`): idea, logo principal, versión vectorial, piezas por separado y tamaños, los cuatro niveles de carga, paleta, espacio mínimo, qué sí y qué no, y dónde aparece cada cosa. Abre en https://gpereira-ucip.github.io/carga-mental/marca.html
+- Estructura de datos: sin cambios (SCHEMA sigue en 7); solo vista y recursos gráficos. Sin movimiento si el sistema pide menos animaciones.
+- Pruebas: la portada usa el camión animado y se cierra sola, símbolos de la marca, que se sirvan el logo, el og.jpg y el ícono adaptable, manifest con ambos tipos de ícono, metaetiquetas del head, niveles de la tarjeta (0, 1 a 3, 4 a 7, 8 o más), tarjeta dentro de la pantalla, pantallas vacías con marca, camión sobre la barra de Novedades y 390 px en claro y oscuro.
+
 ## v1.32.0 — 2026-11-27
 - Ítem 49 del plan: reasignación por guardia. En la hoja «🔁 Turnos y guardias» de una tarea (botón debajo de la tarea) hay una casilla: «Si Gonzalo está de guardia (lunes, viernes y martes de noche), la hace Dani ese día». Esos días la tarea aparece en Hoy a nombre de Dani con el aviso «cubre Dani por la guardia de Gonzalo». Si Dani la marca como hecha, se anota (con un «¡Gracias, Dani! 💙») y en Hoy aparece «🤝 Dani cubrió 1 tarea por tus guardias. Cuando puedas, devolvele una» con el botón «Devolví una» para compensar otro día; el contador nunca baja de cero. Los días sin guardia, o si la hace Gonzalo, no se anota nada.
 - Regla de guardia usada: lunes (desde las 16 h), viernes (hasta las 20 h) y martes solo si esa semana está marcada «guardia el martes de noche»; el jueves de noche (desde las 20 h) no cuenta como día completo. Se puede ajustar si Gonzalo lo prefiere distinto.

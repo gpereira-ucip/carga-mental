@@ -24,6 +24,7 @@ Levanta un servidor local, abre la app en un celular simulado (390x844) y recorr
   18. v1.16.0: ideas y antojos (migración al esquema 5).
   19. v1.17.0: snacks de Joaco (documento opcional checks.snacks, sin migración).
   20. v1.18.0: compartir lista (WhatsApp, menú nativo, copiar), sin migración.
+  28. v1.33.0: marca (camión con cerebro) en vectores, tarjeta «La carga de hoy», portada animada, ícono adaptable y og.jpg (sin datos nuevos).
   27. v1.32.0: Dani cubre las guardias de Gonzalo y compensación (campo guard y checks.favor, sin migración).
   26. v1.31.0: rotación de responsables por semana (campo opcional rot, sin migración).
   25. v1.30.0: posponer una tarea (campo opcional snooze, sin migración).
@@ -800,7 +801,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---------- 10. v1.7.0: aviso anticipado («se acaba en 2 días») ----------
-    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.32.0');"
+    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.33.0');"
               " if(!localStorage.getItem('cm_data')){ const d = %s; d._v = 7; d.tpls = {}; d.ideas = {}; d.checks.m6 = {id:'m6'}; d.checks.m7 = {id:'m7'}; d.tasks.t_ropajoaco = {id:'t_ropajoaco', kind:'cycle', name:'Ropa de Joaco', icon:'🎽', owner:'ambos', steps:['Uniforme','Educación física','En la mochila'], cur:{}, lastDone:null, ord:8, grp:'diaria'}; Object.values(d.tasks || {}).forEach(t => { if(!t.grp) t.grp = t.kind === 'cycle' ? 'diaria' : (t.id === 't_orden' ? 'orden' : 'otra'); }); Object.values(d.items).forEach(i => i.auto = true);"
               " localStorage.setItem('cm_pre', JSON.stringify(d)); localStorage.setItem('cm_data', JSON.stringify(d)); }") % json.dumps(V15)
     for scheme in ['light', 'dark']:
@@ -936,7 +937,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---- v1.12.0: plantillas de pedido (migración al esquema 4) ----
-    init18 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.32.0');"
+    init18 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.33.0');"
               " if(!localStorage.getItem('cm_data')){ const d = %s; d._v = 3; Object.values(d.items).forEach(i => i.auto = true);"
               " localStorage.setItem('cm_pre', JSON.stringify(d)); localStorage.setItem('cm_data', JSON.stringify(d)); }") % json.dumps(V15)
     for scheme in ['light', 'dark']:
@@ -1282,7 +1283,7 @@ with sync_playwright() as p:
     V5['tasks']['t_orden'] = {'id':'t_orden','kind':'rec','name':'Orden general (cocina y living)','icon':'🧺','owner':'ambos','every':1,'last':1762000000000,'ord':3}
     V5['areas']['a_salud'] = {'id':'a_salud','name':'Turnos médicos y odontología de Joaco','owner':'gonzalo'}
     V5['areas']['a_orden'] = {'id':'a_orden','name':'Orden general','owner':'ambos'}
-    init20 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.32.0');"
+    init20 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.33.0');"
               " if(!sessionStorage.getItem('s20')){ sessionStorage.setItem('s20','1'); localStorage.setItem('cm_data', %s); }") % json.dumps(json.dumps(V5))
     for scheme in ['light', 'dark']:
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init20)
@@ -1419,7 +1420,7 @@ with sync_playwright() as p:
 
     # ---- v1.24.0: ropa de Joaco aparte (ítem 43), migración al esquema 7 ----
     V6 = json.loads(json.dumps(con_m6(V15))); V6['tasks'].pop('t_ropajoaco', None); V6['checks'].pop('m7', None); V6['_v'] = 6; V6['tpls'] = {}; V6['ideas'] = {}
-    init24 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.32.0');"
+    init24 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.33.0');"
               " if(!sessionStorage.getItem('s24')){ sessionStorage.setItem('s24','1'); localStorage.setItem('cm_data', %s); }") % json.dumps(json.dumps(V6))
     for scheme in ['light', 'dark']:
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init24)
@@ -1451,7 +1452,7 @@ with sync_playwright() as p:
 
     # ---- v1.25.0: ropa de la semana de Joaco (sin migración) ----
     V7 = json.loads(json.dumps(con_m6(V15))); V7['_v'] = 7; V7['tpls'] = {}; V7['ideas'] = {}
-    init25 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.32.0');"
+    init25 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.33.0');"
               " if(!sessionStorage.getItem('s25')){ sessionStorage.setItem('s25','1'); localStorage.setItem('cm_data', %s); }") % json.dumps(json.dumps(V7))
     for scheme in ['light', 'dark']:
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init25)
@@ -1475,7 +1476,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---- v1.26.0: tareas en días fijos (ítem 44, sin migración) ----
-    init26 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.32.0');"
+    init26 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.33.0');"
               " if(!sessionStorage.getItem('s26')){ sessionStorage.setItem('s26','1'); localStorage.setItem('cm_data', %s); }") % json.dumps(json.dumps(V7))
     for scheme in ['light', 'dark']:
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init26)
@@ -1533,7 +1534,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---- v1.27.0: tareas de una sola vez con fecha límite (ítem 45, sin migración) ----
-    init27 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.32.0');"
+    init27 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.33.0');"
               " if(!sessionStorage.getItem('s27')){ sessionStorage.setItem('s27','1'); localStorage.setItem('cm_data', %s); }") % json.dumps(json.dumps(V7))
     for scheme in ['light', 'dark']:
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init27)
@@ -1589,7 +1590,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---- v1.28.0: botones renovados (solo estilos) ----
-    ctx = b.new_context(viewport={'width': 390, 'height': 844}); ctx.add_init_script(init27.replace('1.27.0', '1.32.0').replace('s27', 's28')); pg = ctx.new_page()
+    ctx = b.new_context(viewport={'width': 390, 'height': 844}); ctx.add_init_script(init27.replace('1.27.0', '1.33.0').replace('s27', 's28')); pg = ctx.new_page()
     pg.on('pageerror', lambda e: errs.append(f'[v1.28.0] JS: {e}'))
     pg.on('console', lambda m: errs.append(f'[v1.28.0] consola: {m.text}') if m.type == 'error' else None)
     pg.goto(URL); pg.wait_for_timeout(1500); pg.evaluate("A.go('casa'); render()"); pg.wait_for_timeout(300)
@@ -1603,7 +1604,7 @@ with sync_playwright() as p:
 
     # ---- v1.29.0: subtareas (ítem 46, sin migración) ----
     for scheme in ['light', 'dark']:
-        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init27.replace('1.27.0', '1.32.0').replace('s27', 's29')); pg = ctx.new_page()
+        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init27.replace('1.27.0', '1.33.0').replace('s27', 's29')); pg = ctx.new_page()
         pg.on('pageerror', lambda e: errs.append(f'[v1.29.0] JS: {e}'))
         pg.on('console', lambda m: errs.append(f'[v1.29.0] consola: {m.text}') if m.type == 'error' else None)
         pg.goto(URL); pg.wait_for_timeout(1500)
@@ -1642,7 +1643,7 @@ with sync_playwright() as p:
 
     # ---- v1.30.0: posponer una tarea (ítem 47, sin migración) ----
     for scheme in ['light', 'dark']:
-        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init27.replace('1.27.0', '1.32.0').replace('s27', 's30')); pg = ctx.new_page()
+        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init27.replace('1.27.0', '1.33.0').replace('s27', 's30')); pg = ctx.new_page()
         pg.on('pageerror', lambda e: errs.append(f'[v1.30.0] JS: {e}'))
         pg.on('console', lambda m: errs.append(f'[v1.30.0] consola: {m.text}') if m.type == 'error' else None)
         pg.goto(URL); pg.wait_for_timeout(1500)
@@ -1686,7 +1687,7 @@ with sync_playwright() as p:
 
     # ---- v1.31.0: rotación de responsables (ítem 48, sin migración) ----
     for scheme in ['light', 'dark']:
-        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init27.replace('1.27.0', '1.32.0').replace('s27', 's31')); pg = ctx.new_page()
+        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init27.replace('1.27.0', '1.33.0').replace('s27', 's31')); pg = ctx.new_page()
         pg.on('pageerror', lambda e: errs.append(f'[v1.31.0] JS: {e}'))
         pg.on('console', lambda m: errs.append(f'[v1.31.0] consola: {m.text}') if m.type == 'error' else None)
         pg.goto(URL); pg.wait_for_timeout(1500)
@@ -1724,7 +1725,7 @@ with sync_playwright() as p:
     # ---- v1.32.0: reasignación por guardia (ítem 49, sin migración) ----
     FAKE = """(y, m, d, h) => { const R = window.__R || (window.__R = Date), t = new R(y, m, d, h).getTime(); globalThis.Date = class extends R { constructor(...a){ if(a.length) super(...a); else super(t); } static now(){ return t; } }; }"""
     for scheme in ['light', 'dark']:
-        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init27.replace('1.27.0', '1.32.0').replace('s27', 's32')); pg = ctx.new_page()
+        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init27.replace('1.27.0', '1.33.0').replace('s27', 's32')); pg = ctx.new_page()
         pg.on('pageerror', lambda e: errs.append(f'[v1.32.0] JS: {e}'))
         pg.on('console', lambda m: errs.append(f'[v1.32.0] consola: {m.text}') if m.type == 'error' else None)
         pg.goto(URL); pg.wait_for_timeout(1500)
@@ -1764,6 +1765,45 @@ with sync_playwright() as p:
         pg.evaluate("globalThis.Date = window.__R")
         d0 = json.loads(json.dumps(S(pg))); d0['checks'].pop('favor', None); d0['tasks'][RT] = V7['tasks'][RT]; d0['log'] = V7['log']
         check(d0 == V7, 'v1.32.0: la guardia tocó otros datos')
+        ctx.close()
+
+    # ---- v1.33.0: marca (camión con cerebro) por toda la app ----
+    for scheme in ['light', 'dark']:
+        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init27.replace('1.27.0', '1.33.0').replace('s27', 's33')); pg = ctx.new_page()
+        pg.on('pageerror', lambda e: errs.append(f'[v1.33.0] JS: {e}'))
+        pg.on('console', lambda m: errs.append(f'[v1.33.0] consola: {m.text}') if m.type == 'error' else None)
+        pg.goto(URL); pg.wait_for_timeout(500)
+        sp = pg.evaluate("(() => { const i = document.querySelector('#splash img.tk'); return i ? i.getAttribute('src') : null; })()")
+        check(sp == 'logo-camion.png', 'v1.33.0: la portada no usa el camión animado')
+        pg.screenshot(path=f'/tmp/cm-v1330-splash-{scheme}.png'); width_ok(pg, 'v1.33.0 portada')
+        pg.wait_for_timeout(2200)
+        check(pg.locator('#splash').count() == 0, 'v1.33.0: la portada no se cierra sola')
+        check(pg.evaluate("['lg-mark','lg-brain','lg-truck'].every(i => !!document.getElementById(i))"), 'v1.33.0: faltan símbolos de la marca')
+        # recursos publicados
+        for f, ct in [('logo-camion.png', 'image/png'), ('og.jpg', 'image/jpeg'), ('icon-maskable-512.png', 'image/png')]:
+            r = pg.request.get(URL + f); check(r.ok and ct in r.headers.get('content-type', '') and len(r.body()) > 5000, f'v1.33.0: no se sirve {f}')
+        man = json.loads(pg.request.get(URL + 'manifest.json').text())
+        check(any(i.get('purpose') == 'maskable' and i['src'] == 'icon-maskable-512.png' for i in man['icons']) and any(i.get('purpose') == 'any' for i in man['icons']), 'v1.33.0: manifest sin ícono adaptable')
+        check(pg.evaluate("document.querySelector('meta[property=\"og:image\"]').content.endsWith('/og.jpg') && !!document.querySelector('meta[name=description]') && !!document.querySelector('meta[property=\"og:title\"]') && !!document.querySelector('meta[property=\"og:description\"]')"), 'v1.33.0: metaetiquetas del head')
+        check("'logo-camion.png'" in open(os.path.join(ROOT, 'sw.js'), encoding='utf-8').read(), 'v1.33.0: sw.js no precachea el logo')
+        # tarjeta «La carga de hoy»
+        lv = pg.evaluate("[0, 1, 3, 4, 7, 8, 20].map(n => { const d = document.createElement('div'); d.innerHTML = heroCard(n, 1); const c = d.firstChild; return [c.dataset.lv, c.querySelectorAll('use').length, c.innerText]; })")
+        check([x[0] for x in lv] == ['0', '1', '1', '2', '2', '3', '3'] and [x[1] for x in lv] == [1, 2, 2, 2, 2, 2, 2], f'v1.33.0: niveles de la carga mal {lv}')
+        pg.evaluate("A.go('hoy'); render()"); pg.wait_for_timeout(900)
+        hc = pg.locator('#heroCard'); check(hc.count() == 1 and 'pendiente' in hc.inner_text(), 'v1.33.0: Hoy no tiene la tarjeta de la carga')
+        check(pg.locator('#heroCard').bounding_box()['x'] >= 0 and pg.locator('#heroCard').bounding_box()['width'] <= 390, 'v1.33.0: la tarjeta se sale de pantalla')
+        pg.screenshot(path=f'/tmp/cm-v1330-hoy-{scheme}.png', full_page=True); width_ok(pg, 'v1.33.0 hoy')
+        # pantallas vacías con marca
+        check('class="lg truck' in pg.evaluate("empty('lg-truck', 'a', 'b')") and 'class="ic' in pg.evaluate("empty('tetoca', 'a', 'b')"), 'v1.33.0: empty() no dibuja la marca')
+        pg.evaluate("A.go('casa'); render()"); pg.wait_for_timeout(300)
+        check(pg.locator('.empty .lg.brain').count() == 1, 'v1.33.0: «Sin otras tareas» sin cerebro')
+        pg.screenshot(path=f'/tmp/cm-v1330-casa-{scheme}.png', full_page=True); width_ok(pg, 'v1.33.0 casa')
+        # Novedades: el camión recorre la barra
+        pg.evaluate("A.news()"); pg.wait_for_timeout(500)
+        rd = pg.locator('.rider'); bb = rd.bounding_box(); bar = pg.locator('.prog .bar').bounding_box()
+        check(rd.count() == 1 and bb['y'] + bb['height'] <= bar['y'] + 2 and bar['x'] - 4 <= bb['x'] + bb['width'] <= bar['x'] + bar['width'] + 4, f'v1.33.0: el camión no está sobre la barra {bb} {bar}')
+        check(pg.locator('.newshero img').evaluate("i => i.naturalWidth") > 100, 'v1.33.0: no carga el logo en Novedades')
+        pg.screenshot(path=f'/tmp/cm-v1330-novedades-{scheme}.png'); width_ok(pg, 'v1.33.0 novedades')
         ctx.close()
 
     b.close()
