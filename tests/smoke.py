@@ -57,6 +57,14 @@ def sin_v15(d):
     return d
 
 def con_m6(d):
+    """Datos viejos + lo que hacen las migraciones 6 (v1.20.0) y 7 (v1.24.0), para comparar."""
+    d = con_m6_solo(d); ch = d.setdefault('checks', {})
+    if 'm7' not in ch:
+        d.setdefault('tasks', {}).setdefault('t_ropajoaco', {'id':'t_ropajoaco','kind':'cycle','name':'Ropa de Joaco','icon':'🎽','owner':'ambos','steps':['Uniforme','Educación física','En la mochila'],'cur':{},'lastDone':None,'ord':8,'grp':'diaria'})
+        ch['m7'] = {'id':'m7'}
+    return d
+
+def con_m6_solo(d):
     """Aplica a datos viejos lo que hace la migración 6 (v1.20.0), para comparar."""
     d = json.loads(json.dumps(d)); t = d.setdefault('tasks', {}); a = d.setdefault('areas', {}); ch = d.setdefault('checks', {}); sa = d.setdefault('salud', {})
     for x in t.values():
@@ -569,14 +577,14 @@ with sync_playwright() as p:
         pg.goto(URL); pg.wait_for_timeout(2200)
         d = S(pg)
         # Migración 1 → 2: nada se pierde, queda copia y se completan los campos nuevos
-        check(d['_v'] == 6, f"v1.5: _v={d['_v']} (esperaba 6)")
+        check(d['_v'] == 7, f"v1.5: _v={d['_v']} (esperaba 6)")
         check(sin_v15(d) == sin_v15(con_m6(V12)), 'v1.5: la migración cambió o perdió datos de v1.4.0')
         check(json.loads(pg.evaluate('localStorage.getItem("cm_backup_v1")') or 'null') == V12, 'v1.5: no quedó la copia cm_backup_v1 idéntica')
         it = d['items']
         check(it['i_agua']['cat'] == 'bebidas' and it['i_mio']['cat'] == 'frescos' and it['i_huerfano']['cat'] == 'almacen', f"v1.5: categorías mal asignadas {[x['cat'] for x in it.values()]}")
         check(all(x['qty'] is None and x['unit'] == '' for x in it.values()), 'v1.5: cantidad/unidad iniciales')
         check(it['i_mio']['hist'] == [{'at': 1762000000000, 'by': None}] and it['i_agua']['hist'] == [], f"v1.5: historial inicial {it['i_mio']['hist']}")
-        check(pg.locator('#sheet >> text=42/100').count() > 0, 'v1.5: Novedades no muestra 42/100')
+        check(pg.locator('#sheet >> text=43/100').count() > 0, 'v1.5: Novedades no muestra 43/100')
         pg.screenshot(path=f'/tmp/cm-v15-novedades-{scheme}.png')
         pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
         pg.reload(); pg.wait_for_timeout(1800)
@@ -709,13 +717,13 @@ with sync_playwright() as p:
         pg.goto(URL); pg.wait_for_timeout(2200)
         d = S(pg); pre = json.loads(pg.evaluate('localStorage.getItem("cm_pre")'))
         # Migración 2 → 3: solo agrega «auto», no cambia «every» ni nada más, y deja copia
-        check(d['_v'] == 6, f"v1.6: _v={d['_v']} (esperaba 6)")
+        check(d['_v'] == 7, f"v1.6: _v={d['_v']} (esperaba 6)")
         check(all(x.get('auto') is True for x in d['items'].values()), 'v1.6: la migración no puso auto=true')
         d0 = json.loads(json.dumps(d)); d0['_v'] = 2; d0.pop('tpls', None); d0.pop('ideas', None)
         for x in d0['items'].values(): x.pop('auto', None)
         check(d0 == con_m6(pre), 'v1.6: la migración cambió o perdió datos de v1.5.0')
         check(json.loads(pg.evaluate('localStorage.getItem("cm_backup_v2")') or 'null') == pre, 'v1.6: no quedó la copia cm_backup_v2 idéntica')
-        check(pg.locator('#sheet >> text=42/100').count() > 0, 'v1.6: Novedades no se abrió con 42/100')
+        check(pg.locator('#sheet >> text=43/100').count() > 0, 'v1.6: Novedades no se abrió con 43/100')
         pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
         # Cálculo del promedio
         calc = pg.evaluate("""() => { const D = 86400000, t = 1e12, h = a => ({hist: a.map(n => ({at: t + n * D}))});
@@ -786,8 +794,8 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---------- 10. v1.7.0: aviso anticipado («se acaba en 2 días») ----------
-    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.23.0');"
-              " if(!localStorage.getItem('cm_data')){ const d = %s; d._v = 6; d.tpls = {}; d.ideas = {}; d.checks.m6 = {id:'m6'}; Object.values(d.tasks || {}).forEach(t => { if(!t.grp) t.grp = t.kind === 'cycle' ? 'diaria' : (t.id === 't_orden' ? 'orden' : 'otra'); }); Object.values(d.items).forEach(i => i.auto = true);"
+    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.24.0');"
+              " if(!localStorage.getItem('cm_data')){ const d = %s; d._v = 7; d.tpls = {}; d.ideas = {}; d.checks.m6 = {id:'m6'}; d.checks.m7 = {id:'m7'}; d.tasks.t_ropajoaco = {id:'t_ropajoaco', kind:'cycle', name:'Ropa de Joaco', icon:'🎽', owner:'ambos', steps:['Uniforme','Educación física','En la mochila'], cur:{}, lastDone:null, ord:8, grp:'diaria'}; Object.values(d.tasks || {}).forEach(t => { if(!t.grp) t.grp = t.kind === 'cycle' ? 'diaria' : (t.id === 't_orden' ? 'orden' : 'otra'); }); Object.values(d.items).forEach(i => i.auto = true);"
               " localStorage.setItem('cm_pre', JSON.stringify(d)); localStorage.setItem('cm_data', JSON.stringify(d)); }") % json.dumps(V15)
     for scheme in ['light', 'dark']:
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init17)
@@ -858,7 +866,7 @@ with sync_playwright() as p:
         pg.on('console', lambda m: errs.append(f'[v1.10] consola: {m.text}') if m.type == 'error' else None)
         pg.goto(URL); pg.wait_for_timeout(1500)
         pre = json.loads(pg.evaluate('localStorage.getItem("cm_pre")')); check(S(pg) == pre, 'v1.10: los datos cambiaron al abrir (sin migración, SCHEMA sigue en 3)')
-        check(pg.evaluate('SCHEMA') == 6, 'v1.10: SCHEMA cambió')
+        check(pg.evaluate('SCHEMA') == 7, 'v1.10: SCHEMA cambió')
         r = pg.evaluate("[parsePrice('1500'), parsePrice('1.500'), parsePrice('$ 1.234,50'), parsePrice('12,5'), parsePrice(''), parsePrice('0'), parsePrice('abc'), fmoney(1234567), fmoney(999)]")
         check(r == [1500, 1500, 1234.5, 12.5, None, None, None, '$1.234.567', '$999'], f'v1.10: parsePrice/fmoney {r}')
         pg.evaluate("""(() => { ['i_agua','i_leche','i_pan'].forEach(k => { if(S.items[k]){ S.items[k].state = 'list'; S.items[k].by = 'dani'; delete S.items[k].price; } }); save(); A.go('compras'); storeFilter = 'todos'; render(); })()""")
@@ -922,7 +930,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---- v1.12.0: plantillas de pedido (migración al esquema 4) ----
-    init18 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.23.0');"
+    init18 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.24.0');"
               " if(!localStorage.getItem('cm_data')){ const d = %s; d._v = 3; Object.values(d.items).forEach(i => i.auto = true);"
               " localStorage.setItem('cm_pre', JSON.stringify(d)); localStorage.setItem('cm_data', JSON.stringify(d)); }") % json.dumps(V15)
     for scheme in ['light', 'dark']:
@@ -932,7 +940,7 @@ with sync_playwright() as p:
         pg.on('console', lambda m: errs.append(f'[v1.12] consola: {m.text}') if m.type == 'error' else None)
         pg.goto(URL); pg.wait_for_timeout(1500)
         pre = json.loads(pg.evaluate('localStorage.getItem("cm_pre")')); d = S(pg)
-        check(d['_v'] == 6, 'v1.12: no pasó al esquema 6')
+        check(d['_v'] == 7, 'v1.12: no pasó al esquema 6')
         pm = con_m6(pre); check(all(d[c] == pm[c] for c in pm if c not in ('_v', 'tpls')), 'v1.12: la migración tocó datos existentes')
         check(json.loads(pg.evaluate('localStorage.getItem("cm_backup_v3")')) == pre, 'v1.12: la copia cm_backup_v3 no es idéntica')
         tp = d['tpls']; check('tp_super' in tp, f'v1.12: plantillas de fábrica {list(tp)}')
@@ -1109,7 +1117,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---- v1.16.0: ideas y antojos (esquema 5) ----
-    init19 = init17.replace("d._v = 6; d.tpls = {}; d.ideas = {}; d.checks.m6 = {id:'m6'}; Object.values(d.tasks || {}).forEach(t => { if(!t.grp) t.grp = t.kind === 'cycle' ? 'diaria' : (t.id === 't_orden' ? 'orden' : 'otra'); });", "d._v = 4; d.tpls = {};")
+    init19 = init17.replace("d._v = 7; d.tpls = {}; d.ideas = {}; d.checks.m6 = {id:'m6'}; d.checks.m7 = {id:'m7'}; d.tasks.t_ropajoaco = {id:'t_ropajoaco', kind:'cycle', name:'Ropa de Joaco', icon:'🎽', owner:'ambos', steps:['Uniforme','Educación física','En la mochila'], cur:{}, lastDone:null, ord:8, grp:'diaria'}; Object.values(d.tasks || {}).forEach(t => { if(!t.grp) t.grp = t.kind === 'cycle' ? 'diaria' : (t.id === 't_orden' ? 'orden' : 'otra'); });", "d._v = 4; d.tpls = {};")
     for scheme in ['light', 'dark']:
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init19)
         pg = ctx.new_page()
@@ -1117,7 +1125,7 @@ with sync_playwright() as p:
         pg.on('console', lambda m: errs.append(f'[v1.16.0] consola: {m.text}') if m.type == 'error' else None)
         pg.goto(URL); pg.wait_for_timeout(1500)
         pre = json.loads(pg.evaluate('localStorage.getItem("cm_pre")')); d = S(pg)
-        check(d['_v'] == 6 and d.get('ideas') == {}, 'v1.16.0: la migración 5 no agregó ideas vacías')
+        check(d['_v'] == 7 and d.get('ideas') == {}, 'v1.16.0: la migración 5 no agregó ideas vacías')
         d0 = json.loads(json.dumps(d)); d0['_v'] = 4; d0.pop('ideas', None)
         check(d0 == con_m6(pre), 'v1.16.0: la migración cambió o perdió datos')
         check(json.loads(pg.evaluate('localStorage.getItem("cm_backup_v4")') or 'null') == pre, 'v1.16.0: no quedó la copia cm_backup_v4 idéntica')
@@ -1268,7 +1276,7 @@ with sync_playwright() as p:
     V5['tasks']['t_orden'] = {'id':'t_orden','kind':'rec','name':'Orden general (cocina y living)','icon':'🧺','owner':'ambos','every':1,'last':1762000000000,'ord':3}
     V5['areas']['a_salud'] = {'id':'a_salud','name':'Turnos médicos y odontología de Joaco','owner':'gonzalo'}
     V5['areas']['a_orden'] = {'id':'a_orden','name':'Orden general','owner':'ambos'}
-    init20 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.23.0');"
+    init20 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.24.0');"
               " if(!sessionStorage.getItem('s20')){ sessionStorage.setItem('s20','1'); localStorage.setItem('cm_data', %s); }") % json.dumps(json.dumps(V5))
     for scheme in ['light', 'dark']:
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init20)
@@ -1277,7 +1285,7 @@ with sync_playwright() as p:
         pg.on('console', lambda m: errs.append(f'[v1.20.0] consola: {m.text}') if m.type == 'error' else None)
         pg.goto(URL); pg.wait_for_timeout(1500)
         d = S(pg)
-        check(d['_v'] == 6, 'v1.20.0: no pasó al esquema 6')
+        check(d['_v'] == 7, 'v1.20.0: no pasó al esquema 6')
         check(json.loads(pg.evaluate('localStorage.getItem("cm_backup_v5")') or 'null') == V5, 'v1.20.0: no quedó la copia cm_backup_v5 idéntica')
         check('t_fert' not in d['tasks'], 'v1.20.0: sigue «Fertilizar el limonero»')
         check(d['tasks']['t_orden']['name'] == 'Orden de la cocina' and d['tasks']['t_orden']['last'] == 1762000000000, 'v1.20.0: el orden de la cocina perdió su registro')
@@ -1324,7 +1332,7 @@ with sync_playwright() as p:
         pg.on('console', lambda m: errs.append(f'[v1.21.0] consola: {m.text}') if m.type == 'error' else None)
         pg.goto(URL); pg.wait_for_timeout(1500)
         pre = json.loads(pg.evaluate('localStorage.getItem("cm_pre")')); check(S(pg) == pre, 'v1.21.0: los datos cambiaron al abrir')
-        check(pg.evaluate("SCHEMA") == 6, 'v1.21.0: no debería haber migración nueva')
+        check(pg.evaluate("SCHEMA") == 7, 'v1.21.0: no debería haber migración nueva')
         hid = pg.evaluate("(() => { let i = Object.values(S.items).find(i => /huevo/i.test(i.name)); if(!i){ i = newItem('Huevos de campo', 'naturista'); S.items[i.id] = i; } i.state = 'list'; save(); A.go('compras'); render(); return i.id; })()"); pg.wait_for_timeout(300)
         pg.evaluate(f"A.itemForm('{hid}')"); pg.wait_for_timeout(300)
         check(pg.locator('#f_qual').count() == 1 and pg.locator('#f_where').count() == 1, 'v1.21.0: faltan los campos de calidad y dónde')
@@ -1357,7 +1365,7 @@ with sync_playwright() as p:
         pg.on('console', lambda m: errs.append(f'[v1.22.0] consola: {m.text}') if m.type == 'error' else None)
         pg.goto(URL); pg.wait_for_timeout(1500)
         pre = json.loads(pg.evaluate('localStorage.getItem("cm_pre")')); check(S(pg) == pre, 'v1.22.0: los datos cambiaron al abrir')
-        check(pg.evaluate("SCHEMA") == 6, 'v1.22.0: no debería haber migración nueva')
+        check(pg.evaluate("SCHEMA") == 7, 'v1.22.0: no debería haber migración nueva')
         pg.evaluate("A.go('hoy'); render()"); pg.wait_for_timeout(300)
         pg.evaluate("S.tasks.t_lava.cur = {}; render()"); pg.wait_for_timeout(300)
         card = pg.locator('#lavaCard'); check(card.count() == 1, 'v1.22.0: falta la tarjeta del lavavajillas')
@@ -1382,7 +1390,7 @@ with sync_playwright() as p:
         pg.on('console', lambda m: errs.append(f'[v1.23.0] consola: {m.text}') if m.type == 'error' else None)
         pg.goto(URL); pg.wait_for_timeout(1500)
         pre = json.loads(pg.evaluate('localStorage.getItem("cm_pre")')); check(S(pg) == pre, 'v1.23.0: los datos cambiaron al abrir')
-        check(pg.evaluate("SCHEMA") == 6, 'v1.23.0: no debería haber migración nueva')
+        check(pg.evaluate("SCHEMA") == 7, 'v1.23.0: no debería haber migración nueva')
         pg.evaluate("S.tasks.t_ropa = seed().tasks.t_ropa; save()")
         pg.evaluate("A.go('casa'); render()"); pg.wait_for_timeout(300)
         btn = pg.locator('button:has-text("+ Otra carga")'); check(btn.count() == 1, 'v1.23.0: falta + Otra carga')
@@ -1402,6 +1410,38 @@ with sync_playwright() as p:
         pg.evaluate("A.loadDel('t_ropa',1)"); pg.evaluate("A.loadDel('t_ropa',0)"); pg.wait_for_timeout(300)
         check('more' not in S(pg)['tasks']['t_ropa'], 'v1.23.0: no quitó las cargas')
         width_ok(pg, 'v1.23.0 final'); ctx.close()
+
+    # ---- v1.24.0: ropa de Joaco aparte (ítem 43), migración al esquema 7 ----
+    V6 = json.loads(json.dumps(con_m6(V15))); V6['tasks'].pop('t_ropajoaco', None); V6['checks'].pop('m7', None); V6['_v'] = 6; V6['tpls'] = {}; V6['ideas'] = {}
+    init24 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.24.0');"
+              " if(!sessionStorage.getItem('s24')){ sessionStorage.setItem('s24','1'); localStorage.setItem('cm_data', %s); }") % json.dumps(json.dumps(V6))
+    for scheme in ['light', 'dark']:
+        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init24)
+        pg = ctx.new_page()
+        pg.on('pageerror', lambda e: errs.append(f'[v1.24.0] JS: {e}'))
+        pg.on('console', lambda m: errs.append(f'[v1.24.0] consola: {m.text}') if m.type == 'error' else None)
+        pg.goto(URL); pg.wait_for_timeout(1500)
+        d = S(pg)
+        check(d['_v'] == 7 and pg.evaluate('SCHEMA') == 7, 'v1.24.0: no pasó al esquema 7')
+        check(json.loads(pg.evaluate('localStorage.getItem("cm_backup_v6")') or 'null') == V6, 'v1.24.0: no quedó la copia cm_backup_v6 idéntica')
+        d0 = json.loads(json.dumps(d)); d0['tasks'].pop('t_ropajoaco', None); d0['checks'].pop('m7', None)
+        check(d0 == {k: v for k, v in V6.items() if k != '_v'} | {'_v': 7}, 'v1.24.0: la migración cambió o perdió datos')
+        check('t_ropajoaco' in d['tasks'] and d['tasks']['t_ropajoaco']['steps'] == ['Uniforme', 'Educación física', 'En la mochila'], 'v1.24.0: falta la tarea Ropa de Joaco')
+        pg.evaluate("A.go('casa'); render()"); pg.wait_for_timeout(300)
+        check(pg.locator('body').inner_text().count('Ropa de Joaco') >= 1, 'v1.24.0: Casa no muestra Ropa de Joaco')
+        pg.evaluate("A.step('t_ropajoaco',0)"); pg.wait_for_timeout(300)
+        r = S(pg)['tasks']['t_ropajoaco']; check(r['cur'].get('0') and all(t.get('cur') == V6['tasks'][k].get('cur') for k, t in S(pg)['tasks'].items() if k != 't_ropajoaco'), 'v1.24.0: la etapa no quedó solo en la ropa de Joaco')
+        pg.evaluate("A.go('hoy'); render()"); pg.wait_for_timeout(300)
+        check('educación física' in pg.locator('body').inner_text().lower(), 'v1.24.0: Hoy no muestra qué falta de la ropa de Joaco')
+        pg.screenshot(path=f'/tmp/cm-v1240-hoy-{scheme}.png', full_page=True)
+        pg.evaluate("A.step('t_ropajoaco',1)"); pg.evaluate("A.step('t_ropajoaco',2)"); pg.wait_for_timeout(300)
+        r = S(pg)['tasks']['t_ropajoaco']; check(r.get('lastDone') and not r['cur'], 'v1.24.0: no cerró el ciclo')
+        pg.evaluate("A.go('casa'); render()"); pg.wait_for_timeout(300)
+        pg.screenshot(path=f'/tmp/cm-v1240-casa-{scheme}.png', full_page=True); width_ok(pg, 'v1.24.0 casa')
+        # borrar no la revive al recargar
+        pg.evaluate("del('tasks','t_ropajoaco','x')"); pg.wait_for_timeout(200); pg.reload(); pg.wait_for_timeout(1200)
+        check('t_ropajoaco' not in S(pg)['tasks'], 'v1.24.0: la tarea borrada revivió')
+        ctx.close()
 
     b.close()
 srv.shutdown()

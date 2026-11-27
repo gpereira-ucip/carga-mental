@@ -1,5 +1,10 @@
 # Novedades de Carga Mental
 
+## v1.24.0 — 2026-11-27
+- Ítem 43 del plan: la ropa de Joaco va aparte. En Casa, dentro de «Tareas diarias», hay una tarea nueva «Ropa de Joaco» (🎽) con tres etapas: Uniforme, Educación física y En la mochila, para dejar todo listo para el día. En Hoy aparece qué falta apenas se empieza (y suma al numerito de Casa). Cada etapa lleva quién y cuándo, festejo al cerrar el ciclo y «Deshacer». Se puede borrar como cualquier tarea propia.
+- Estructura de datos: SCHEMA pasa a 7. La migración 7 solo suma la tarea `t_ropajoaco` (una sola vez, marca `checks.m7`, que viaja a la nube; si se borra, no revive) y antes guarda la copia `cm_backup_v6`. No toca nada más.
+- Pruebas: migración desde el esquema 6 con copia idéntica y datos intactos, la tarea en Casa y en Hoy, etapas independientes de la ropa del lavarropas, cierre del ciclo, que no reviva al borrarla y 390 px en claro y oscuro. Pruebas viejas adaptadas al esquema 7 y a 43/100.
+
 ## v1.23.0 — 2026-11-26
 - Ítem 42 del plan: la ropa admite varias cargas a la vez. En Casa, la tarea «Ropa (lavarropas)» tiene «+ Otra carga»: cada carga extra tiene sus propias etapas (Lavar, Colgar, Doblar, Guardar), se completa por separado (con festejo y «Deshacer») y se puede quitar. En Hoy aparece qué falta de cada carga y el numerito de Casa las cuenta. La carga 1 sigue siendo la de siempre.
 - Estructura de datos: sin cambios (SCHEMA sigue en 6, sin migración): `more` ([{id, cur}]) es un campo opcional de la tarea; si falta, hay una sola carga como antes.

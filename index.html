@@ -382,10 +382,11 @@ details.fold[open] .chev{transform:rotate(90deg)}
 <script>
 'use strict';
 /* ============ Constantes ============ */
-const VERSION = '1.23.0';
-const SCHEMA = 6; // versión de la estructura de datos guardados (ver MIGRATIONS)
+const VERSION = '1.24.0';
+const SCHEMA = 7; // versión de la estructura de datos guardados (ver MIGRATIONS)
 /* Novedades: la primera es la versión actual. "hechas" = ítems del plan de 100 tildados hasta esa versión. */
 const NEWS = [
+  {v:'1.24.0', d:'2026-11-27', hechas:43, items:['Ropa de Joaco aparte: en Casa, dentro de las tareas diarias, hay una tarea nueva «Ropa de Joaco» con tres etapas (uniforme, ropa de educación física y en la mochila) para dejar todo listo para el día. En Hoy aparece qué falta apenas se empieza. Tus datos quedan como estaban: solo se suma la tarea (y si la borrás, no vuelve).']},
   {v:'1.23.0', d:'2026-11-26', hechas:42, items:['Ropa: ahora podés tener varias cargas a la vez. En Casa, «+ Otra carga» suma una carga más con sus propias etapas (lavar, colgar, doblar, guardar); cada una se completa por separado y en Hoy aparece lo que falta de cada una.']},
   {v:'1.22.0', d:'2026-11-24', hechas:41, items:['El estado del lavavajillas se ve en Hoy: «Vacío y guardado», «Cargando: falta encenderlo» o «Limpio, falta guardar», con el botón para pasar a la etapa que sigue.']},
   {v:'1.21.0', d:'2026-11-23', hechas:40, items:['Cada producto tiene ahora «Nota de calidad» (ej.: gallinas alimentadas a maíz) y «Dónde comprarlo» (ej.: el naturista de la esquina). Se ven en la lista de compras con ⭐ y 📍, el buscador los encuentra y la nota de calidad viaja en el mensaje al negocio. Los huevos nuevos arrancan con su nota de maíz.']},
@@ -643,6 +644,7 @@ function seed(){
   add('tasks', {id:'t_orden', kind:'rec', name:'Orden de la cocina', icon:'🍳', owner:'ambos', every:1, last:null, ord:3, grp:'orden'});
   add('tasks', {id:'t_riego', kind:'rec', name:'Regar el limonero', icon:'🍋', owner:'gonzalo', every:3, last:null, ord:4, grp:'otra'});
   M6_ADD.tasks.forEach(t => add('tasks', JSON.parse(JSON.stringify(t))));
+  M7_ADD.tasks.forEach(t => add('tasks', JSON.parse(JSON.stringify(t))));
 
   add('checks', {id:'mochila', date:'', done:{}, list:['Carpetas y cuadernos del día','Cartuchera','Snack','Botella de agua','Tarea hecha','Comunicados firmados','Ropa de mañana preparada']});
   add('checks', {id:'daniela', next:'', hours:'', coord:'dani', note:'Viene 1 vez por semana (a veces 2, una más corta).'});
@@ -740,8 +742,19 @@ const MIGRATIONS = {
       up.forEach(([c, o]) => remotePath(c).doc(o.id).set(clean(o)).catch(() => {}));
       dl.forEach(([c, id]) => remotePath(c).doc(id).delete().catch(() => {}));
     } catch(e) {} }
+  },
+  7(D){ // v1.23.x → esquema 7 (v1.24.0), ítem 43: «Ropa de Joaco» como tarea aparte. Solo agrega la tarea (una sola vez: marca checks.m7, así si se borra no revive).
+    if(!D.tasks || !D.checks || D.checks.m7) return;
+    const up = [];
+    M7_ADD.tasks.forEach(n => { if(!D.tasks[n.id]){ D.tasks[n.id] = JSON.parse(JSON.stringify(n)); up.push(['tasks', D.tasks[n.id]]); } });
+    D.checks.m7 = {id:'m7'}; up.push(['checks', D.checks.m7]);
+    let F = null; try { F = fs; } catch(e) {}
+    if(F){ try { up.forEach(([c, o]) => remotePath(c).doc(o.id).set(clean(o)).catch(() => {})); } catch(e) {} }
   }
 };
+const M7_ADD = {tasks:[
+  {id:'t_ropajoaco', kind:'cycle', name:'Ropa de Joaco', icon:'🎽', owner:'ambos', steps:['Uniforme','Educación física','En la mochila'], cur:{}, lastDone:null, ord:8, grp:'diaria'}
+]};
 const M6_ADD = {tasks:[
   {id:'t_hab', kind:'rec', name:'Orden de las habitaciones', icon:'🛏️', owner:'ambos', every:1, last:null, ord:6, grp:'orden'},
   {id:'t_basura', kind:'rec', name:'Sacar la basura', icon:'🗑️', owner:'ambos', every:1, last:null, ord:7, grp:'diaria'}
