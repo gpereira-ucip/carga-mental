@@ -58,7 +58,7 @@ Las marcadas 🔑 necesitan algo de Gonzalo (una cuenta, una clave, un dato). En
 - [x] 45. Tareas de una sola vez con fecha límite. — ✔ 2026-11-27 (v1.27.0)
 - [x] 46. Subtareas dentro de una tarea. — ✔ 2026-11-27 (v1.29.0)
 - [x] 47. Posponer una tarea (mañana / en 3 días). — ✔ 2026-11-27 (v1.30.0)
-- [ ] 48. Rotación automática de responsables (semanas alternas).
+- [x] 48. Rotación automática de responsables (semanas alternas). — ✔ 2026-11-27 (v1.31.0)
 - [ ] 49. Reasignación por guardia: si Gonzalo está de guardia, la tarea pasa a Dani con aviso y se compensa otro día.
 - [ ] 50. "Pedile al otro": mandar una tarea con un mensaje.
 - [ ] 51. Limonero con calendario estacional (riego verano/invierno, fertilización, poda).

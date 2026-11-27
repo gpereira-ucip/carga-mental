@@ -1,5 +1,10 @@
 # Novedades de Carga Mental
 
+## v1.31.0 — 2026-11-27
+- Ítem 48 del plan: rotación automática de responsables. Debajo de cada tarea (que se repite o de una sola vez) hay un botón «🔁 Turnos»: se elige quién la hace esta semana (Gonzalo o Dani) y «Alternar cada semana». Cada lunes la tarea pasa sola al otro; el botón pasa a decir «Alterna semanas». Tocar el nombre del responsable en una tarea con turnos abre esa hoja (en vez de ir rotando). «Siempre la misma persona» deja de alternar y conserva a quien le tocaba.
+- Estructura de datos: sin migración (SCHEMA sigue en 7). `rot` ({a, b, ref}) es un campo opcional de la tarea; `ref` es el lunes de una semana en la que le toca a `a`. El responsable de la semana se calcula igual en todos los teléfonos (una vez por día al abrir la app), así que no hay conflicto.
+- Pruebas: datos intactos al abrir, cálculo de semanas alternadas (incluido cambio de año y semanas anteriores a la referencia), guardar, la hoja desde el nombre, rotación a la semana siguiente con fecha simulada, dejar de alternar, botón ≥ 44 px, datos ajenos intactos y 390 px en claro y oscuro. Pruebas viejas adaptadas a 48/100.
+
 ## v1.30.0 — 2026-11-27
 - Ítem 47 del plan: posponer una tarea. Debajo de cada tarea (que se repite o de una sola vez) hay un botón «⏰ Posponer» que abre una hoja con «Mañana», «En 3 días», «En una semana» o una fecha a elección (no acepta hoy ni el pasado). Pospuesta, la tarea no figura como «toca», no aparece en Hoy ni suma al numerito de Casa; se ve «pospuesta hasta mañana / vie 4/12» y vuelve sola cuando llega la fecha. Se puede quitar la postergación y todo tiene «Deshacer»; marcar «Hecho» también la limpia.
 - Estructura de datos: sin migración (SCHEMA sigue en 7). `snooze` ('AAAA-MM-DD') es un campo opcional de la tarea; si falta, nada cambia.

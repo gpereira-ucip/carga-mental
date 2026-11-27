@@ -406,7 +406,8 @@ button.b.x:hover{background:var(--badbg);color:var(--bad);border-color:var(--bad
 .subs .sublink::before{content:"☰";margin-right:6px}
 .subs .sublink:nth-child(1)::before{content:"＋"}
 .subs .sublink.snz::before{content:"⏰"}
-.subs .sublink.snz{margin-left:8px}
+.subs .sublink.snz,.subs .sublink.rot{margin-left:8px}
+.subs .sublink.rot::before{content:"🔁"}
 .subs{flex-flow:row wrap}
 .subs .sr{flex:1 1 100%}
 @media (prefers-reduced-motion:reduce){button{transition:none}button:active:not(:disabled){transform:none}}
@@ -428,10 +429,11 @@ button.b.x:hover{background:var(--badbg);color:var(--bad);border-color:var(--bad
 <script>
 'use strict';
 /* ============ Constantes ============ */
-const VERSION = '1.30.0';
+const VERSION = '1.31.0';
 const SCHEMA = 7; // versión de la estructura de datos guardados (ver MIGRATIONS)
 /* Novedades: la primera es la versión actual. "hechas" = ítems del plan de 100 tildados hasta esa versión. */
 const NEWS = [
+  {v:'1.31.0', d:'2026-11-27', hechas:48, items:['Rotación de responsables: debajo de cada tarea hay un botón «🔁 Turnos». Elegís quién la hace esta semana y «Alternar cada semana»: la app cambia sola de Gonzalo a Dani (o al revés) cada lunes, así nadie tiene que acordarse de pasársela al otro. Al tocar el nombre de la persona en una tarea con turnos se abre esa misma hoja. Se puede dejar de alternar cuando quieras.']},
   {v:'1.30.0', d:'2026-11-27', hechas:47, items:['Posponer una tarea: debajo de cada tarea hay un botón «⏰ Posponer» con «Mañana», «En 3 días», «En una semana» o una fecha a elección. Mientras está pospuesta no figura como «toca» ni aparece en Hoy, se ve «pospuesta hasta…» y, cuando llega la fecha, vuelve sola. Se puede quitar la postergación y tiene «Deshacer». Marcar «Hecho» también la limpia.']},
   {v:'1.29.0', d:'2026-11-27', hechas:46, items:['Subtareas: cualquier tarea que se repite o de una sola vez puede tener una lista de pasos (por ejemplo «Llevar el auto al service»: pedir turno, juntar los papeles, llevarlo). Tocá «＋ Subtareas» debajo de la tarea para armarla; cada paso se tilda con un toque y se ve el avance (2/3). En las tareas que se repiten, al tocar «Hecho» los pasos vuelven a empezar. Tus tareas de siempre no cambian.']},
   {v:'1.28.0', d:'2026-11-27', hechas:45, items:['Botones renovados y más fáciles de entender: «Hecho» ahora es un botón azul con tilde ✓ para que se vea cuál es la acción principal, los botones de agregar («+ Nueva tarea», «+ Tarea de una vez») ocupan todo el ancho con borde punteado, «✕» es un botón redondo discreto y todos responden al toque con un pequeño hundimiento. Los botones de las hojas (Guardar, Crear) son más grandes y quedan fijos abajo.']},
@@ -967,6 +969,13 @@ const DSEL = [1, 2, 3, 4, 5, 6, 0];
 const daysTxt = ds => { const n = DSEL.filter(d => ds.includes(d)).map(d => DOWL[d]); return n.length > 1 ? n.slice(0, -1).join(', ') + ' y ' + n[n.length - 1] : n[0] || ''; };
 /* Posponer (v1.30.0): t.snooze = 'AAAA-MM-DD' (opcional). Hasta ese día la tarea no «toca» ni aparece en Hoy. */
 const snzTxt = d => { const n = daysTo(d); return n === 1 ? 'mañana' : fdate(d); };
+/* Rotación (v1.31.0): t.rot = {a, b, ref}; «ref» es el lunes (AAAA-MM-DD) de una semana en la que le toca a «a». Cada lunes pasa al otro. */
+const mondayOf = (d = new Date()) => { const m = new Date(d.getFullYear(), d.getMonth(), d.getDate()); m.setDate(m.getDate() - (m.getDay() + 6) % 7); return m; };
+const rotOwner = (t, d = new Date()) => { const r = t.rot; if(!r || !r.ref || !r.a || !r.b) return null; const w = Math.round((mondayOf(d) - parseDk(r.ref)) / (7 * DAY)); return (((w % 2) + 2) % 2) === 0 ? r.a : r.b; };
+/* Pone el responsable de la semana en cada tarea con turnos; lo calculan igual todos los teléfonos, así que da lo mismo. */
+function rotSync(){
+  let n = 0; Object.values(S.tasks || {}).forEach(t => { const o = rotOwner(t); if(o && t.owner !== o){ t.owner = o; n++; put('tasks', t, null); } }); return n;
+}
 const snoozed = t => !!t.snooze && dk() < t.snooze;
 function recDue(t){
   if(snoozed(t)) return false;
@@ -981,7 +990,7 @@ const onceSoon = t => t.kind === 'once' && !t.done && !snoozed(t) && !!t.due && 
 const onceTxt = t => !t.due ? 'sin fecha' : (n => n < 0 ? `venció hace ${-n} día${n < -1 ? 's' : ''}` : n === 0 ? 'vence hoy' : n === 1 ? 'vence mañana' : `vence en ${n} días`)(daysTo(t.due));
 /* Subtareas (v1.29.0): t.subs = [{id, text, done}] es opcional en tareas 'rec' y 'once'. Al marcar «Hecho» una tarea que se repite, los pasos se destildan. */
 const subsOf = t => Array.isArray(t.subs) ? t.subs : [];
-const subsHtml = t => { const l = subsOf(t), n = l.filter(x => x.done).length; return `<div class="subs">${l.map(x => `<button type="button" class="sr${x.done ? ' on' : ''}" aria-pressed="${!!x.done}" onclick="A.subTog('${t.id}','${x.id}')"><i class="bx">${x.done ? '✓' : ''}</i><span>${esc(x.text)}</span></button>`).join('')}<button type="button" class="b sm sublink" onclick="A.subForm('${t.id}')">${l.length ? `Editar subtareas · ${n}/${l.length}` : 'Subtareas'}</button><button type="button" class="b sm sublink snz" onclick="A.snoozeForm('${t.id}')">${snoozed(t) ? 'Pospuesta · cambiar' : 'Posponer'}</button></div>`; };
+const subsHtml = t => { const l = subsOf(t), n = l.filter(x => x.done).length; return `<div class="subs">${l.map(x => `<button type="button" class="sr${x.done ? ' on' : ''}" aria-pressed="${!!x.done}" onclick="A.subTog('${t.id}','${x.id}')"><i class="bx">${x.done ? '✓' : ''}</i><span>${esc(x.text)}</span></button>`).join('')}<button type="button" class="b sm sublink" onclick="A.subForm('${t.id}')">${l.length ? `Editar subtareas · ${n}/${l.length}` : 'Subtareas'}</button><button type="button" class="b sm sublink snz" onclick="A.snoozeForm('${t.id}')">${snoozed(t) ? 'Pospuesta · cambiar' : 'Posponer'}</button><button type="button" class="b sm sublink rot" onclick="A.rotForm('${t.id}')">${t.rot ? 'Alterna semanas' : 'Turnos'}</button></div>`; };
 const dsel = (sel = []) => `<div class="dsel" id="f_days">${DSEL.map(d => `<button type="button" class="${sel.includes(d) ? 'on' : ''}" data-d="${d}" aria-pressed="${sel.includes(d)}" aria-label="${DOWL[d]}" onclick="this.classList.toggle('on'); this.setAttribute('aria-pressed', this.classList.contains('on'))">${DOW[d]}</button>`).join('')}</div>`;
 const pickDays = () => [...document.querySelectorAll('#f_days button.on')].map(b => +b.dataset.d).sort((a, b) => a - b);
 /* Registrar una compra: vuelve a «al día» y suma un renglón al historial del producto (últimas 30). */
@@ -1460,7 +1469,7 @@ const A = {
     else put('tasks', t, L.cur[k] ? `${t.name}, carga ${li + 2}: ${t.steps[k].toLowerCase()} ✔` : null);
   },
   recDone(tid){ const t = S.tasks[tid]; const u = snapshot([['tasks', tid]]); t.last = Date.now(); t.lastBy = me; delete t.snooze; subsOf(t).forEach(x => x.done = false); buzz(); pop('r:' + tid); put('tasks', t, `hizo: ${t.name}`); toast('Hecho ✔', u); },
-  cycleTask(tid){ const t = S.tasks[tid]; const o = ['gonzalo','dani','ambos']; t.owner = o[(o.indexOf(t.owner)+1) % o.length]; put('tasks', t, `${t.name} → ${M[t.owner].n}`); },
+  cycleTask(tid){ const t = S.tasks[tid]; if(t && t.rot) return A.rotForm(tid); const o = ['gonzalo','dani','ambos']; t.owner = o[(o.indexOf(t.owner)+1) % o.length]; put('tasks', t, `${t.name} → ${M[t.owner].n}`); },
   taskForm(pre){
     A.open(`<h3>Nueva tarea</h3>
       <label class="f">Nombre</label><input type="text" id="f_name">
@@ -1494,6 +1503,21 @@ const A = {
   subDel(tid, sid){
     const t = S.tasks[tid]; if(!t) return;
     t.subs = subsOf(t).filter(x => x.id !== sid); if(!t.subs.length) delete t.subs; put('tasks', t, null); A.subForm(tid); toast('Paso quitado');
+  },
+  rotForm(tid){
+    const t = S.tasks[tid]; if(!t) return; const cur = t.owner === 'dani' ? 'dani' : 'gonzalo';
+    A.open(`<h3>🔁 Turnos de ${esc(t.name)}</h3>
+      <p class="muted">Con «Alternar cada semana», la tarea pasa sola de uno al otro cada lunes.</p>
+      <label class="f">Esta semana la hace</label><div class="seg" id="f_who"><button type="button" data-w="gonzalo" class="${cur === 'gonzalo' ? 'on' : ''}" onclick="A.rotPick('gonzalo')">Gonzalo</button><button type="button" data-w="dani" class="${cur === 'dani' ? 'on' : ''}" onclick="A.rotPick('dani')">Dani</button></div>
+      <label class="f">Cómo se reparte</label><select id="f_rotm"><option value="alt" selected>Alternar cada semana</option><option value="fijo">Siempre la misma persona</option></select>
+      <div class="btns"><button class="pri" onclick="A.rotSave('${tid}')">Guardar</button><button onclick="A.close()">Cancelar</button></div>`);
+  },
+  rotPick(w){ document.querySelectorAll('#f_who button').forEach(b => b.classList.toggle('on', b.dataset.w === w)); },
+  rotSave(tid){
+    const t = S.tasks[tid]; if(!t) return; const w = ((document.querySelector('#f_who button.on') || {}).dataset || {}).w || 'gonzalo', u = snapshot([['tasks', tid]]);
+    t.owner = w;
+    if($('#f_rotm').value === 'alt') t.rot = {a:w, b:w === 'gonzalo' ? 'dani' : 'gonzalo', ref:dk(mondayOf())}; else delete t.rot;
+    A.close(); put('tasks', t, t.rot ? `${t.name}: alterna Gonzalo y Dani cada semana` : `${t.name} → ${M[t.owner].n}`); toast(t.rot ? 'Turnos guardados 🔁' : 'Guardado ✔', u);
   },
   snoozeForm(tid){
     const t = S.tasks[tid]; if(!t) return; const ymd = n => { const d = new Date(); d.setDate(d.getDate() + n); return dk(d); };
@@ -1990,6 +2014,7 @@ function vChat(){
 
 /* ============ Render ============ */
 function render(){
+  if(!render._rot || render._rot !== dk()){ render._rot = dk(); rotSync(); }
   const tabs = me === 'daniela'
     ? [['daniela','escoba','Indicaciones'],['chat','chat','Mensajes']]
     : [['hoy','hoy','Hoy'],['compras','compras','Compras'],['casa','casa','Casa'],['joaco','joaco','Joaco'],['chat','chat','Mensajes']];
