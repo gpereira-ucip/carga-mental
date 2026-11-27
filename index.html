@@ -12,7 +12,19 @@
 <meta property="og:image" content="https://gpereira-ucip.github.io/carga-mental/icon-512.png">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#24476b">
-<style>@font-face{font-family:"Poppins";src:url(fonts/poppins-regular.woff) format("woff");font-weight:300 449;font-display:swap}@font-face{font-family:"Poppins";src:url(fonts/poppins-medium.woff) format("woff");font-weight:450 599;font-display:swap}@font-face{font-family:"Poppins";src:url(fonts/poppins-bold.woff) format("woff");font-weight:600 900;font-display:swap}</style>
+<style>@font-face{font-family:"Poppins";src:url(fonts/poppins-regular.woff) format("woff");font-weight:300 449;font-display:swap}@font-face{font-family:"Poppins";src:url(fonts/poppins-medium.woff) format("woff");font-weight:450 599;font-display:swap}@font-face{font-family:"Poppins";src:url(fonts/poppins-bold.woff) format("woff");font-weight:600 900;font-display:swap}.uni-w{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:8px 0}
+.uni-d{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 2px 6px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:inherit;font:inherit;font-size:11px;cursor:pointer;min-width:0}
+.uni-d.today{border-color:#24476b;box-shadow:0 0 0 2px #24476b33}
+.uni-d span{line-height:1.2;text-align:center}
+.uni-svg{width:100%;max-width:52px;height:auto}
+.uni-hoy{display:flex;gap:12px;align-items:center;cursor:pointer}
+.uni-hoy h3{margin:0 0 2px}.uni-hoy p{margin:0}
+.uni-mini{width:40px;flex:none}
+.uni-f{border:1px solid var(--line);border-radius:14px;padding:8px 10px;margin:10px 0}
+.uni-f legend{font-weight:600;padding:0 4px}
+.uni-c{display:flex;gap:8px;align-items:flex-end}.uni-c label{flex:1}
+.uni-c input[type=color]{width:44px;height:40px;padding:2px;border-radius:10px;flex:none}
+</style>
 <script>try{var t=localStorage.getItem("cm_theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t;if(localStorage.getItem("cm_big")==="1")document.documentElement.dataset.big="1";}catch(e){}</script>
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -382,10 +394,11 @@ details.fold[open] .chev{transform:rotate(90deg)}
 <script>
 'use strict';
 /* ============ Constantes ============ */
-const VERSION = '1.24.0';
+const VERSION = '1.25.0';
 const SCHEMA = 7; // versión de la estructura de datos guardados (ver MIGRATIONS)
 /* Novedades: la primera es la versión actual. "hechas" = ítems del plan de 100 tildados hasta esa versión. */
 const NEWS = [
+  {v:'1.25.0', d:'2026-11-27', hechas:43, items:['Ropa de la semana de Joaco: en la pestaña Joaco hay un dibujo de lunes a viernes con la ropa de cada día (gimnasia o uniforme de calle). Tocá un día para cambiarlo y con «Editar» cambiás las prendas, los colores y las fechas de clases para el año que viene. En Hoy aparece qué ropa va mañana.']},
   {v:'1.24.0', d:'2026-11-27', hechas:43, items:['Ropa de Joaco aparte: en Casa, dentro de las tareas diarias, hay una tarea nueva «Ropa de Joaco» con tres etapas (uniforme, ropa de educación física y en la mochila) para dejar todo listo para el día. En Hoy aparece qué falta apenas se empieza. Tus datos quedan como estaban: solo se suma la tarea (y si la borrás, no vuelve).']},
   {v:'1.23.0', d:'2026-11-26', hechas:42, items:['Ropa: ahora podés tener varias cargas a la vez. En Casa, «+ Otra carga» suma una carga más con sus propias etapas (lavar, colgar, doblar, guardar); cada una se completa por separado y en Hoy aparece lo que falta de cada una.']},
   {v:'1.22.0', d:'2026-11-24', hechas:41, items:['El estado del lavavajillas se ve en Hoy: «Vacío y guardado», «Cargando: falta encenderlo» o «Limpio, falta guardar», con el botón para pasar a la etapa que sigue.']},
@@ -1447,6 +1460,21 @@ const A = {
   office(monStr, dow){ const w = weekCfg(parseDk(monStr)); w.office = w.office || []; const i = w.office.indexOf(dow); if(i >= 0) w.office.splice(i,1); else w.office.push(dow); put('weeks', w, `Dani: ${DOWL[dow]} ${i >= 0 ? 'home office' : 'oficina'}`); },
   setBase(dow, field){ const b = S.weeks.base; const o = ['gonzalo','dani','abuelos']; b.days[dow][field] = o[(o.indexOf(b.days[dow][field])+1) % o.length]; put('weeks', b, `cambió la semana tipo (${DOWL[dow]})`); },
   mochila(k){ const c = S.checks.mochila; const u = snapshot([['checks', 'mochila']]); if(c.date !== dk()){ c.date = dk(); c.done = {}; } if(c.done[k]) delete c.done[k]; else { c.done[k] = me; buzz(); pop('m:' + k); } const all = c.list.every((_, i) => c.done[i]); put('checks', c, all ? 'dejó lista la mochila de Joaco 🎒' : null); if(all && c.done[k]){ confetti(); toast('¡Mochila lista! 🎒', u); } },
+  uniDay(x){ const u = uni(), u0 = snapshot([['checks', 'uniforme']]); u.dias[x] = u.dias[x] === 'gim' ? 'calle' : 'gim'; put('checks', u, `cambió la ropa de Joaco del ${DOWL[x]}: ${u.tipos[u.dias[x]].n.toLowerCase()}`); toast(`${DOWL[x][0].toUpperCase() + DOWL[x].slice(1)}: ${u.tipos[u.dias[x]].n.toLowerCase()}`, u0); },
+  uniEdit(){ const u = uni(); const f = (k, t) => `<fieldset class="uni-f"><legend>${esc(t.n)}</legend>
+      <label>Nombre<input id="u_${k}_n" value="${esc(t.n)}"></label>
+      <div class="uni-c"><label>Arriba<input id="u_${k}_a" value="${esc(t.arriba)}"></label><input type="color" id="u_${k}_c0" value="${t.c[0]}" aria-label="Color de arriba"></div>
+      <div class="uni-c"><label>Abajo<input id="u_${k}_b" value="${esc(t.abajo)}"></label><input type="color" id="u_${k}_c1" value="${t.c[1]}" aria-label="Color de abajo"></div>
+      <div class="uni-c"><label>Calzado<input id="u_${k}_z" value="${esc(t.pies)}"></label><input type="color" id="u_${k}_c2" value="${t.c[2]}" aria-label="Color del calzado"></div>
+      <label class="item"><input type="checkbox" id="u_${k}_ch" ${t.chomba ? 'checked' : ''}><div class="t">Arriba es chomba (con cuello)</div></label></fieldset>`;
+    A.open(`<h3>🎽 Ropa de la semana</h3><p class="muted">Para el año que viene: cambiá prendas y colores, y tocá cada día en la pestaña Joaco para elegir gimnasia o uniforme.</p>
+      ${f('gim', u.tipos.gim)}${f('calle', u.tipos.calle)}
+      <div class="uni-c"><label>Primer día de clases<input type="date" id="u_ini" value="${esc(u.inicio || '')}"></label><label>Último día de clases<input type="date" id="u_fin" value="${esc(u.fin || '')}"></label></div>
+      <p class="muted">Fuera de esas fechas, Hoy no muestra la ropa de mañana. Si las dejás vacías, se muestra siempre.</p>
+      <div class="btns"><button class="pri" onclick="A.uniSave()">Guardar</button><button onclick="A.close()">Cancelar</button></div>`); },
+  uniSave(){ const u = uni(); ['gim','calle'].forEach(k => { const t = u.tipos[k], v = id => ($('#u_' + k + '_' + id).value || '').trim();
+      t.n = v('n') || UNI_DEF.tipos[k].n; t.arriba = v('a'); t.abajo = v('b'); t.pies = v('z'); t.c = [v('c0'), v('c1'), v('c2')]; t.chomba = $('#u_' + k + '_ch').checked; });
+    u.inicio = $('#u_ini').value || ''; u.fin = $('#u_fin').value || ''; A.close(); put('checks', u, 'editó la ropa de la semana de Joaco'); },
   mochilaEdit(){
     const c = S.checks.mochila;
     A.open(`<h3>Checklist de la mochila</h3><p class="muted">Un ítem por renglón. Podés agregar cosas por día, ej: "Mar: ropa de Educación Física".</p>
@@ -1591,6 +1619,33 @@ function verLink(){
 }
 
 /* ============ Vistas ============ */
+/* Ropa de la semana de Joaco (v1.25.0, pedido de Gonzalo). Vive en checks.uniforme, que se crea recién al editar:
+   mientras no existe se usan estos valores, así que no hace falta migración ni se pierde nada. */
+const UNI_DEF = {id:'uniforme', dias:{1:'gim',2:'calle',3:'gim',4:'gim',5:'calle'}, inicio:'', fin:'',
+  tipos:{gim:{n:'Gimnasia', arriba:'Remera amarilla', abajo:'Pantalón bordó', pies:'Zapatillas blancas', chomba:false, c:['#e8b520','#8c1529','#f7f7f5']},
+         calle:{n:'Uniforme de calle', arriba:'Chomba crema con cuello bordó', abajo:'Pantalón gris', pies:'Zapatillas negras', chomba:true, c:['#f2e8c4','#8a8e93','#26282b']}}};
+function uni(){ const u = S.checks.uniforme; if(!u) return JSON.parse(JSON.stringify(UNI_DEF));
+  const d = JSON.parse(JSON.stringify(UNI_DEF)); return Object.assign(d, u, {tipos:Object.assign(d.tipos, u.tipos || {}), dias:Object.assign(d.dias, u.dias || {})}); }
+function uniTipo(d){ const u = uni(); const k = u.dias[d.getDay()]; return k && u.tipos[k] ? u.tipos[k] : null; }
+function uniClases(d){ const u = uni(), k = dk(d); return (!u.inicio || k >= u.inicio) && (!u.fin || k <= u.fin); }
+function uniSvg(t){ const [a, b, z] = t.c, bo = 'stroke="#00000026" stroke-width="1.2" stroke-linejoin="round"';
+  const cuello = t.chomba ? `<path d="M25 9l5 6 5-6" fill="none" stroke="${b === '#8a8e93' ? '#7a1020' : b}" stroke-width="4" stroke-linecap="round"/><path d="M30 15v7" stroke="#00000030"/>` : `<path d="M25 9q5 5 10 0" fill="none" stroke="#00000030" stroke-width="1.5"/>`;
+  const puno = t.chomba ? `<path d="M9 27l5 3M51 27l-5 3" stroke="#7a1020" stroke-width="3"/>` : '';
+  return `<svg viewBox="0 0 60 112" class="uni-svg" aria-hidden="true">
+    <path d="M22 8l-14 7-4 12 10 4 2-5v26h28V26l2 5 10-4-4-12-14-7q-8 7-16 0z" fill="${a}" ${bo}/>${cuello}${puno}
+    <path d="M16 54h28l2 40h-11l-5-30-5 30H14z" fill="${b}" ${bo}/>
+    <path d="M12 98h17l1 7H9q0-5 3-7zM31 98h17q3 2 3 7H30z" fill="${z}" ${bo}/></svg>`; }
+function uniWeekHtml(){
+  const u = uni(), hoy = new Date().getDay();
+  return `<div class="card"><div class="row"><h3>🎽 Ropa de la semana</h3><button class="b sm" onclick="A.uniEdit()">Editar</button></div>
+    <div class="uni-w">${[1,2,3,4,5].map(x => { const t = u.tipos[u.dias[x]] || u.tipos.gim;
+      return `<button class="uni-d${x === hoy ? ' today' : ''}" onclick="A.uniDay(${x})" aria-label="${DOWL[x]}: ${esc(t.n)}. Tocá para cambiar"><b>${DOW[x]}</b>${uniSvg(t)}<span>${esc(t.n)}</span></button>`; }).join('')}</div>
+    <div class="sub">Tocá un día para cambiar entre gimnasia y uniforme.${u.fin ? ` Clases hasta el ${fdate(u.fin)}.` : ''}</div></div>`; }
+function uniHoyHtml(now){
+  const man = new Date(now); man.setDate(man.getDate() + 1);
+  if(man.getDay() < 1 || man.getDay() > 5 || feriado(man) || !uniClases(man)) return '';
+  const t = uniTipo(man); if(!t) return '';
+  return `<div class="card uni-hoy" onclick="A.go('joaco')" ${KB}><div class="uni-mini">${uniSvg(t)}</div><div><h3>Ropa de mañana: ${esc(t.n.toLowerCase())}</h3><p class="muted">${esc([t.arriba, t.abajo, t.pies].filter(Boolean).join(' · '))}</p></div></div>`; }
 function vHoy(){
   const now = new Date(), j = joacoDay(now);
   let h = `<h2>Hola${me ? ', ' + esc(M[me].n) : ''} 👋</h2><p class="muted">${DOWL[now.getDay()][0].toUpperCase() + DOWL[now.getDay()].slice(1)} ${now.getDate()}/${now.getMonth()+1}</p>`;
@@ -1604,6 +1659,7 @@ function vHoy(){
 
   const man = new Date(now); man.setDate(man.getDate() + 1); const fm = feriado(man);
   if(fm && man.getDay() >= 1 && man.getDay() <= 5) h += `<div class="card ferbox" onclick="A.go('joaco')" ${KB}><h3>${hic('calendario')} Mañana es feriado</h3><p>${esc(fm[0])}. Joaco no tiene clases.${gFeriado(man) ? ` <b>${esc(gFeriado(man))}.</b>` : ''}</p></div>`;
+  h += uniHoyHtml(now);
   h += ringsCard();
   h += lavaCard();
   const todo = todoList(now, j);
@@ -1764,6 +1820,7 @@ function vJoaco(){
   <div class="sub">Dani va a la oficina:</div><div class="legend">${[1,2,3,4,5].map(x => `<button class="b sm${(w.office || []).includes(x) ? ' dani-on' : ''}" aria-pressed="${(w.office || []).includes(x)}" onclick="A.office('${monStr}',${x})">${DOW[x]}</button>`).join('')}</div>
   <details><summary>Semana tipo (base)</summary><p class="muted">Lo que se repite todas las semanas. Lo de arriba es solo para esta semana.</p>${[1,2,3,4,5].map(x => { const b = S.weeks.base.days[x]; return `<div class="item"><div class="t">${DOWL[x]}</div><span class="meta">lleva</span>${PB(b.lleva, `A.setBase(${x},'lleva')`)}<span class="meta">busca</span>${PB(b.busca, `A.setBase(${x},'busca')`)}</div>`; }).join('')}</details></div>`;
 
+  h += uniWeekHtml();
   const c = S.checks.mochila, done = c.date === dk() ? c.done : {}, n = Object.keys(done).length;
   h += `<div class="card"><div class="row"><h3>${hic('mochila')} Mochila y ropa</h3><button class="b sm" onclick="A.mochilaEdit()">Editar</button></div>
     <div class="bar"><i style="width:${Math.round(100*n/Math.max(1,c.list.length))}%"></i></div>

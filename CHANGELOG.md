@@ -1,5 +1,10 @@
 # Novedades de Carga Mental
 
+## v1.25.0 — 2026-11-27
+- Pedido de Gonzalo: «Ropa de la semana» de Joaco. En la pestaña Joaco, arriba de la mochila, hay un dibujo de lunes a viernes con la ropa de cada día: gimnasia (remera amarilla, pantalón bordó, zapatillas blancas) o uniforme de calle (chomba crema con cuello bordó, pantalón gris, zapatillas negras). Tocar un día cambia entre gimnasia y uniforme, con «Deshacer». «Editar» permite cambiar nombres, prendas, colores, chomba o remera y las fechas de inicio y fin de clases, para el año que viene. En Hoy aparece «Ropa de mañana» cuando mañana hay clases (no en fin de semana, feriado ni fuera de las fechas de clases).
+- Estructura de datos: sin migración (SCHEMA sigue en 7). El documento `checks.uniforme` se crea recién al editar; mientras no existe se usan los valores de fábrica, así que no se toca ningún dato guardado.
+- Pruebas: datos intactos al abrir, dibujo de la semana en Joaco, cambio de un día, Hoy con la ropa de mañana y 390 px en claro y oscuro.
+
 ## v1.24.0 — 2026-11-27
 - Ítem 43 del plan: la ropa de Joaco va aparte. En Casa, dentro de «Tareas diarias», hay una tarea nueva «Ropa de Joaco» (🎽) con tres etapas: Uniforme, Educación física y En la mochila, para dejar todo listo para el día. En Hoy aparece qué falta apenas se empieza (y suma al numerito de Casa). Cada etapa lleva quién y cuándo, festejo al cerrar el ciclo y «Deshacer». Se puede borrar como cualquier tarea propia.
 - Estructura de datos: SCHEMA pasa a 7. La migración 7 solo suma la tarea `t_ropajoaco` (una sola vez, marca `checks.m7`, que viaja a la nube; si se borra, no revive) y antes guarda la copia `cm_backup_v6`. No toca nada más.
