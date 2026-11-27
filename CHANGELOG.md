@@ -1,5 +1,10 @@
 # Novedades de Carga Mental
 
+## v1.29.0 — 2026-11-27
+- Ítem 46 del plan: subtareas. Las tareas que se repiten y las de una sola vez tienen debajo un botón «＋ Subtareas» que abre una hoja para armar los pasos (con Enter o «Agregar paso»; «✕» quita uno). Los pasos se ven en la lista como círculos que se tildan con un toque, y el botón pasa a «Editar subtareas · 2/3». Al tildar el último paso aparece un aviso con confeti para tocar «Hecho» (no se cierra sola). En las tareas que se repiten, «Hecho» destilda los pasos para la próxima vuelta.
+- Estructura de datos: sin migración (SCHEMA sigue en 7). `subs` ([{id, text, done}]) es un campo opcional de la tarea; si falta, la tarea es como antes.
+- Pruebas: datos intactos al abrir, rechazo de pasos vacíos, alta con Enter, pasos en Casa, tildar, aviso de «todos listos», reinicio con «Hecho», quitar, botones ≥ 44 px, datos ajenos intactos y 390 px en claro y oscuro. Pruebas viejas adaptadas a 46/100.
+
 ## v1.28.0 — 2026-11-27
 - Pedido de Gonzalo (27/11): mejorar la estética y que la app sea más intuitiva, con mejores botones. Jerarquía clara: «Hecho» es un botón azul lleno con tilde ✓ (acción principal); los botones comunes son pastillas tonales; «+ Nueva tarea» y «+ Tarea de una vez» ocupan todo el ancho con borde punteado; «✕» es un botón redondo discreto que se pone rojo al pasar; «Cancelar» es un botón liso. Todos se hunden un poco al tocarlos (se desactiva si el sistema pide menos movimiento). En las hojas, «Guardar»/«Crear» son más grandes y quedan fijos abajo aunque haya que desplazarse.
 - Estructura de datos: sin cambios (solo estilos y clases).
