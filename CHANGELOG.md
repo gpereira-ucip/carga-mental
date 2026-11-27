@@ -1,5 +1,10 @@
 # Novedades de Carga Mental
 
+## v1.26.0 — 2026-11-27
+- Ítem 44 del plan: tareas que se repiten en días fijos de la semana (por ejemplo lunes, miércoles y viernes). Al crear una tarea hay un tipo nuevo «Se repite en días fijos de la semana» con siete botones de día; en Casa se ve «lunes, miércoles y viernes» en vez de «cada X días». Esos días la tarea figura como «toca» (en Casa, en Hoy y en el numerito de Casa) y, si queda sin hacer, sigue pendiente hasta que alguien toque «Hecho». Tocando el nombre de cualquier tarea que se repite se abre una hoja para pasarla a días fijos o volver a «cada X días» (con «Deshacer»).
+- Estructura de datos: sin migración (SCHEMA sigue en 7). `days` ([0-6], 0 = domingo) es un campo opcional de la tarea; si falta, la tarea funciona exactamente como antes.
+- Pruebas: datos intactos al abrir, lógica de «toca» con fechas simuladas (hoy toca, ya hecha, olvidada de un día anterior, hoy no toca, tarea de siempre), texto de días, alta con y sin días elegidos, edición en ambos sentidos, botones ≥ 44 px, datos ajenos intactos y 390 px en claro y oscuro. Pruebas viejas adaptadas a 44/100.
+
 ## v1.25.0 — 2026-11-27
 - Pedido de Gonzalo: «Ropa de la semana» de Joaco. En la pestaña Joaco, arriba de la mochila, hay un dibujo de lunes a viernes con la ropa de cada día: gimnasia (remera amarilla, pantalón bordó, zapatillas blancas) o uniforme de calle (chomba crema con cuello bordó, pantalón gris, zapatillas negras). Tocar un día cambia entre gimnasia y uniforme, con «Deshacer». «Editar» permite cambiar nombres, prendas, colores, chomba o remera y las fechas de inicio y fin de clases, para el año que viene. En Hoy aparece «Ropa de mañana» cuando mañana hay clases (no en fin de semana, feriado ni fuera de las fechas de clases).
 - Estructura de datos: sin migración (SCHEMA sigue en 7). El documento `checks.uniforme` se crea recién al editar; mientras no existe se usan los valores de fábrica, así que no se toca ningún dato guardado.

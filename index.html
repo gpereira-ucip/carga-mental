@@ -139,6 +139,9 @@ button.sm{padding:5px 10px;font-size:var(--fs-xs);min-height:32px}
 button.b.on{background:var(--pri);border-color:var(--pri);color:var(--pri-on)}
 button.dani-on{background:#db2777;border-color:#db2777;color:#fff}
 .btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:var(--s2)}
+.dsel{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:6px 0}
+.dsel button{border:1px solid var(--line2);background:var(--card);color:var(--ink);border-radius:var(--r2);font:inherit;font-size:var(--fs-sm);min-height:44px;padding:0}
+.dsel button.on{background:var(--pri);color:var(--pri-on);border-color:var(--pri);font-weight:650}
 .chips{display:flex;gap:6px;overflow-x:auto;padding:6px 0;scrollbar-width:none}
 .chips button{border:1px solid var(--line2);background:var(--card);color:var(--ink);border-radius:var(--rp);padding:6px 12px;font:inherit;font-size:var(--fs-sm);white-space:nowrap;min-height:36px}
 .chips button.on{background:var(--pri);color:var(--pri-on);border-color:var(--pri)}
@@ -394,10 +397,11 @@ details.fold[open] .chev{transform:rotate(90deg)}
 <script>
 'use strict';
 /* ============ Constantes ============ */
-const VERSION = '1.25.0';
+const VERSION = '1.26.0';
 const SCHEMA = 7; // versión de la estructura de datos guardados (ver MIGRATIONS)
 /* Novedades: la primera es la versión actual. "hechas" = ítems del plan de 100 tildados hasta esa versión. */
 const NEWS = [
+  {v:'1.26.0', d:'2026-11-27', hechas:44, items:['Tareas en días fijos: al crear una tarea podés elegir «Días fijos de la semana» (por ejemplo lunes, miércoles y viernes). Esos días aparece como «toca» y, si queda sin hacer, sigue pendiente hasta que alguien la marque. Tocando el nombre de cualquier tarea que se repite podés pasarla a días fijos, o volver a «cada X días». Tus tareas de siempre no cambian.']},
   {v:'1.25.0', d:'2026-11-27', hechas:43, items:['Ropa de la semana de Joaco: en la pestaña Joaco hay un dibujo de lunes a viernes con la ropa de cada día (gimnasia o uniforme de calle). Tocá un día para cambiarlo y con «Editar» cambiás las prendas, los colores y las fechas de clases para el año que viene. En Hoy aparece qué ropa va mañana.']},
   {v:'1.24.0', d:'2026-11-27', hechas:43, items:['Ropa de Joaco aparte: en Casa, dentro de las tareas diarias, hay una tarea nueva «Ropa de Joaco» con tres etapas (uniforme, ropa de educación física y en la mochila) para dejar todo listo para el día. En Hoy aparece qué falta apenas se empieza. Tus datos quedan como estaban: solo se suma la tarea (y si la borrás, no vuelve).']},
   {v:'1.23.0', d:'2026-11-26', hechas:42, items:['Ropa: ahora podés tener varias cargas a la vez. En Casa, «+ Otra carga» suma una carga más con sus propias etapas (lavar, colgar, doblar, guardar); cada una se completa por separado y en Hoy aparece lo que falta de cada una.']},
@@ -921,7 +925,19 @@ function soonLeft(i){
   return left >= 1 && left <= SOON_DAYS ? left : null;
 }
 const soonTxt = n => n === 1 ? 'se acaba mañana' : `se acaba en ${n} días`;
-const recDue = t => !t.last || (Date.now() - t.last) >= t.every * DAY;
+/* Tareas en días fijos (v1.26.0): t.days = [0..6] (0 = domingo) es opcional; si falta, la tarea sigue siendo «cada X días».
+   Con días fijos «toca» desde el último día programado (hoy o antes, hasta 7 días atrás) hasta que alguien la marca. */
+const recDays = t => Array.isArray(t.days) && t.days.length ? t.days : null;
+const DSEL = [1, 2, 3, 4, 5, 6, 0];
+const daysTxt = ds => { const n = DSEL.filter(d => ds.includes(d)).map(d => DOWL[d]); return n.length > 1 ? n.slice(0, -1).join(', ') + ' y ' + n[n.length - 1] : n[0] || ''; };
+function recDue(t){
+  const ds = recDays(t); if(!ds) return !t.last || (Date.now() - t.last) >= t.every * DAY;
+  const h = new Date(); h.setHours(0, 0, 0, 0);
+  for(let k = 0; k < 7; k++){ const d = new Date(h); d.setDate(h.getDate() - k); if(ds.includes(d.getDay())) return k === 0 ? (!t.last || t.last < d.getTime()) : (!!t.last && t.last < d.getTime()); }
+  return false;
+}
+const dsel = (sel = []) => `<div class="dsel" id="f_days">${DSEL.map(d => `<button type="button" class="${sel.includes(d) ? 'on' : ''}" data-d="${d}" aria-pressed="${sel.includes(d)}" aria-label="${DOWL[d]}" onclick="this.classList.toggle('on'); this.setAttribute('aria-pressed', this.classList.contains('on'))">${DOW[d]}</button>`).join('')}</div>`;
+const pickDays = () => [...document.querySelectorAll('#f_days button.on')].map(b => +b.dataset.d).sort((a, b) => a - b);
 /* Registrar una compra: vuelve a «al día» y suma un renglón al historial del producto (últimas 30). */
 /* Frecuencia aprendida (ítem 26): promedio de los intervalos reales entre compras.
    Compras con menos de 12 h de diferencia cuentan como una sola; se usan los últimos 6 intervalos
@@ -1402,16 +1418,34 @@ const A = {
   taskForm(){
     A.open(`<h3>Nueva tarea</h3>
       <label class="f">Nombre</label><input type="text" id="f_name">
-      <label class="f">Tipo</label><select id="f_kind"><option value="rec">Se repite cada X días</option><option value="cycle">Tiene etapas (como el lavavajillas)</option></select>
+      <label class="f">Tipo</label><select id="f_kind"><option value="rec">Se repite cada X días</option><option value="dias">Se repite en días fijos de la semana</option><option value="cycle">Tiene etapas (como el lavavajillas)</option></select>
       <label class="f">Sección</label><select id="f_grp"><option value="diaria">Tareas diarias</option><option value="orden">Orden de la casa</option><option value="otra" selected>Otras tareas que se repiten</option></select>
       <label class="f">Cada cuántos días (si se repite)</label><input type="number" id="f_every" value="7" min="1">
+      <label class="f">Días de la semana (si es en días fijos)</label>${dsel([])}
       <label class="f">Etapas separadas por coma (si tiene etapas)</label><input type="text" id="f_steps" placeholder="Ej: Juntar, Sacar, Reponer bolsa">
       <div class="btns"><button class="pri" onclick="A.saveTask()">Crear</button><button onclick="A.close()">Cancelar</button></div>`);
   },
+  recForm(tid){
+    const t = S.tasks[tid]; if(!t) return; const ds = recDays(t) || [];
+    A.open(`<h3>${t.icon} ${esc(t.name)}</h3>
+      <label class="f">Cuándo se repite</label><select id="f_mode" onchange="$('#f_boxd').hidden = this.value !== 'dias'; $('#f_boxe').hidden = this.value === 'dias'"><option value="cada" ${ds.length ? '' : 'selected'}>Cada X días</option><option value="dias" ${ds.length ? 'selected' : ''}>Días fijos de la semana</option></select>
+      <div id="f_boxe" ${ds.length ? 'hidden' : ''}><label class="f">Cada cuántos días</label><input type="number" id="f_every" value="${t.every || 7}" min="1"></div>
+      <div id="f_boxd" ${ds.length ? '' : 'hidden'}><label class="f">Días de la semana</label>${dsel(ds)}</div>
+      <div class="btns"><button class="pri" onclick="A.saveRec('${tid}')">Guardar</button><button onclick="A.close()">Cancelar</button></div>`);
+  },
+  saveRec(tid){
+    const t = S.tasks[tid]; if(!t) return; const fijos = $('#f_mode').value === 'dias', ds = pickDays();
+    if(fijos && !ds.length) return toast('Elegí al menos un día de la semana');
+    const u = snapshot([['tasks', tid]]);
+    if(fijos) t.days = ds; else { delete t.days; t.every = Math.max(1, Math.round(+$('#f_every').value) || 7); }
+    A.close(); put('tasks', t, fijos ? `${t.name}: ${daysTxt(ds)}` : `${t.name}: cada ${t.every} días`); toast('Guardado ✔', u);
+  },
   saveTask(){
     const name = $('#f_name').value.trim(); if(!name) return toast('Poné un nombre');
-    const kind = $('#f_kind').value; const t = {id:'t_'+uid(), kind, name, icon:'✅', owner:'ambos', ord:99, grp:($('#f_grp') || {}).value || 'otra'};
-    if(kind === 'rec'){ t.every = Math.max(1, +$('#f_every').value || 7); t.last = null; }
+    let kind = $('#f_kind').value; const fijos = kind === 'dias'; if(fijos) kind = 'rec';
+    if(fijos && !pickDays().length) return toast('Elegí al menos un día de la semana');
+    const t = {id:'t_'+uid(), kind, name, icon:'✅', owner:'ambos', ord:99, grp:($('#f_grp') || {}).value || 'otra'};
+    if(kind === 'rec'){ t.every = Math.max(1, +$('#f_every').value || 7); t.last = null; if(fijos) t.days = pickDays(); }
     else { t.steps = $('#f_steps').value.split(',').map(s => s.trim()).filter(Boolean); if(t.steps.length < 2) return toast('Poné al menos 2 etapas separadas por coma'); t.cur = {}; t.lastDone = null; }
     A.close(); put('tasks', t, `creó la tarea ${name}`);
   },
@@ -1770,7 +1804,7 @@ function vCasa(){
       ${(t.more || []).map((L, li) => { const lc = L.cur || {}, ln = t.steps.findIndex((_, i) => !lc[i]); return `<div class="row" style="margin-top:10px"><div class="sub"><b>Carga ${li + 2}</b></div><button class="b sm" onclick="A.loadDel('${t.id}',${li})" aria-label="Quitar la carga ${li + 2}">Quitar</button></div><div class="steps">${t.steps.map((s, i) => `<button class="${lc[i] ? 'done' : i === ln ? 'next' : ''}${pc(`st:${t.id}:${li}:${i}`)}" aria-pressed="${!!lc[i]}" onclick="A.stepL('${t.id}',${li},${i})">${lc[i] ? '✔ ' : ''}${esc(s)}<small>${lc[i] ? esc(M[lc[i].by]?.n) + ' · ' + ago(lc[i].at) : '&nbsp;'}</small></button>`).join('')}</div>`; }).join('')}
       ${t.id === 't_ropa' ? `<div class="btns"><button onclick="A.loadAdd('${t.id}')">+ Otra carga</button></div>` : ''}
       <div class="sub" style="margin-top:6px">Último ciclo completo: ${t.lastDone ? ago(t.lastDone.at) + ' · ' + [...new Set(t.lastDone.who || [t.lastDone.by])].map(p => M[p]?.n).join(' y ') : 'todavía no'}${t.id.startsWith('t_') && !['t_lava','t_ropa'].includes(t.id) ? ` · <button class="b sm" onclick="A.delTask('${t.id}')" aria-label="Borrar la tarea ${esc(t.name)}">Borrar</button>` : ''}</div></div>`; };
-  const rec = t => `<div class="item${pc('r:' + t.id)}"><div class="t"><div><span class="tic">${t.icon}</span>${esc(t.name)}</div><div class="meta">cada ${t.every} día${t.every > 1 ? 's' : ''} · ${t.last ? ago(t.last) + ' (' + esc(M[t.lastBy]?.n || '') + ')' : 'sin registro'} ${recDue(t) ? '<span class="tag w">toca</span>' : '<span class="tag">al día</span>'}</div></div>${PB(t.owner, `A.cycleTask('${t.id}')`)}<button class="b sm" onclick="A.recDone('${t.id}')">Hecho</button></div>`;
+  const rec = t => `<div class="item${pc('r:' + t.id)}"><div class="t" onclick="A.recForm('${t.id}')" ${KB} aria-label="Editar cuándo se repite ${esc(t.name)}"><div><span class="tic">${t.icon}</span>${esc(t.name)}</div><div class="meta">${recDays(t) ? esc(daysTxt(recDays(t))) : `cada ${t.every} día${t.every > 1 ? 's' : ''}`} · ${t.last ? ago(t.last) + ' (' + esc(M[t.lastBy]?.n || '') + ')' : 'sin registro'} ${recDue(t) ? '<span class="tag w">toca</span>' : '<span class="tag">al día</span>'}</div></div>${PB(t.owner, `A.cycleTask('${t.id}')`)}<button class="b sm" onclick="A.recDone('${t.id}')">Hecho</button></div>`;
   const all = sorted('tasks'), recOf = g => all.filter(t => t.kind === 'rec' && gp(t) === g);
   h += `<h2>${hic('ciclo')} Tareas diarias</h2>`;
   all.filter(t => t.kind === 'cycle').forEach(t => h += cyc(t));
