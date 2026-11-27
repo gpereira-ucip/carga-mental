@@ -1,5 +1,11 @@
 # Novedades de Carga Mental
 
+## v1.32.0 — 2026-11-27
+- Ítem 49 del plan: reasignación por guardia. En la hoja «🔁 Turnos y guardias» de una tarea (botón debajo de la tarea) hay una casilla: «Si Gonzalo está de guardia (lunes, viernes y martes de noche), la hace Dani ese día». Esos días la tarea aparece en Hoy a nombre de Dani con el aviso «cubre Dani por la guardia de Gonzalo». Si Dani la marca como hecha, se anota (con un «¡Gracias, Dani! 💙») y en Hoy aparece «🤝 Dani cubrió 1 tarea por tus guardias. Cuando puedas, devolvele una» con el botón «Devolví una» para compensar otro día; el contador nunca baja de cero. Los días sin guardia, o si la hace Gonzalo, no se anota nada.
+- Regla de guardia usada: lunes (desde las 16 h), viernes (hasta las 20 h) y martes solo si esa semana está marcada «guardia el martes de noche»; el jueves de noche (desde las 20 h) no cuenta como día completo. Se puede ajustar si Gonzalo lo prefiere distinto.
+- Estructura de datos: sin migración (SCHEMA sigue en 7). `guard` es un campo opcional de la tarea y `checks.favor` ({id:'favor', n}) un documento que se crea recién al usarlo.
+- Pruebas: datos intactos al abrir, días de guardia (con y sin martes de noche), guardar la casilla, aviso en el botón, Hoy a nombre de Dani con la fecha simulada de un lunes, deuda al hacerla Dani, sin deuda en día sin guardia, devolver sin bajar de cero, datos ajenos intactos y 390 px en claro y oscuro. Pruebas viejas adaptadas a 49/100.
+
 ## v1.31.0 — 2026-11-27
 - Ítem 48 del plan: rotación automática de responsables. Debajo de cada tarea (que se repite o de una sola vez) hay un botón «🔁 Turnos»: se elige quién la hace esta semana (Gonzalo o Dani) y «Alternar cada semana». Cada lunes la tarea pasa sola al otro; el botón pasa a decir «Alterna semanas». Tocar el nombre del responsable en una tarea con turnos abre esa hoja (en vez de ir rotando). «Siempre la misma persona» deja de alternar y conserva a quien le tocaba.
 - Estructura de datos: sin migración (SCHEMA sigue en 7). `rot` ({a, b, ref}) es un campo opcional de la tarea; `ref` es el lunes de una semana en la que le toca a `a`. El responsable de la semana se calcula igual en todos los teléfonos (una vez por día al abrir la app), así que no hay conflicto.

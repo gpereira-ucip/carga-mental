@@ -429,10 +429,11 @@ button.b.x:hover{background:var(--badbg);color:var(--bad);border-color:var(--bad
 <script>
 'use strict';
 /* ============ Constantes ============ */
-const VERSION = '1.31.0';
+const VERSION = '1.32.0';
 const SCHEMA = 7; // versión de la estructura de datos guardados (ver MIGRATIONS)
 /* Novedades: la primera es la versión actual. "hechas" = ítems del plan de 100 tildados hasta esa versión. */
 const NEWS = [
+  {v:'1.32.0', d:'2026-11-27', hechas:49, items:['Guardias: en «🔁 Turnos y guardias» de una tarea de Gonzalo podés tildar «Si estoy de guardia, la hace Dani ese día». Los lunes, los viernes y los martes con guardia de noche, esa tarea aparece en Hoy a nombre de Dani con el aviso «cubre por la guardia de Gonzalo». Cuando Dani la marca como hecha se anota una «deuda» amable y en Hoy aparece «🤝 Dani cubrió 1 tarea por tus guardias» con el botón «Devolví una» para compensar otro día.']},
   {v:'1.31.0', d:'2026-11-27', hechas:48, items:['Rotación de responsables: debajo de cada tarea hay un botón «🔁 Turnos». Elegís quién la hace esta semana y «Alternar cada semana»: la app cambia sola de Gonzalo a Dani (o al revés) cada lunes, así nadie tiene que acordarse de pasársela al otro. Al tocar el nombre de la persona en una tarea con turnos se abre esa misma hoja. Se puede dejar de alternar cuando quieras.']},
   {v:'1.30.0', d:'2026-11-27', hechas:47, items:['Posponer una tarea: debajo de cada tarea hay un botón «⏰ Posponer» con «Mañana», «En 3 días», «En una semana» o una fecha a elección. Mientras está pospuesta no figura como «toca» ni aparece en Hoy, se ve «pospuesta hasta…» y, cuando llega la fecha, vuelve sola. Se puede quitar la postergación y tiene «Deshacer». Marcar «Hecho» también la limpia.']},
   {v:'1.29.0', d:'2026-11-27', hechas:46, items:['Subtareas: cualquier tarea que se repite o de una sola vez puede tener una lista de pasos (por ejemplo «Llevar el auto al service»: pedir turno, juntar los papeles, llevarlo). Tocá «＋ Subtareas» debajo de la tarea para armarla; cada paso se tilda con un toque y se ve el avance (2/3). En las tareas que se repiten, al tocar «Hecho» los pasos vuelven a empezar. Tus tareas de siempre no cambian.']},
@@ -976,6 +977,12 @@ const rotOwner = (t, d = new Date()) => { const r = t.rot; if(!r || !r.ref || !r
 function rotSync(){
   let n = 0; Object.values(S.tasks || {}).forEach(t => { const o = rotOwner(t); if(o && t.owner !== o){ t.owner = o; n++; put('tasks', t, null); } }); return n;
 }
+/* Guardias (v1.32.0): t.guard = true en una tarea de Gonzalo → los días de guardia (lunes, viernes y martes con guardia de noche) la cubre Dani.
+   Cada vez que Dani la hace ese día se suma 1 en checks.favor ({id:'favor', n}), que Gonzalo devuelve con «Devolví una». Documento opcional, se crea al usarlo. */
+const gGuardiaDay = (d = new Date()) => { const w = d.getDay(); return w === 1 || w === 5 || (w === 2 && !!weekCfg(monday(d)).tueNight); };
+const effOwner = t => t.guard && t.owner === 'gonzalo' && gGuardiaDay() ? 'dani' : t.owner;
+const favorN = () => +((S.checks || {}).favor || {}).n || 0;
+function favorAdd(k){ const f = Object.assign({id:'favor', n:0}, S.checks.favor || {}); f.n = Math.max(0, (+f.n || 0) + k); put('checks', f, k > 0 ? 'cubrió una tarea por la guardia de Gonzalo' : 'devolvió una tarea a Dani'); }
 const snoozed = t => !!t.snooze && dk() < t.snooze;
 function recDue(t){
   if(snoozed(t)) return false;
@@ -990,7 +997,7 @@ const onceSoon = t => t.kind === 'once' && !t.done && !snoozed(t) && !!t.due && 
 const onceTxt = t => !t.due ? 'sin fecha' : (n => n < 0 ? `venció hace ${-n} día${n < -1 ? 's' : ''}` : n === 0 ? 'vence hoy' : n === 1 ? 'vence mañana' : `vence en ${n} días`)(daysTo(t.due));
 /* Subtareas (v1.29.0): t.subs = [{id, text, done}] es opcional en tareas 'rec' y 'once'. Al marcar «Hecho» una tarea que se repite, los pasos se destildan. */
 const subsOf = t => Array.isArray(t.subs) ? t.subs : [];
-const subsHtml = t => { const l = subsOf(t), n = l.filter(x => x.done).length; return `<div class="subs">${l.map(x => `<button type="button" class="sr${x.done ? ' on' : ''}" aria-pressed="${!!x.done}" onclick="A.subTog('${t.id}','${x.id}')"><i class="bx">${x.done ? '✓' : ''}</i><span>${esc(x.text)}</span></button>`).join('')}<button type="button" class="b sm sublink" onclick="A.subForm('${t.id}')">${l.length ? `Editar subtareas · ${n}/${l.length}` : 'Subtareas'}</button><button type="button" class="b sm sublink snz" onclick="A.snoozeForm('${t.id}')">${snoozed(t) ? 'Pospuesta · cambiar' : 'Posponer'}</button><button type="button" class="b sm sublink rot" onclick="A.rotForm('${t.id}')">${t.rot ? 'Alterna semanas' : 'Turnos'}</button></div>`; };
+const subsHtml = t => { const l = subsOf(t), n = l.filter(x => x.done).length; return `<div class="subs">${l.map(x => `<button type="button" class="sr${x.done ? ' on' : ''}" aria-pressed="${!!x.done}" onclick="A.subTog('${t.id}','${x.id}')"><i class="bx">${x.done ? '✓' : ''}</i><span>${esc(x.text)}</span></button>`).join('')}<button type="button" class="b sm sublink" onclick="A.subForm('${t.id}')">${l.length ? `Editar subtareas · ${n}/${l.length}` : 'Subtareas'}</button><button type="button" class="b sm sublink snz" onclick="A.snoozeForm('${t.id}')">${snoozed(t) ? 'Pospuesta · cambiar' : 'Posponer'}</button><button type="button" class="b sm sublink rot" onclick="A.rotForm('${t.id}')">${t.rot ? 'Alterna semanas' : t.guard ? 'Cubre Dani por guardia' : 'Turnos'}</button></div>`; };
 const dsel = (sel = []) => `<div class="dsel" id="f_days">${DSEL.map(d => `<button type="button" class="${sel.includes(d) ? 'on' : ''}" data-d="${d}" aria-pressed="${sel.includes(d)}" aria-label="${DOWL[d]}" onclick="this.classList.toggle('on'); this.setAttribute('aria-pressed', this.classList.contains('on'))">${DOW[d]}</button>`).join('')}</div>`;
 const pickDays = () => [...document.querySelectorAll('#f_days button.on')].map(b => +b.dataset.d).sort((a, b) => a - b);
 /* Registrar una compra: vuelve a «al día» y suma un renglón al historial del producto (últimas 30). */
@@ -1468,7 +1475,7 @@ const A = {
     if(t.steps.every((_, i) => L.cur[i])){ t.lastDone = {at:Date.now(), by:me, who:Object.values(L.cur).map(x => x.by)}; t.more.splice(li, 1); if(!t.more.length) delete t.more; put('tasks', t, `completó la carga ${li + 2} de ${t.name} ✔`); confetti(); toast(`Carga ${li + 2} lista 🎉`, u); }
     else put('tasks', t, L.cur[k] ? `${t.name}, carga ${li + 2}: ${t.steps[k].toLowerCase()} ✔` : null);
   },
-  recDone(tid){ const t = S.tasks[tid]; const u = snapshot([['tasks', tid]]); t.last = Date.now(); t.lastBy = me; delete t.snooze; subsOf(t).forEach(x => x.done = false); buzz(); pop('r:' + tid); put('tasks', t, `hizo: ${t.name}`); toast('Hecho ✔', u); },
+  recDone(tid){ const t = S.tasks[tid]; const u = snapshot([['tasks', tid]]); const cub = me === 'dani' && effOwner(t) !== t.owner; t.last = Date.now(); t.lastBy = me; delete t.snooze; subsOf(t).forEach(x => x.done = false); buzz(); pop('r:' + tid); put('tasks', t, `hizo: ${t.name}`); if(cub){ favorAdd(1); toast('¡Gracias, Dani! 💙 Gonzalo lo compensa otro día', u); } else toast('Hecho ✔', u); },
   cycleTask(tid){ const t = S.tasks[tid]; if(t && t.rot) return A.rotForm(tid); const o = ['gonzalo','dani','ambos']; t.owner = o[(o.indexOf(t.owner)+1) % o.length]; put('tasks', t, `${t.name} → ${M[t.owner].n}`); },
   taskForm(pre){
     A.open(`<h3>Nueva tarea</h3>
@@ -1506,16 +1513,18 @@ const A = {
   },
   rotForm(tid){
     const t = S.tasks[tid]; if(!t) return; const cur = t.owner === 'dani' ? 'dani' : 'gonzalo';
-    A.open(`<h3>🔁 Turnos de ${esc(t.name)}</h3>
+    A.open(`<h3>🔁 Turnos y guardias</h3><p class="muted"><b>${esc(t.name)}</b></p>
       <p class="muted">Con «Alternar cada semana», la tarea pasa sola de uno al otro cada lunes.</p>
       <label class="f">Esta semana la hace</label><div class="seg" id="f_who"><button type="button" data-w="gonzalo" class="${cur === 'gonzalo' ? 'on' : ''}" onclick="A.rotPick('gonzalo')">Gonzalo</button><button type="button" data-w="dani" class="${cur === 'dani' ? 'on' : ''}" onclick="A.rotPick('dani')">Dani</button></div>
       <label class="f">Cómo se reparte</label><select id="f_rotm"><option value="alt" selected>Alternar cada semana</option><option value="fijo">Siempre la misma persona</option></select>
+      <label class="item" style="margin-top:8px"><input type="checkbox" id="f_guard" ${t.guard ? 'checked' : ''}><div class="t">Si Gonzalo está de guardia (lunes, viernes y martes de noche), la hace Dani ese día<div class="meta">Dani la ve en Hoy con el aviso y se anota para compensarlo otro día.</div></div></label>
       <div class="btns"><button class="pri" onclick="A.rotSave('${tid}')">Guardar</button><button onclick="A.close()">Cancelar</button></div>`);
   },
   rotPick(w){ document.querySelectorAll('#f_who button').forEach(b => b.classList.toggle('on', b.dataset.w === w)); },
+  favorPay(){ if(favorN() < 1) return; favorAdd(-1); toast('¡Devuelta! 🤝'); },
   rotSave(tid){
     const t = S.tasks[tid]; if(!t) return; const w = ((document.querySelector('#f_who button.on') || {}).dataset || {}).w || 'gonzalo', u = snapshot([['tasks', tid]]);
-    t.owner = w;
+    t.owner = w; if($('#f_guard').checked) t.guard = true; else delete t.guard;
     if($('#f_rotm').value === 'alt') t.rot = {a:w, b:w === 'gonzalo' ? 'dani' : 'gonzalo', ref:dk(mondayOf())}; else delete t.rot;
     A.close(); put('tasks', t, t.rot ? `${t.name}: alterna Gonzalo y Dani cada semana` : `${t.name} → ${M[t.owner].n}`); toast(t.rot ? 'Turnos guardados 🔁' : 'Guardado ✔', u);
   },
@@ -1545,7 +1554,7 @@ const A = {
     const u = snapshot([['tasks', tid]]); t.name = name; const d = $('#f_due').value; if(d) t.due = d; else delete t.due;
     A.close(); put('tasks', t, `cambió la tarea ${name}`); toast('Guardado ✔', u);
   },
-  onceDone(tid){ const t = S.tasks[tid]; if(!t) return; const u = snapshot([['tasks', tid]]); t.done = Date.now(); t.doneBy = me; delete t.snooze; buzz(); pop('o:' + tid); put('tasks', t, `hizo: ${t.name}`); toast('Hecho ✔', u); },
+  onceDone(tid){ const t = S.tasks[tid]; if(!t) return; const u = snapshot([['tasks', tid]]); const cub = me === 'dani' && effOwner(t) !== t.owner; t.done = Date.now(); t.doneBy = me; delete t.snooze; buzz(); pop('o:' + tid); put('tasks', t, `hizo: ${t.name}`); if(cub){ favorAdd(1); toast('¡Gracias, Dani! 💙 Gonzalo lo compensa otro día', u); } else toast('Hecho ✔', u); },
   onceDel(tid){ const t = S.tasks[tid]; if(!t) return; const n = t.name, u = snapshot([['tasks', tid]]); del('tasks', tid, `borró la tarea ${n}`); toast('Tarea borrada', u); },
   recForm(tid){
     const t = S.tasks[tid]; if(!t) return; const ds = recDays(t) || [];
@@ -1868,10 +1877,11 @@ function todoList(now = new Date(), j = joacoDay(now)){
   sorted('stores').forEach(s => { const n = Object.values(S.items).filter(i => i.store === s.id && needs(i)); if(n.length) todo.push({own:s.owner, html:`${s.icon} <b>${esc(s.name)}</b>: ${n.length} para comprar`, go:`A.filter('${s.id}');A.go('compras')`}); });
   ['gonzalo', 'dani'].forEach(w => { const l = Object.values(S.items).filter(i => bringer(i) === w).sort((a, b) => a.name.localeCompare(b.name)); if(l.length) todo.push({own:w, html:`🙋 Lo traés vos: <b>${l.map(i => esc(i.name)).join(', ')}</b>`, go:"A.go('compras')"}); });
   sorted('tasks').forEach(t => {
-    if(onceSoon(t)) todo.push({own:t.owner, html:`📌 ${esc(t.name)} <span class="meta">· ${onceTxt(t)}</span>`, btn:`<button class="b sm ok" onclick="A.onceDone('${t.id}')">Hecho</button>`});
-    if(t.kind === 'rec' && recDue(t)) todo.push({own:t.owner, html:`${t.icon} ${esc(t.name)} <span class="meta">· ${ago(t.last)}</span>`, btn:`<button class="b sm ok" onclick="A.recDone('${t.id}')">Hecho</button>`});
+    if(onceSoon(t)) todo.push({own:effOwner(t), html:`📌 ${esc(t.name)} <span class="meta">· ${onceTxt(t)}${effOwner(t) !== t.owner ? ' · cubre Dani por la guardia de Gonzalo' : ''}</span>`, btn:`<button class="b sm ok" onclick="A.onceDone('${t.id}')">Hecho</button>`});
+    if(t.kind === 'rec' && recDue(t)) todo.push({own:effOwner(t), html:`${t.icon} ${esc(t.name)} <span class="meta">· ${ago(t.last)}${effOwner(t) !== t.owner ? ' · cubre Dani por la guardia de Gonzalo' : ''}</span>`, btn:`<button class="b sm ok" onclick="A.recDone('${t.id}')">Hecho</button>`});
     if(t.kind === 'cycle'){ const k = t.steps.findIndex((_, i) => !(t.cur || {})[i]); if(Object.keys(t.cur || {}).length) todo.push({own:t.owner, html:`${t.icon} ${esc(t.name)}: falta <b>${esc(t.steps[k].toLowerCase())}</b>`, btn:`<button class="b sm" onclick="A.step('${t.id}',${k})">${esc(t.steps[k])}</button>`}); (t.more || []).forEach((L, li) => { const kk = t.steps.findIndex((_, i) => !(L.cur || {})[i]); if(kk >= 0) todo.push({own:t.owner, html:`${t.icon} ${esc(t.name)}, carga ${li + 2}: falta <b>${esc(t.steps[kk].toLowerCase())}</b>`, btn:`<button class="b sm" onclick="A.stepL('${t.id}',${li},${kk})">${esc(t.steps[kk])}</button>`}); }); }
   });
+  if(favorN() > 0) todo.push({own:'gonzalo', html:`🤝 Dani cubrió <b>${favorN()}</b> tarea${favorN() > 1 ? 's' : ''} por tus guardias. Cuando puedas, devolvele una`, btn:`<button class="b sm ok" onclick="A.favorPay()">Devolví una</button>`});
   /* v1.20.1 (pedido de Gonzalo): los turnos médicos ya no aparecen en «Te toca»; se ven en el desplegable de la pestaña Joaco. */
   if(j && !j.fer){ const c = S.checks.mochila, done = c.date === dk() ? Object.keys(c.done).length : 0; if(done < c.list.length) todo.push({own:j.lleva, html:`🎒 Mochila de Joaco ${done}/${c.list.length}`, go:`A.go('joaco')`}); }
   const pend = Object.values(S.indic).filter(n => !n.done).length;
