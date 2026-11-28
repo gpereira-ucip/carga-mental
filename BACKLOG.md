@@ -60,7 +60,7 @@ Las marcadas 🔑 necesitan algo de Gonzalo (una cuenta, una clave, un dato). En
 - [x] 47. Posponer una tarea (mañana / en 3 días). — ✔ 2026-11-27 (v1.30.0)
 - [x] 48. Rotación automática de responsables (semanas alternas). — ✔ 2026-11-27 (v1.31.0)
 - [x] 49. Reasignación por guardia: si Gonzalo está de guardia, la tarea pasa a Dani con aviso y se compensa otro día. — ✔ 2026-11-27 (v1.32.0) · Regla usada: lunes, viernes y martes de noche; el jueves de noche no cuenta (a revisar por Gonzalo).
-- [ ] 50. "Pedile al otro": mandar una tarea con un mensaje.
+- [x] 50. "Pedile al otro": mandar una tarea con un mensaje. — ✔ 2026-11-28 (v1.34.0)
 - [ ] 51. Limonero con calendario estacional (riego verano/invierno, fertilización, poda).
 - [ ] 52. Mantenimiento de la casa (filtro del lavavajillas, sarro, aire acondicionado, matafuego).
 - [ ] 53. Vencimientos (seguros, servicios, cuota del colegio) como recordatorios.

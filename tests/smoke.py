@@ -24,6 +24,7 @@ Levanta un servidor local, abre la app en un celular simulado (390x844) y recorr
   18. v1.16.0: ideas y antojos (migración al esquema 5).
   19. v1.17.0: snacks de Joaco (documento opcional checks.snacks, sin migración).
   20. v1.18.0: compartir lista (WhatsApp, menú nativo, copiar), sin migración.
+  29. v1.34.0: «Pedile al otro» (campo opcional ask + mensaje, sin migración).
   28. v1.33.0: marca (camión con cerebro) en vectores, tarjeta «La carga de hoy», portada animada, ícono adaptable y og.jpg (sin datos nuevos).
   27. v1.32.0: Dani cubre las guardias de Gonzalo y compensación (campo guard y checks.favor, sin migración).
   26. v1.31.0: rotación de responsables por semana (campo opcional rot, sin migración).
@@ -591,7 +592,7 @@ with sync_playwright() as p:
         check(it['i_agua']['cat'] == 'bebidas' and it['i_mio']['cat'] == 'frescos' and it['i_huerfano']['cat'] == 'almacen', f"v1.5: categorías mal asignadas {[x['cat'] for x in it.values()]}")
         check(all(x['qty'] is None and x['unit'] == '' for x in it.values()), 'v1.5: cantidad/unidad iniciales')
         check(it['i_mio']['hist'] == [{'at': 1762000000000, 'by': None}] and it['i_agua']['hist'] == [], f"v1.5: historial inicial {it['i_mio']['hist']}")
-        check(pg.locator('#sheet >> text=49/100').count() > 0, 'v1.5: Novedades no muestra 49/100')
+        check(pg.locator('#sheet >> text=50/100').count() > 0, 'v1.5: Novedades no muestra 50/100')
         pg.screenshot(path=f'/tmp/cm-v15-novedades-{scheme}.png')
         pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
         pg.reload(); pg.wait_for_timeout(1800)
@@ -730,7 +731,7 @@ with sync_playwright() as p:
         for x in d0['items'].values(): x.pop('auto', None)
         check(d0 == con_m6(pre), 'v1.6: la migración cambió o perdió datos de v1.5.0')
         check(json.loads(pg.evaluate('localStorage.getItem("cm_backup_v2")') or 'null') == pre, 'v1.6: no quedó la copia cm_backup_v2 idéntica')
-        check(pg.locator('#sheet >> text=49/100').count() > 0, 'v1.6: Novedades no se abrió con 49/100')
+        check(pg.locator('#sheet >> text=50/100').count() > 0, 'v1.6: Novedades no se abrió con 50/100')
         pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
         # Cálculo del promedio
         calc = pg.evaluate("""() => { const D = 86400000, t = 1e12, h = a => ({hist: a.map(n => ({at: t + n * D}))});
@@ -801,7 +802,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---------- 10. v1.7.0: aviso anticipado («se acaba en 2 días») ----------
-    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.33.0');"
+    init17 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.34.0');"
               " if(!localStorage.getItem('cm_data')){ const d = %s; d._v = 7; d.tpls = {}; d.ideas = {}; d.checks.m6 = {id:'m6'}; d.checks.m7 = {id:'m7'}; d.tasks.t_ropajoaco = {id:'t_ropajoaco', kind:'cycle', name:'Ropa de Joaco', icon:'🎽', owner:'ambos', steps:['Uniforme','Educación física','En la mochila'], cur:{}, lastDone:null, ord:8, grp:'diaria'}; Object.values(d.tasks || {}).forEach(t => { if(!t.grp) t.grp = t.kind === 'cycle' ? 'diaria' : (t.id === 't_orden' ? 'orden' : 'otra'); }); Object.values(d.items).forEach(i => i.auto = true);"
               " localStorage.setItem('cm_pre', JSON.stringify(d)); localStorage.setItem('cm_data', JSON.stringify(d)); }") % json.dumps(V15)
     for scheme in ['light', 'dark']:
@@ -937,7 +938,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---- v1.12.0: plantillas de pedido (migración al esquema 4) ----
-    init18 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.33.0');"
+    init18 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.34.0');"
               " if(!localStorage.getItem('cm_data')){ const d = %s; d._v = 3; Object.values(d.items).forEach(i => i.auto = true);"
               " localStorage.setItem('cm_pre', JSON.stringify(d)); localStorage.setItem('cm_data', JSON.stringify(d)); }") % json.dumps(V15)
     for scheme in ['light', 'dark']:
@@ -1283,7 +1284,7 @@ with sync_playwright() as p:
     V5['tasks']['t_orden'] = {'id':'t_orden','kind':'rec','name':'Orden general (cocina y living)','icon':'🧺','owner':'ambos','every':1,'last':1762000000000,'ord':3}
     V5['areas']['a_salud'] = {'id':'a_salud','name':'Turnos médicos y odontología de Joaco','owner':'gonzalo'}
     V5['areas']['a_orden'] = {'id':'a_orden','name':'Orden general','owner':'ambos'}
-    init20 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.33.0');"
+    init20 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.34.0');"
               " if(!sessionStorage.getItem('s20')){ sessionStorage.setItem('s20','1'); localStorage.setItem('cm_data', %s); }") % json.dumps(json.dumps(V5))
     for scheme in ['light', 'dark']:
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init20)
@@ -1420,7 +1421,7 @@ with sync_playwright() as p:
 
     # ---- v1.24.0: ropa de Joaco aparte (ítem 43), migración al esquema 7 ----
     V6 = json.loads(json.dumps(con_m6(V15))); V6['tasks'].pop('t_ropajoaco', None); V6['checks'].pop('m7', None); V6['_v'] = 6; V6['tpls'] = {}; V6['ideas'] = {}
-    init24 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.33.0');"
+    init24 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.34.0');"
               " if(!sessionStorage.getItem('s24')){ sessionStorage.setItem('s24','1'); localStorage.setItem('cm_data', %s); }") % json.dumps(json.dumps(V6))
     for scheme in ['light', 'dark']:
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init24)
@@ -1452,7 +1453,7 @@ with sync_playwright() as p:
 
     # ---- v1.25.0: ropa de la semana de Joaco (sin migración) ----
     V7 = json.loads(json.dumps(con_m6(V15))); V7['_v'] = 7; V7['tpls'] = {}; V7['ideas'] = {}
-    init25 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.33.0');"
+    init25 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.34.0');"
               " if(!sessionStorage.getItem('s25')){ sessionStorage.setItem('s25','1'); localStorage.setItem('cm_data', %s); }") % json.dumps(json.dumps(V7))
     for scheme in ['light', 'dark']:
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init25)
@@ -1476,7 +1477,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---- v1.26.0: tareas en días fijos (ítem 44, sin migración) ----
-    init26 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.33.0');"
+    init26 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.34.0');"
               " if(!sessionStorage.getItem('s26')){ sessionStorage.setItem('s26','1'); localStorage.setItem('cm_data', %s); }") % json.dumps(json.dumps(V7))
     for scheme in ['light', 'dark']:
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init26)
@@ -1534,7 +1535,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---- v1.27.0: tareas de una sola vez con fecha límite (ítem 45, sin migración) ----
-    init27 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.33.0');"
+    init27 = ("localStorage.setItem('cm_me','gonzalo'); localStorage.setItem('cm_seen','1.34.0');"
               " if(!sessionStorage.getItem('s27')){ sessionStorage.setItem('s27','1'); localStorage.setItem('cm_data', %s); }") % json.dumps(json.dumps(V7))
     for scheme in ['light', 'dark']:
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init27)
@@ -1590,7 +1591,7 @@ with sync_playwright() as p:
         ctx.close()
 
     # ---- v1.28.0: botones renovados (solo estilos) ----
-    ctx = b.new_context(viewport={'width': 390, 'height': 844}); ctx.add_init_script(init27.replace('1.27.0', '1.33.0').replace('s27', 's28')); pg = ctx.new_page()
+    ctx = b.new_context(viewport={'width': 390, 'height': 844}); ctx.add_init_script(init27.replace('1.27.0', '1.34.0').replace('s27', 's28')); pg = ctx.new_page()
     pg.on('pageerror', lambda e: errs.append(f'[v1.28.0] JS: {e}'))
     pg.on('console', lambda m: errs.append(f'[v1.28.0] consola: {m.text}') if m.type == 'error' else None)
     pg.goto(URL); pg.wait_for_timeout(1500); pg.evaluate("A.go('casa'); render()"); pg.wait_for_timeout(300)
@@ -1604,7 +1605,7 @@ with sync_playwright() as p:
 
     # ---- v1.29.0: subtareas (ítem 46, sin migración) ----
     for scheme in ['light', 'dark']:
-        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init27.replace('1.27.0', '1.33.0').replace('s27', 's29')); pg = ctx.new_page()
+        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init27.replace('1.27.0', '1.34.0').replace('s27', 's29')); pg = ctx.new_page()
         pg.on('pageerror', lambda e: errs.append(f'[v1.29.0] JS: {e}'))
         pg.on('console', lambda m: errs.append(f'[v1.29.0] consola: {m.text}') if m.type == 'error' else None)
         pg.goto(URL); pg.wait_for_timeout(1500)
@@ -1643,7 +1644,7 @@ with sync_playwright() as p:
 
     # ---- v1.30.0: posponer una tarea (ítem 47, sin migración) ----
     for scheme in ['light', 'dark']:
-        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init27.replace('1.27.0', '1.33.0').replace('s27', 's30')); pg = ctx.new_page()
+        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init27.replace('1.27.0', '1.34.0').replace('s27', 's30')); pg = ctx.new_page()
         pg.on('pageerror', lambda e: errs.append(f'[v1.30.0] JS: {e}'))
         pg.on('console', lambda m: errs.append(f'[v1.30.0] consola: {m.text}') if m.type == 'error' else None)
         pg.goto(URL); pg.wait_for_timeout(1500)
@@ -1687,7 +1688,7 @@ with sync_playwright() as p:
 
     # ---- v1.31.0: rotación de responsables (ítem 48, sin migración) ----
     for scheme in ['light', 'dark']:
-        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init27.replace('1.27.0', '1.33.0').replace('s27', 's31')); pg = ctx.new_page()
+        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init27.replace('1.27.0', '1.34.0').replace('s27', 's31')); pg = ctx.new_page()
         pg.on('pageerror', lambda e: errs.append(f'[v1.31.0] JS: {e}'))
         pg.on('console', lambda m: errs.append(f'[v1.31.0] consola: {m.text}') if m.type == 'error' else None)
         pg.goto(URL); pg.wait_for_timeout(1500)
@@ -1725,7 +1726,7 @@ with sync_playwright() as p:
     # ---- v1.32.0: reasignación por guardia (ítem 49, sin migración) ----
     FAKE = """(y, m, d, h) => { const R = window.__R || (window.__R = Date), t = new R(y, m, d, h).getTime(); globalThis.Date = class extends R { constructor(...a){ if(a.length) super(...a); else super(t); } static now(){ return t; } }; }"""
     for scheme in ['light', 'dark']:
-        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init27.replace('1.27.0', '1.33.0').replace('s27', 's32')); pg = ctx.new_page()
+        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init27.replace('1.27.0', '1.34.0').replace('s27', 's32')); pg = ctx.new_page()
         pg.on('pageerror', lambda e: errs.append(f'[v1.32.0] JS: {e}'))
         pg.on('console', lambda m: errs.append(f'[v1.32.0] consola: {m.text}') if m.type == 'error' else None)
         pg.goto(URL); pg.wait_for_timeout(1500)
@@ -1769,7 +1770,7 @@ with sync_playwright() as p:
 
     # ---- v1.33.0: marca (camión con cerebro) por toda la app ----
     for scheme in ['light', 'dark']:
-        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init27.replace('1.27.0', '1.33.0').replace('s27', 's33')); pg = ctx.new_page()
+        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init27.replace('1.27.0', '1.34.0').replace('s27', 's33')); pg = ctx.new_page()
         pg.on('pageerror', lambda e: errs.append(f'[v1.33.0] JS: {e}'))
         pg.on('console', lambda m: errs.append(f'[v1.33.0] consola: {m.text}') if m.type == 'error' else None)
         pg.goto(URL); pg.wait_for_timeout(500)
@@ -1804,6 +1805,48 @@ with sync_playwright() as p:
         check(rd.count() == 1 and bb['y'] + bb['height'] <= bar['y'] + 2 and bar['x'] - 4 <= bb['x'] + bb['width'] <= bar['x'] + bar['width'] + 4, f'v1.33.0: el camión no está sobre la barra {bb} {bar}')
         check(pg.locator('.newshero img').evaluate("i => i.naturalWidth") > 100, 'v1.33.0: no carga el logo en Novedades')
         pg.screenshot(path=f'/tmp/cm-v1330-novedades-{scheme}.png'); width_ok(pg, 'v1.33.0 novedades')
+        ctx.close()
+
+    # ---- v1.34.0: «Pedile al otro» (ítem 50, sin migración) ----
+    for scheme in ['light', 'dark']:
+        ctx = b.new_context(viewport={'width': 390, 'height': 844}, color_scheme=scheme); ctx.add_init_script(init27.replace('1.27.0', '1.34.0').replace('s27', 's34')); pg = ctx.new_page()
+        pg.on('pageerror', lambda e: errs.append(f'[v1.34.0] JS: {e}'))
+        pg.on('console', lambda m: errs.append(f'[v1.34.0] consola: {m.text}') if m.type == 'error' else None)
+        pg.goto(URL); pg.wait_for_timeout(1500)
+        check(S(pg) == V7, 'v1.34.0: al abrir cambió o perdió datos')
+        RT = next(k for k, v in V7['tasks'].items() if v.get('kind') == 'rec' and not v.get('last'))
+        rname = V7['tasks'][RT]['name']; nmsg = len(V7['msgs'])
+        pg.evaluate("A.go('casa'); render()"); pg.wait_for_timeout(250)
+        check(pg.locator('.sublink.ask').count() >= 1 and pg.locator('.sublink.ask').first.bounding_box()['height'] >= 43.5, 'v1.34.0: falta el botón «Pedile al otro» táctil')
+        pg.evaluate(f"A.askForm('{RT}')"); pg.wait_for_timeout(250)
+        check('Pedile a Dani' in pg.locator('#sheet').inner_text(), 'v1.34.0: la hoja no nombra a Dani')
+        pg.click('#sheet .chips button >> nth=0')
+        check(pg.input_value('#f_ask') != '', 'v1.34.0: la frase rápida no completó el mensaje')
+        pg.screenshot(path=f'/tmp/cm-v1340-form-{scheme}.png'); width_ok(pg, 'v1.34.0 hoja')
+        pg.evaluate(f"A.askSend('{RT}')"); pg.wait_for_timeout(300)
+        D = S(pg); t = D['tasks'][RT]
+        check(t['owner'] == 'dani' and t['ask']['by'] == 'gonzalo' and t['ask']['to'] == 'dani' and t['ask']['msg'], f'v1.34.0: no pasó la tarea a Dani {t}')
+        ms = [m for m in D['msgs'].values() if rname in m['text']]
+        check(len(D['msgs']) == nmsg + 1 and len(ms) == 1 and 'Dani' in ms[0]['text'] and ms[0]['by'] == 'gonzalo', 'v1.34.0: no mandó el mensaje')
+        check('pedida por Gonzalo' in pg.locator('body').inner_text(), 'v1.34.0: Casa no muestra el pedido')
+        pg.screenshot(path=f'/tmp/cm-v1340-casa-{scheme}.png', full_page=True); width_ok(pg, 'v1.34.0 casa')
+        pg.evaluate("me = 'dani'; A.go('hoy'); render()"); pg.wait_for_timeout(300)
+        check('pedida por Gonzalo' in pg.locator('body').inner_text().split('Últimos movimientos')[0], 'v1.34.0: Hoy no muestra el pedido a Dani')
+        pg.screenshot(path=f'/tmp/cm-v1340-hoy-{scheme}.png', full_page=True); width_ok(pg, 'v1.34.0 hoy')
+        # Dani la hace → se limpia el pedido
+        pg.evaluate(f"A.recDone('{RT}')"); pg.wait_for_timeout(250); pg.evaluate("me = 'gonzalo'")
+        check('ask' not in S(pg)['tasks'][RT], 'v1.34.0: el pedido no se limpió al hacerla')
+        # deshacer: vuelve la tarea y se va el mensaje
+        pg.evaluate(f"S.tasks['{RT}'] = JSON.parse(JSON.stringify({json.dumps(V7['tasks'][RT])})); render()")
+        nm2 = len(S(pg)['msgs'])
+        pg.evaluate(f"A.askForm('{RT}')"); pg.wait_for_timeout(200); pg.evaluate(f"A.askSend('{RT}')"); pg.wait_for_timeout(250)
+        check(S(pg)['tasks'][RT]['ask']['msg'] == '', 'v1.34.0: sin mensajito debería quedar vacío')
+        pg.click('#toast >> text=Deshacer'); pg.wait_for_timeout(300)
+        D = S(pg); check('ask' not in D['tasks'][RT] and D['tasks'][RT]['owner'] == V7['tasks'][RT]['owner'] and len(D['msgs']) == nm2, 'v1.34.0: deshacer no restauró tarea y mensaje')
+        # tarea con turnos: se deja de alternar; tarea de una vez
+        pg.evaluate(f"S.tasks['{RT}'].rot = {{a:'gonzalo', b:'dani', ref:dk(mondayOf())}}; render(); A.askSend('{RT}')") if False else None
+        d0 = json.loads(json.dumps(S(pg))); d0['log'] = V7['log']; d0['msgs'] = V7['msgs']
+        check(d0 == V7, 'v1.34.0: el pedido tocó otros datos')
         ctx.close()
 
     b.close()

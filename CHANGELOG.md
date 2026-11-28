@@ -1,5 +1,10 @@
 # Novedades de Carga Mental
 
+## v1.34.0 — 2026-11-28
+- Ítem 50 del plan: «Pedile al otro». Debajo de cada tarea (que se repite o de una sola vez) hay un botón nuevo «Pedile al otro»: abre una hoja con un mensajito opcional (con tres frases rápidas) y «Pedírselo a Dani» (o a Gonzalo, según quién use la app). La tarea pasa a nombre del otro, con «🙏 pedida por Gonzalo: «mensaje»» a la vista en Casa y en Hoy, y le llega un mensaje en la pestaña Mensajes (que dispara el aviso de siempre). El pedido se borra solo cuando alguien marca la tarea como hecha. «Deshacer» devuelve la tarea y quita el mensaje. Si la tarea alternaba semanas, deja de alternar (también se deshace). Solo Gonzalo y Dani pueden pedirse cosas entre ellos.
+- Estructura de datos: sin migración (SCHEMA sigue en 7). `ask` ({by, to, msg, at}) es un campo opcional de la tarea; si falta, nada cambia.
+- Pruebas: datos intactos al abrir, botón ≥ 44 px, hoja con la frase rápida, tarea a nombre del otro con el pedido, mensaje enviado, pedido visible en Casa y en Hoy, limpieza al hacerla, deshacer (tarea y mensaje), datos ajenos intactos y 390 px en claro y oscuro. Pruebas viejas adaptadas a 50/100.
+
 ## v1.33.0 — 2026-11-27
 - Pedido de Gonzalo (27/11): usar el logo del camión con el cerebro en más lugares, por separado y en distintos tamaños, con un trabajo de diseño profesional.
   - Logo con fondo transparente (`logo-camion.png`, recortado de la portada) para usarlo sobre blanco, azul o modo oscuro.
